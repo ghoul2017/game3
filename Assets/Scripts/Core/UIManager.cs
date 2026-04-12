@@ -115,12 +115,12 @@ namespace Game.Core
             if (panelCache.TryGetValue(typeName, out var cached))
                 return (T)cached;
 
-            // 尝试从 Resources/UI 加载
-            var prefab = Resources.Load<GameObject>($"UI/{typeName}");
+            // 优先通过 PrefabLoader 加载面板预制体
+            var prefab = PrefabLoader.LoadPanelPrefab(typeName);
             GameObject panelObj;
             if (prefab != null)
             {
-                panelObj = Object.Instantiate(prefab, canvasTransform, false);
+                panelObj = PrefabLoader.Instantiate(prefab, canvasTransform, typeName);
             }
             else
             {
