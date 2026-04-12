@@ -147,7 +147,7 @@ namespace Game.UI
             for (int i = 0; i < 3; i++)
             {
                 var item = ConfigManager.Instance.GetItem(ids[i]);
-                equipTexts[i].text = $"{slots[i]}: {item != null ? item.name : "空"}";
+                equipTexts[i].text = $"{slots[i]}: {(item != null ? item.name : "空")}";
                 equipTexts[i].color = item != null ? UIBuilder.TextWhite : UIBuilder.TextDim;
             }
 
