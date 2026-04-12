@@ -73,6 +73,19 @@ namespace Game.Data
             if (armor != null) { defense += armor.def; maxHp += armor.hp; }
             if (accessory != null) { critRate += accessory.crit; dodgeRate += accessory.dodge; }
 
+            // 宝物加成（百分比）
+            foreach (var tid in treasures)
+            {
+                var tc = ConfigManager.Instance.GetTreasure(tid);
+                if (tc == null) continue;
+                switch (tc.effectType)
+                {
+                    case 0: attack += (int)(attack * tc.effectValue / 100f); break;   // ATK%
+                    case 1: defense += (int)(defense * tc.effectValue / 100f); break;  // DEF%
+                    case 2: maxHp += (int)(maxHp * tc.effectValue / 100f); break;     // HP%
+                }
+            }
+
             if (hp > maxHp) hp = maxHp;
             if (mp > maxMp) mp = maxMp;
         }

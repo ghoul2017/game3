@@ -55,6 +55,9 @@ namespace Game.Config
         public TreasureConfig GetTreasure(int id)
             => treasures.TryGetValue(id, out var c) ? c : null;
 
+        public List<TreasureConfig> GetAllTreasures()
+            => treasures.Values.ToList();
+
         // ---- 初始化配置 ----
 
         private void InitProfessions()

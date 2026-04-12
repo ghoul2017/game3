@@ -43,7 +43,7 @@
 
   {"id":"F060","category":"item","desc":"物品数据：武器、防具、饰品、消耗品","passes":true},
   {"id":"F061","category":"item","desc":"背包管理：添加、删除、排序物品","passes":true},
-  {"id":"F062","category":"item","desc":"宝物系统：特殊遗物，提供被动效果（RecalcStats 中生效）","passes":false},
+  {"id":"F062","category":"item","desc":"宝物系统：特殊遗物，提供被动效果（RecalcStats 中生效）","passes":true},
 
   {"id":"F070","category":"config","desc":"职业配置：5职业基础属性和成长","passes":true},
   {"id":"F071","category":"config","desc":"技能配置：技能效果、消耗、前置条件","passes":true},

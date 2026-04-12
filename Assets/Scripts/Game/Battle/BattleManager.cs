@@ -33,6 +33,16 @@ namespace Game.Battle
             int dmg = CalcDamage(p.attack, b.monster.defense + b.monster.buffDefense);
             b.monster.hp -= dmg;
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
+
+            // 吸血之牙宝物效果：攻击恢复 effectValue% 伤害值的生命
+            if (p.treasures.Contains(4))
+            {
+                var tc = ConfigManager.Instance.GetTreasure(4);
+                int lifesteal = Mathf.Max(1, (int)(dmg * tc.effectValue / 100f));
+                p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
+                msg += $"，吸血恢复 {lifesteal} 生命";
+            }
+
             b.log.Add(msg);
 
             if (b.monster.hp <= 0)
@@ -78,6 +88,16 @@ namespace Game.Battle
             int dmg = CalcDamage((int)(p.attack * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
+
+            // 吸血之牙宝物效果
+            if (p.treasures.Contains(4))
+            {
+                var tc = ConfigManager.Instance.GetTreasure(4);
+                int lifesteal = Mathf.Max(1, (int)(dmg * tc.effectValue / 100f));
+                p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
+                msg += $"，吸血恢复 {lifesteal} 生命";
+            }
+
             b.log.Add(msg);
 
             if (b.monster.hp <= 0)
@@ -200,11 +220,19 @@ namespace Game.Battle
             b.isVictory = true;
             if (b.room != null) b.room.cleared = true;
 
-            p.AddExp(m.expReward);
-            p.gold += m.goldReward;
+            // 宝物加成：幸运硬币(id=5)金币+30%，经验宝石(id=6)经验+20%
+            int goldReward = m.goldReward;
+            int expReward = m.expReward;
+            if (p.treasures.Contains(5))
+                goldReward = (int)(goldReward * (1 + ConfigManager.Instance.GetTreasure(5).effectValue / 100f));
+            if (p.treasures.Contains(6))
+                expReward = (int)(expReward * (1 + ConfigManager.Instance.GetTreasure(6).effectValue / 100f));
 
-            Debug.Log($"[战斗] 胜利！怪物={m.name} 经验={m.expReward} 金币={m.goldReward}");
-            string msg = $"击败了 {m.name}！获得 {m.expReward} 经验，{m.goldReward} 金币";
+            p.AddExp(expReward);
+            p.gold += goldReward;
+
+            Debug.Log($"[战斗] 胜利！怪物={m.name} 经验={expReward} 金币={goldReward}");
+            string msg = $"击败了 {m.name}！获得 {expReward} 经验，{goldReward} 金币";
 
             // 掉落物品
             foreach (var drop in m.drops)

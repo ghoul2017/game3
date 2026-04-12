@@ -309,8 +309,21 @@ namespace Game.UI
             int goldFound = Random.Range(10, 30) * GameManager.Instance.Dungeon.floor;
             player.gold += goldFound;
             pendingMessage = $"发现宝箱！获得 {goldFound} 金币";
+
+            // 40% 几率获得宝物遗物
+            var allTreasures = ConfigManager.Instance.GetAllTreasures();
+            var available = allTreasures.FindAll(t => !player.treasures.Contains(t.id));
+            if (available.Count > 0 && Random.value < 0.4f)
+            {
+                var treasure = available[Random.Range(0, available.Count)];
+                player.treasures.Add(treasure.id);
+                player.RecalcStats();
+                pendingMessage += $"\n获得宝物：{treasure.name} — {treasure.desc}";
+            }
+
+            // 30% 几率获得消耗品
             var consumables = ConfigManager.Instance.GetItemsByType(ItemType.Consumable);
-            if (consumables.Count > 0 && Random.value < 0.5f && player.bagItems.Count < player.maxBagSize)
+            if (consumables.Count > 0 && Random.value < 0.3f && player.bagItems.Count < player.maxBagSize)
             {
                 var item = consumables[Random.Range(0, consumables.Count)];
                 player.bagItems.Add(item.id);
