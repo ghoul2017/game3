@@ -1,0 +1,48 @@
+[
+  {"id":"F001","category":"framework","desc":"GameEntry 启动入口，初始化 UI 系统","passes":false},
+  {"id":"F002","category":"framework","desc":"UIManager 单例，Canvas/EventSystem 自动创建","passes":false},
+  {"id":"F003","category":"framework","desc":"UIPanel 基类，生命周期 OnInit/OnShow/OnHide/OnDestroyed","passes":false},
+  {"id":"F004","category":"framework","desc":"UIBuilder 静态工厂，纯代码构建 UI 控件","passes":false},
+  {"id":"F005","category":"framework","desc":"GameManager 单例，管理游戏全局状态","passes":false},
+  {"id":"F006","category":"framework","desc":"DataManager 数据管理，JSON 存档/读档","passes":false},
+  {"id":"F007","category":"framework","desc":"ConfigManager 配置管理，加载职业/技能/物品配置","passes":false},
+
+  {"id":"F010","category":"ui","desc":"主菜单面板 MainPanel：开始游戏、继续游戏","passes":false},
+  {"id":"F011","category":"ui","desc":"角色创建面板 CreateRolePanel：选择职业、输入名字","passes":false},
+  {"id":"F012","category":"ui","desc":"城镇面板 TownPanel：商店、技能学习、休息、进入地牢","passes":false},
+  {"id":"F013","category":"ui","desc":"地牢探索面板 DungeonPanel：地图显示、移动、事件触发","passes":false},
+  {"id":"F014","category":"ui","desc":"战斗面板 BattlePanel：回合制战斗 UI","passes":false},
+  {"id":"F015","category":"ui","desc":"背包面板 BagPanel：物品列表、装备管理","passes":false},
+  {"id":"F016","category":"ui","desc":"角色信息面板 RolePanel：属性、装备、技能一览","passes":false},
+
+  {"id":"F020","category":"player","desc":"角色数据模型：基础属性（力量/敏捷/智力/体力）","passes":false},
+  {"id":"F021","category":"player","desc":"战斗属性计算：攻击力/防御力/生命值/法力值","passes":false},
+  {"id":"F022","category":"player","desc":"等级与经验系统","passes":false},
+  {"id":"F023","category":"player","desc":"装备系统：武器/防具/饰品槽位","passes":false},
+  {"id":"F024","category":"player","desc":"技能系统：职业技能列表、装备技能","passes":false},
+
+  {"id":"F030","category":"dungeon","desc":"地牢地图生成：随机房间+通道","passes":false},
+  {"id":"F031","category":"dungeon","desc":"地牢探索：玩家在地图上移动","passes":false},
+  {"id":"F032","category":"dungeon","desc":"地牢事件：怪物遭遇、宝箱、泉水、商人","passes":false},
+  {"id":"F033","category":"dungeon","desc":"地牢返回：返回城镇，小怪和泉水恢复","passes":false},
+  {"id":"F034","category":"dungeon","desc":"Boss 战：每层地牢末尾 Boss","passes":false},
+
+  {"id":"F040","category":"battle","desc":"回合制战斗：玩家选择行动，敌人行动","passes":false},
+  {"id":"F041","category":"battle","desc":"技能释放与伤害计算","passes":false},
+  {"id":"F042","category":"battle","desc":"战斗奖励：经验、金币、物品掉落","passes":false},
+  {"id":"F043","category":"battle","desc":"战斗失败处理：返回城镇，损失部分金币","passes":false},
+
+  {"id":"F050","category":"town","desc":"城镇休息：恢复全部生命和法力","passes":false},
+  {"id":"F051","category":"town","desc":"城镇商店：购买/出售装备和物品","passes":false},
+  {"id":"F052","category":"town","desc":"城镇技能学习：花费金币学习新技能","passes":false},
+
+  {"id":"F060","category":"item","desc":"物品数据：武器、防具、饰品、消耗品","passes":false},
+  {"id":"F061","category":"item","desc":"背包管理：添加、删除、排序物品","passes":false},
+  {"id":"F062","category":"item","desc":"宝物系统：特殊遗物，提供被动效果","passes":false},
+
+  {"id":"F070","category":"config","desc":"职业配置：5职业基础属性和成长","passes":false},
+  {"id":"F071","category":"config","desc":"技能配置：技能效果、消耗、前置条件","passes":false},
+  {"id":"F072","category":"config","desc":"怪物配置：怪物属性、技能、掉落","passes":false},
+  {"id":"F073","category":"config","desc":"物品配置：装备属性、价格、效果","passes":false},
+  {"id":"F074","category":"config","desc":"地牢层数配置：每层怪物强度、房间数","passes":false}
+]
