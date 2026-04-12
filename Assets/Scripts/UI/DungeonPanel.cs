@@ -11,27 +11,77 @@ namespace Game.UI
     {
         private const int RoomBtnSize = 70;
         private const int RoomGap = 10;
+        private const int MaxRooms = 20;
         private string pendingMessage;
+
+        // ---- 缓存引用 ----
+        private Text titleText;
+        private Text statusText;
+        private GameObject msgOverlay;
+        private Text msgText;
+
+        // 房间对象池
+        private RoomCell[] roomCells;
+
+        private struct RoomCell
+        {
+            public GameObject obj;
+            public RectTransform rt;
+            public Image bg;
+            public Text iconText;
+            public Button btn;
+        }
 
         public override void OnInit()
         {
             UIBuilder.CreateFullScreenBg(transform);
-            BuildUI();
-        }
 
-        public override void OnShow()
-        {
-            RefreshUI();
-        }
+            // 标题栏
+            UIBuilder.CreateTitleBar(transform, "地牢");
+            titleText = transform.Find("TitleBar/Title").GetComponent<Text>();
 
-        private void BuildUI()
-        {
-            UIBuilder.CreateTitleBar(transform, $"地牢 第{GameManager.Instance.Dungeon?.floor ?? 1} 层");
+            // 状态栏
+            var bar = UIBuilder.CreatePanel(transform, 0, 45, "StatusBar");
+            var barRt = bar.GetComponent<RectTransform>();
+            barRt.anchorMin = new Vector2(0, 1);
+            barRt.anchorMax = new Vector2(1, 1);
+            barRt.pivot = new Vector2(0.5f, 1);
+            barRt.anchoredPosition = new Vector2(0, -65);
+            barRt.sizeDelta = new Vector2(0, 45);
+            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+            statusText = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
+            UIBuilder.SetStretch(statusText.gameObject);
 
-            // 房间地图区域
+            // 地图面板
             var mapPanel = UIBuilder.CreateBorderedPanel(transform, 1400, 450, "MapPanel");
-            var mapRt = mapPanel.GetComponent<RectTransform>();
-            mapRt.anchoredPosition = new Vector2(0, 80);
+            mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 80);
+            var inner = mapPanel.transform.Find("Inner");
+
+            // 创建房间对象池（最大 20 个房间）
+            roomCells = new RoomCell[MaxRooms];
+            for (int i = 0; i < MaxRooms; i++)
+            {
+                roomCells[i] = CreateRoomCell(inner, i);
+                roomCells[i].obj.SetActive(false);
+            }
+
+            // 消息覆盖层（默认隐藏）
+            msgOverlay = new GameObject("MsgOverlay");
+            msgOverlay.transform.SetParent(inner, false);
+            UIBuilder.SetStretch(msgOverlay);
+            var oImg = msgOverlay.AddComponent<Image>();
+            oImg.color = new Color(0, 0, 0, 0.75f);
+            var overlayCg = msgOverlay.AddComponent<CanvasGroup>();
+            msgOverlay.SetActive(false);
+
+            msgText = UIBuilder.CreateText(msgOverlay.transform, "", 26, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "MsgText");
+            UIBuilder.SetStretch(msgText.gameObject);
+
+            UIBuilder.CreateButton(msgOverlay.transform, "继续", 160, 40, () =>
+            {
+                pendingMessage = null;
+                RefreshUI();
+            }, 20, "BtnContinue").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
 
             // 底部按钮区
             float btnY = -220;
@@ -55,83 +105,76 @@ namespace Game.UI
             {
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             }, 20, "BtnRole").GetComponent<RectTransform>().anchoredPosition = new Vector2(200, btnY);
-
-            BuildStatusBar();
         }
 
-        private void BuildStatusBar()
+        private RoomCell CreateRoomCell(Transform parent, int index)
         {
-            var bar = UIBuilder.CreatePanel(transform, 0, 45, "StatusBar");
-            var rt = bar.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0, 1);
-            rt.anchorMax = new Vector2(1, 1);
-            rt.pivot = new Vector2(0.5f, 1);
-            rt.anchoredPosition = new Vector2(0, -65);
-            rt.sizeDelta = new Vector2(0, 45);
-            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+            var obj = new GameObject($"Room_{index}");
+            obj.transform.SetParent(parent, false);
+            var rt = obj.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
+
+            var bg = obj.AddComponent<Image>();
+            bg.color = Color.gray;
+
+            var iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(obj.transform, false);
+            UIBuilder.SetStretch(iconObj);
+            var iconText = iconObj.AddComponent<Text>();
+            iconText.fontSize = 24;
+            iconText.color = Color.white;
+            iconText.alignment = TextAnchor.MiddleCenter;
+            iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 24);
+            iconText.raycastTarget = false;
+
+            var btn = obj.AddComponent<Button>();
+            int capturedIndex = index;
+            btn.onClick.AddListener(() => OnClickRoom(capturedIndex));
+
+            return new RoomCell
+            {
+                obj = obj, rt = rt, bg = bg,
+                iconText = iconText, btn = btn
+            };
         }
 
+        public override void OnShow()
+        {
+            RefreshUI();
+        }
+
+        /// <summary>
+        /// 零销毁刷新：只修改属性
+        /// </summary>
         private void RefreshUI()
         {
             var dungeon = GameManager.Instance.Dungeon;
             var player = GameManager.Instance.Player;
             if (dungeon == null) return;
 
-            // 更新标题
-            var titleText = transform.Find("TitleBar/Title");
-            if (titleText != null)
-                titleText.GetComponent<Text>().text = $"地牢 第{dungeon.floor} 层";
+            // 标题
+            titleText.text = $"地牢 第{dungeon.floor} 层";
 
-            // 更新地图
-            var mapPanel = transform.Find("MapPanel");
-            if (mapPanel != null)
+            // 状态栏
+            statusText.text = $"HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}  攻击:{player.attack}  防御:{player.defense}  金币:{player.gold}";
+
+            // 房间地图
+            UpdateRoomMap(dungeon);
+
+            // 消息覆盖
+            if (!string.IsNullOrEmpty(pendingMessage))
             {
-                UpdateMap(mapPanel);
-
-                // 消息覆盖层
-                var oldOverlay = mapPanel.transform.Find("MsgOverlay");
-                if (oldOverlay != null) Object.DestroyImmediate(oldOverlay.gameObject);
-
-                if (!string.IsNullOrEmpty(pendingMessage))
-                {
-                    var overlay = new GameObject("MsgOverlay");
-                    overlay.transform.SetParent(mapPanel.transform, false);
-                    UIBuilder.SetStretch(overlay);
-                    var oImg = overlay.AddComponent<Image>();
-                    oImg.color = new Color(0, 0, 0, 0.75f);
-
-                    var msgText = UIBuilder.CreateText(overlay.transform, pendingMessage, 26, UIBuilder.Gold, TextAnchor.MiddleCenter);
-                    UIBuilder.SetStretch(msgText.gameObject);
-
-                    UIBuilder.CreateButton(overlay.transform, "继续", 160, 40, () =>
-                    {
-                        pendingMessage = null;
-                        RefreshUI();
-                    }, 20, "BtnContinue").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
-                }
+                msgText.text = pendingMessage;
+                msgOverlay.SetActive(true);
             }
-
-            // 更新状态栏
-            var statusBar = transform.Find("StatusBar");
-            if (statusBar != null)
+            else
             {
-                for (int i = statusBar.childCount - 1; i >= 0; i--)
-                    Object.DestroyImmediate(statusBar.GetChild(i).gameObject);
-                string status = $"HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}  攻击:{player.attack}  防御:{player.defense}  金币:{player.gold}";
-                var t = UIBuilder.CreateText(statusBar, status, 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter);
-                UIBuilder.SetStretch(t.gameObject);
+                msgOverlay.SetActive(false);
             }
         }
 
-        private void UpdateMap(Transform mapPanel)
+        private void UpdateRoomMap(DungeonData dungeon)
         {
-            var dungeon = GameManager.Instance.Dungeon;
-            var inner = mapPanel.Find("Inner");
-            if (inner == null) return;
-
-            for (int i = inner.childCount - 1; i >= 0; i--)
-                Object.DestroyImmediate(inner.GetChild(i).gameObject);
-
             int total = dungeon.rooms.Count;
             int cols = Mathf.Min(total, 10);
             int rows = Mathf.CeilToInt((float)total / cols);
@@ -140,41 +183,29 @@ namespace Game.UI
             float offsetX = -totalWidth / 2 + RoomBtnSize / 2;
             float offsetY = totalHeight / 2 - RoomBtnSize / 2;
 
-            for (int i = 0; i < total; i++)
+            for (int i = 0; i < MaxRooms; i++)
             {
-                var room = dungeon.rooms[i];
-                int col = i % cols;
-                int row = i / cols;
-                float x = offsetX + col * (RoomBtnSize + RoomGap);
-                float y = offsetY - row * (RoomBtnSize + RoomGap);
-
-                var roomObj = new GameObject($"Room_{i}");
-                roomObj.transform.SetParent(inner, false);
-                var rt = roomObj.AddComponent<RectTransform>();
-                rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
-                rt.anchoredPosition = new Vector2(x, y);
-
-                var img = roomObj.AddComponent<Image>();
-                img.color = GetRoomColor(room, i == dungeon.currentRoomIndex);
-
-                var iconObj = new GameObject("Icon");
-                iconObj.transform.SetParent(roomObj.transform, false);
-                var iconRt = iconObj.AddComponent<RectTransform>();
-                UIBuilder.SetStretch(iconObj);
-                var iconText = iconObj.AddComponent<Text>();
-                iconText.text = GetRoomIcon(room);
-                iconText.fontSize = 24;
-                iconText.color = Color.white;
-                iconText.alignment = TextAnchor.MiddleCenter;
-                iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 24);
-                iconText.raycastTarget = false;
-
-                // 当前房间或下一房间可点击
-                if (i == dungeon.currentRoomIndex || i == dungeon.currentRoomIndex + 1)
+                var cell = roomCells[i];
+                if (i < total)
                 {
-                    var btn = roomObj.AddComponent<Button>();
-                    int capturedIndex = i;
-                    btn.onClick.AddListener(() => OnClickRoom(capturedIndex));
+                    var room = dungeon.rooms[i];
+                    cell.obj.SetActive(true);
+
+                    int col = i % cols;
+                    int row = i / cols;
+                    cell.rt.anchoredPosition = new Vector2(
+                        offsetX + col * (RoomBtnSize + RoomGap),
+                        offsetY - row * (RoomBtnSize + RoomGap));
+
+                    cell.bg.color = GetRoomColor(room, i == dungeon.currentRoomIndex);
+                    cell.iconText.text = GetRoomIcon(room);
+
+                    // 只有当前房间和下一房间可交互
+                    cell.btn.interactable = (i == dungeon.currentRoomIndex || i == dungeon.currentRoomIndex + 1);
+                }
+                else
+                {
+                    cell.obj.SetActive(false);
                 }
             }
         }
@@ -307,9 +338,7 @@ namespace Game.UI
             dungeon.GenerateFloor(player.dungeonFloor);
             GameManager.Instance.Dungeon = dungeon;
             GameManager.Instance.SetState(GameState.InDungeon);
-            for (int i = transform.childCount - 1; i >= 0; i--)
-                Object.DestroyImmediate(transform.GetChild(i).gameObject);
-            OnInit();
+            // 直接刷新，不销毁重建
             RefreshUI();
         }
     }
