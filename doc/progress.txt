@@ -12,3 +12,5 @@
 2026-04-12 F013 COMPLETED - DungeonPanel 重写：OnInit缓存titleText/statusText/msgOverlay引用、RoomCell[20]对象池房间、RefreshUI零销毁刷新、HandleExit不再销毁重建
 2026-04-12 F014 COMPLETED - BattlePanel 重写：OnInit缓存全部引用（怪物/日志/玩家/按钮）、日志池[6]+技能池[8]+物品池[8]、新增物品选择子面板（OnItemMenu）、RefreshUI零销毁、BtnResult预创建
 2026-04-12 F015 COMPLETED - BagPanel 重写：OnInit缓存引用（infoText/emptyText）、PoolRow[20]对象池物品行、RefreshUI零销毁零创建
+2026-04-12 F016 COMPLETED - RoleInfoPanel 重写：OnInit缓存全部引用（titleText/attrTexts[10]/equipTexts[3]/skillTexts[4]/expSlider+expText/treasureTexts[6]+emptyTreasureText）、RefreshUI零销毁零创建
+2026-04-12 F017 COMPLETED - ShopPanel 重写：OnInit缓存引用（goldText/btnPrev/btnNext）+ PoolRow[8]对象池商品行 + BuildItemList一次性缓存 + RefreshUI零销毁零创建
