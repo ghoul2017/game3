@@ -26,10 +26,11 @@ type: reference
 - `OnDestroyed()` — 销毁时
 - UIManager 用 Stack<UIPanel> 管理面板栈，支持 Show/Back/Replace
 
-### 3. UIBuilder 静态工厂
-- 纯代码构建UI，不依赖预制体
+### 3. UIBuilder 静态工厂 + PrefabLoader 预制体
+- 早期面板用 UIBuilder 纯代码构建（F001-F081）
+- 从 F089 起新面板改用预制体，通过 PrefabLoader 加载（见 feedback_prefab_ui.md）
 - RPG暗色配色常量化（DarkBg, Gold, ButtonNormal 等）
-- CreateText/CreateButton/CreateSlider/CreatePanel 等工厂方法
+- CreateText/CreateButton/CreateSlider/CreatePanel 等工厂方法仍可用于局部控件
 
 ### 4. 命名约定
 - 类名：PascalCase
