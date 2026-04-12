@@ -8,15 +8,28 @@ namespace Game.UI
 {
     public class TownPanel : UIPanel
     {
+        // ---- 缓存引用 ----
+        private Text infoText;
+
         public override void OnInit()
         {
             UIBuilder.CreateFullScreenBg(transform);
 
             // 标题栏
-            var titleBar = UIBuilder.CreateTitleBar(transform, "城  镇");
+            UIBuilder.CreateTitleBar(transform, "城  镇");
 
             // 角色信息栏（顶部）
-            BuildPlayerInfoBar();
+            var bar = UIBuilder.CreatePanel(transform, 0, 50, "InfoBar");
+            var barRt = bar.GetComponent<RectTransform>();
+            barRt.anchorMin = new Vector2(0, 1);
+            barRt.anchorMax = new Vector2(1, 1);
+            barRt.pivot = new Vector2(0.5f, 1);
+            barRt.anchoredPosition = new Vector2(0, -65);
+            barRt.sizeDelta = new Vector2(0, 50);
+            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+
+            infoText = UIBuilder.CreateText(bar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
+            UIBuilder.SetStretch(infoText.gameObject);
 
             // 功能按钮区
             float centerX = 0;
@@ -39,7 +52,7 @@ namespace Game.UI
                 Debug.Log("[操作] 休息恢复");
                 GameManager.Instance.Player.FullRestore();
                 GameManager.Instance.SaveGame();
-                RefreshInfo();
+                RefreshUI();
             }, 24, "BtnRest").GetComponent<RectTransform>().anchoredPosition = new Vector2(centerX, startY - gap);
 
             UIBuilder.CreateButton(transform, "商店", 260, 55, () =>
@@ -71,37 +84,19 @@ namespace Game.UI
 
         public override void OnShow()
         {
-            RefreshInfo();
+            RefreshUI();
         }
 
-        private void BuildPlayerInfoBar()
-        {
-            var bar = UIBuilder.CreatePanel(transform, 0, 50, "InfoBar");
-            var barRt = bar.GetComponent<RectTransform>();
-            barRt.anchorMin = new Vector2(0, 1);
-            barRt.anchorMax = new Vector2(1, 1);
-            barRt.pivot = new Vector2(0.5f, 1);
-            barRt.anchoredPosition = new Vector2(0, -65);
-            barRt.sizeDelta = new Vector2(0, 50);
-            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
-        }
-
-        private void RefreshInfo()
+        /// <summary>
+        /// 零销毁刷新：只修改 text 属性
+        /// </summary>
+        private void RefreshUI()
         {
             var player = GameManager.Instance.Player;
             if (player == null) return;
 
-            var bar = transform.Find("InfoBar");
-            if (bar == null) return;
-
-            // 清除旧内容
-            for (int i = bar.childCount - 1; i >= 0; i--)
-                Object.DestroyImmediate(bar.GetChild(i).gameObject);
-
             var profCfg = ConfigManager.Instance.GetProfession(player.profession);
-            string infoText = $"{player.name}  Lv.{player.level} {profCfg.name}  HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}  金币:{player.gold}  地牢层:{player.dungeonFloor}";
-            var text = UIBuilder.CreateText(bar, infoText, 18, UIBuilder.Gold, TextAnchor.MiddleCenter);
-            UIBuilder.SetStretch(text.gameObject);
+            infoText.text = $"{player.name}  Lv.{player.level} {profCfg.name}  HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}  金币:{player.gold}  地牢层:{player.dungeonFloor}";
         }
     }
 }

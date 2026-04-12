@@ -8,3 +8,4 @@
 2026-04-12 F008 COMPLETED - UIBuilder 新增 CreateButtonWithRef、PoolRow、CreatePoolRows
 2026-04-12 F009 COMPLETED - UIPanel.Hide() 改用 CanvasGroup alpha=0 替代 SetActive(false)
 2026-04-12 F011 COMPLETED - CreateRolePanel 重写：OnInit缓存所有控件引用、RefreshUI零销毁刷新、新增角色名输入
+2026-04-12 F012 COMPLETED - TownPanel 重写：OnInit缓存infoText引用、RefreshUI零销毁刷新（移除DestroyImmediate）

@@ -12,7 +12,7 @@
 
   {"id":"F010","category":"ui","desc":"主菜单面板 MainPanel：开始游戏、继续游戏","passes":true},
   {"id":"F011","category":"ui","desc":"角色创建面板 CreateRolePanel：缓存引用、零销毁刷新","passes":true},
-  {"id":"F012","category":"ui","desc":"城镇面板 TownPanel：缓存引用、零销毁刷新","passes":false},
+  {"id":"F012","category":"ui","desc":"城镇面板 TownPanel：缓存引用、零销毁刷新","passes":true},
   {"id":"F013","category":"ui","desc":"地牢探索面板 DungeonPanel：对象池房间、缓存引用、零销毁刷新","passes":false},
   {"id":"F014","category":"ui","desc":"战斗面板 BattlePanel：缓存引用、零销毁刷新、物品选择子面板","passes":false},
   {"id":"F015","category":"ui","desc":"背包面板 BagPanel：对象池物品行、缓存引用、零销毁刷新","passes":false},
