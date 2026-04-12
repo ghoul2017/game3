@@ -39,6 +39,7 @@ namespace Game.UI
         // ---- 缓存引用：物品选择子面板 ----
         private GameObject itemPanel;
         private ItemRow[] itemRows;
+        private Text itemEmptyText;
 
         // ---- 缓存引用：战斗结果按钮 ----
         private Button btnResult;
@@ -173,6 +174,11 @@ namespace Game.UI
 
                 itemRows[i] = new ItemRow { obj = rowObj, btn = rowBtn, label = rowLabel };
             }
+
+            // 物品面板空提示
+            itemEmptyText = UIBuilder.CreateText(itemInner, "没有可用的消耗品", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "ItemEmpty");
+            UIBuilder.SetAnchored(itemEmptyText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(500, 30));
+            itemEmptyText.gameObject.SetActive(false);
 
             // 物品面板关闭按钮
             UIBuilder.CreateButton(itemInner, "关闭", 240, 35,
@@ -321,20 +327,40 @@ namespace Game.UI
         private void PopulateItemPanel()
         {
             var player = GameManager.Instance.Player;
-            int idx = 0;
+            // 按 itemId 分组统计数量
+            var groups = new Dictionary<int, int>();
             for (int i = 0; i < player.bagItems.Count; i++)
             {
-                var item = ConfigManager.Instance.GetItem(player.bagItems[i]);
+                int id = player.bagItems[i];
+                var item = ConfigManager.Instance.GetItem(id);
                 if (item == null || item.type != ItemType.Consumable) continue;
-                if (idx >= MaxItemRows) break;
+                if (!groups.ContainsKey(id)) groups[id] = 0;
+                groups[id]++;
+            }
 
-                var row = itemRows[idx];
+            if (groups.Count == 0)
+            {
+                for (int i = 0; i < MaxItemRows; i++)
+                    itemRows[i].obj.SetActive(false);
+                itemEmptyText.gameObject.SetActive(true);
+                return;
+            }
+            itemEmptyText.gameObject.SetActive(false);
+
+            int idx = 0;
+            foreach (var kv in groups)
+            {
+                if (idx >= MaxItemRows) break;
+                var item = ConfigManager.Instance.GetItem(kv.Key);
                 string desc = "";
                 if (item.restoreHp > 0) desc += $" HP+{item.restoreHp}";
                 if (item.restoreMp > 0) desc += $" MP+{item.restoreMp}";
-                row.label.text = $"{item.name}{desc}";
+                string countStr = kv.Value > 1 ? $" x{kv.Value}" : "";
+
+                var row = itemRows[idx];
+                row.label.text = $"{item.name}{countStr}{desc}";
                 row.btn.onClick.RemoveAllListeners();
-                int capturedItemId = player.bagItems[i];
+                int capturedItemId = kv.Key;
                 row.btn.onClick.AddListener(() =>
                 {
                     itemPanel.gameObject.SetActive(false);

@@ -52,5 +52,5 @@
   {"id":"F074","category":"config","desc":"地牢层数配置：每层怪物强度、房间数","passes":true},
 
   {"id":"F080","category":"battle","desc":"Buff 技能系统：玩家 buff 效果、衰减、战斗结束清除","passes":true},
-  {"id":"F081","category":"battle","desc":"战斗物品选择子面板：可选择使用哪个消耗品","passes":false}
+  {"id":"F081","category":"battle","desc":"战斗物品选择子面板：可选择使用哪个消耗品","passes":true}
 ]
