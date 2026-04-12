@@ -223,6 +223,99 @@ namespace Game.Core
             rt.sizeDelta = sizeDelta;
         }
 
+        /// <summary>
+        /// 创建按钮并返回引用元组，方便缓存
+        /// </summary>
+        public static (Button btn, Text label) CreateButtonWithRef(Transform parent, string label, float w, float h,
+            System.Action onClick = null, int fontSize = 22, string name = "Btn")
+        {
+            var btn = CreateButton(parent, label, w, h, onClick, fontSize, name);
+            var labelComp = btn.transform.Find("Label").GetComponent<Text>();
+            return (btn, labelComp);
+        }
+
+        /// <summary>
+        /// 对象池行结构体
+        /// </summary>
+        public struct PoolRow
+        {
+            public GameObject obj;
+            public RectTransform rt;
+            public Image bg;
+            public Text nameText;
+            public Button actionBtn;
+            public Text actionBtnLabel;
+            public Button secondBtn;
+            public Text secondBtnLabel;
+        }
+
+        /// <summary>
+        /// 创建对象池行列表，预创建 count 行，每行含 nameText + actionBtn + secondBtn
+        /// </summary>
+        public static List<PoolRow> CreatePoolRows(Transform parent, int count, float rowHeight, float startY, float rowWidth)
+        {
+            var rows = new List<PoolRow>();
+            for (int i = 0; i < count; i++)
+            {
+                var row = CreatePoolRow(parent, rowHeight, startY - i * (rowHeight + 4), rowWidth);
+                row.obj.SetActive(false);
+                rows.Add(row);
+            }
+            return rows;
+        }
+
+        public static PoolRow CreatePoolRow(Transform parent, float height, float y, float width)
+        {
+            var obj = CreateUI(parent, "PoolRow");
+            var rt = obj.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(width, height);
+            rt.anchoredPosition = new Vector2(0, y);
+
+            var bg = obj.AddComponent<Image>();
+            bg.color = new Color(0.1f, 0.1f, 0.16f, 0.5f);
+
+            var nameText = CreateText(obj.transform, "", 16, TextWhite, TextAnchor.MiddleLeft, name: "NameText");
+            SetAnchored(nameText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-140, 0), new Vector2(width - 280, height - 6));
+
+            var (actionBtn, actionBtnLabel) = CreateButtonWithRef(obj.transform, "", 90, (int)(height - 8),
+                null, 14, "ActionBtn");
+            actionBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(width / 2 - 100, 0);
+
+            var (secondBtn, secondBtnLabel) = CreateButtonWithRef(obj.transform, "", 90, (int)(height - 8),
+                null, 14, "SecondBtn");
+            secondBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(width / 2 - 10, 0);
+
+            return new PoolRow
+            {
+                obj = obj, rt = rt, bg = bg,
+                nameText = nameText,
+                actionBtn = actionBtn, actionBtnLabel = actionBtnLabel,
+                secondBtn = secondBtn, secondBtnLabel = secondBtnLabel
+            };
+        }
+
+        /// <summary>
+        /// 更新池行位置（Y 坐标）
+        /// </summary>
+        public static void RepositionPoolRows(List<PoolRow> rows, float startY, float rowHeight, float gap = 4)
+        {
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].obj.activeSelf)
+                    rows[i].rt.anchoredPosition = new Vector2(0, startY - i * (rowHeight + gap));
+            }
+        }
+
+        /// <summary>
+        /// 隐藏所有池行
+        /// </summary>
+        public static void HideAllRows(List<PoolRow> rows)
+        {
+            foreach (var row in rows)
+                row.obj.SetActive(false);
+        }
+
         private static GameObject CreateUI(Transform parent, string name)
         {
             var obj = new GameObject(name);

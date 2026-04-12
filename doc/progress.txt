@@ -1,20 +1,8 @@
-# 方块与地下城 - 开发进度
+# 开发进度记录
+# 格式：[日期] [功能ID] 状态 - 描述
+# 状态：INIT / COMPLETED / FAILED / SKIPPED
 
-## 2026-04-12 项目启动
-
-### 已完成
-- [x] 阅读参考资料和参考项目代码
-- [x] 确定：基于 Unity 2D + URP + Tilemap
-- [x] 确定：UIManager 单例 + UIPanel 基类 + 栈式导航
-- [x] 确定：UIBuilder 静态工厂，纯代码构建 UI
-- [ ] 核心框架搭建（UIManager, UIPanel, UIBuilder, GameEntry）
-
-### 架构决策
-- UI 框架：UIManager 单例 + UIPanel 基类 + 栈式导航（参考 game1/client）
-- 代码 UI 构建：UIBuilder 静态工厂，不依赖预制体
-- 场景管理：单场景 + UI 面板切换
-- 数据存储：本地 JSON 存档
-- 配置系统：ScriptableObject + JSON 配置表
-- 5 职业：战士、游侠、骑士、牧师、法师
-- 养成：等级、技能、宝物、装备
-- 核心循环：城镇补给 → 地牢探索 → 战斗成长 → 返回城镇
+2026-04-12 INIT COMPLETED - 项目初始化完成，核心框架和基础系统已实现
+2026-04-12 INIT COMPLETED - 全部UI面板已创建（MainPanel, CreateRolePanel, TownPanel, DungeonPanel, BattlePanel, ShopPanel, BagPanel, SkillLearnPanel, RoleInfoPanel）
+2026-04-12 REFACTOR STARTED - UI架构系统性重设计：从销毁-重建模式改为缓存引用+原地更新模式
+2026-04-12 F008 COMPLETED - UIBuilder 新增 CreateButtonWithRef、PoolRow、CreatePoolRows
