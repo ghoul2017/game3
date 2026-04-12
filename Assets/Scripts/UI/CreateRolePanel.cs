@@ -54,6 +54,7 @@ namespace Game.UI
         private void SelectProfession(Profession prof)
         {
             selectedProfession = prof;
+            Debug.Log($"[操作] 选择职业 -> {prof}");
             // 更新按钮高亮
             foreach (var kv in professionButtons)
             {
@@ -71,7 +72,7 @@ namespace Game.UI
 
             // 清除旧内容
             for (int i = detail.childCount - 1; i >= 0; i--)
-                Object.Destroy(detail.GetChild(i).gameObject);
+                Object.DestroyImmediate(detail.GetChild(i).gameObject);
 
             // 职业名
             var nameText = UIBuilder.CreateText(detail, cfg.name, 28, UIBuilder.Gold, TextAnchor.MiddleCenter, true);
@@ -88,7 +89,7 @@ namespace Game.UI
             for (int i = 0; i < 4; i++)
             {
                 var attrText = UIBuilder.CreateText(detail, $"{attrNames[i]}: {attrBases[i]} (+{attrGrows[i]}/级)", 18, UIBuilder.TextWhite, TextAnchor.MiddleLeft);
-                UIBuilder.SetAnchored(attrText.gameObject, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-180, -110 - i * 30), new Vector2(360, 28));
+                UIBuilder.SetAnchored(attrText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -110 - i * 30), new Vector2(360, 28));
             }
 
             // 战斗属性
@@ -99,12 +100,13 @@ namespace Game.UI
                 int col = i / 3;
                 int row = i % 3;
                 var bText = UIBuilder.CreateText(detail, $"{battleNames[i]}: {battleValues[i]}", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft);
-                UIBuilder.SetAnchored(bText.gameObject, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-180 + col * 250, -250 - row * 26), new Vector2(200, 24));
+                UIBuilder.SetAnchored(bText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-100 + col * 250, -250 - row * 26), new Vector2(200, 24));
             }
         }
 
         private void OnCreateRole()
         {
+            Debug.Log($"[操作] 创建角色 职业={selectedProfession}");
             var player = new PlayerData
             {
                 name = $"冒险者",

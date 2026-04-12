@@ -25,6 +25,7 @@ namespace Game.UI
 
             UIBuilder.CreateButton(transform, "进入地牢", 260, 55, () =>
             {
+                Debug.Log("[操作] 进入地牢");
                 var dungeon = new DungeonData();
                 dungeon.GenerateFloor(GameManager.Instance.Player.dungeonFloor > 0 ?
                     GameManager.Instance.Player.dungeonFloor : 1);
@@ -35,6 +36,7 @@ namespace Game.UI
 
             UIBuilder.CreateButton(transform, "休息恢复", 260, 55, () =>
             {
+                Debug.Log("[操作] 休息恢复");
                 GameManager.Instance.Player.FullRestore();
                 GameManager.Instance.SaveGame();
                 RefreshInfo();
@@ -42,21 +44,25 @@ namespace Game.UI
 
             UIBuilder.CreateButton(transform, "商店", 260, 55, () =>
             {
+                Debug.Log("[操作] 打开商店");
                 UIManager.Instance.ShowPanel<ShopPanel>();
             }, 24, "BtnShop").GetComponent<RectTransform>().anchoredPosition = new Vector2(centerX, startY - gap * 2);
 
             UIBuilder.CreateButton(transform, "技能学习", 260, 55, () =>
             {
+                Debug.Log("[操作] 打开技能学习");
                 UIManager.Instance.ShowPanel<SkillLearnPanel>();
             }, 24, "BtnSkill").GetComponent<RectTransform>().anchoredPosition = new Vector2(centerX, startY - gap * 3);
 
             UIBuilder.CreateButton(transform, "角色信息", 260, 55, () =>
             {
+                Debug.Log("[操作] 查看角色信息");
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             }, 24, "BtnRole").GetComponent<RectTransform>().anchoredPosition = new Vector2(centerX, startY - gap * 4);
 
             UIBuilder.CreateButton(transform, "存档退出", 260, 55, () =>
             {
+                Debug.Log("[操作] 存档退出");
                 GameManager.Instance.SaveGame();
                 GameManager.Instance.SetState(GameState.MainMenu);
                 UIManager.Instance.ReplacePanel<MainPanel>();
@@ -90,7 +96,7 @@ namespace Game.UI
 
             // 清除旧内容
             for (int i = bar.childCount - 1; i >= 0; i--)
-                Object.Destroy(bar.GetChild(i).gameObject);
+                Object.DestroyImmediate(bar.GetChild(i).gameObject);
 
             var profCfg = ConfigManager.Instance.GetProfession(player.profession);
             string infoText = $"{player.name}  Lv.{player.level} {profCfg.name}  HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}  金币:{player.gold}  地牢层:{player.dungeonFloor}";

@@ -89,6 +89,7 @@ namespace Game.Data
             {
                 exp -= GetExpToNextLevel();
                 level++;
+                Debug.Log($"[角色] 升级！Lv.{level}");
                 var profCfg = ConfigManager.Instance.GetProfession(profession);
                 strength += profCfg.strGrow;
                 agility += profCfg.agiGrow;

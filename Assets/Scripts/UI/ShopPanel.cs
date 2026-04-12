@@ -59,7 +59,7 @@ namespace Game.UI
             if (goldBar != null)
             {
                 for (int i = goldBar.childCount - 1; i >= 0; i--)
-                    Object.Destroy(goldBar.GetChild(i).gameObject);
+                    Object.DestroyImmediate(goldBar.GetChild(i).gameObject);
                 var goldText = UIBuilder.CreateText(goldBar, $"金币: {player.gold}", 20, UIBuilder.Gold, TextAnchor.MiddleCenter);
                 UIBuilder.SetStretch(goldText.gameObject);
             }
@@ -68,7 +68,7 @@ namespace Game.UI
             var inner = transform.Find("ItemList/Inner");
             if (inner == null) return;
             for (int i = inner.childCount - 1; i >= 0; i--)
-                Object.Destroy(inner.GetChild(i).gameObject);
+                Object.DestroyImmediate(inner.GetChild(i).gameObject);
 
             var allItems = new List<ItemConfig>();
             // 武器
@@ -102,16 +102,16 @@ namespace Game.UI
                 if (item.restoreHp > 0) statStr += $" 恢复HP {item.restoreHp}";
                 if (item.restoreMp > 0) statStr += $" 恢复MP {item.restoreMp}";
 
-                var nameText = UIBuilder.CreateText(row, $"{item.name}  {statStr}", 17, UIBuilder.TextWhite, TextAnchor.MiddleLeft);
-                UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                    new Vector2(-350, 0), new Vector2(500, 40));
+                var nameText = UIBuilder.CreateText(row.transform, $"{item.name}  {statStr}", 17, UIBuilder.TextWhite, TextAnchor.MiddleLeft);
+                UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    new Vector2(-150, 0), new Vector2(500, 40));
 
                 // 价格+购买按钮
                 int capturedId = item.id;
                 int capturedPrice = item.price;
                 bool canBuy = player.gold >= capturedPrice && player.bagItems.Count < player.maxBagSize;
 
-                var buyBtn = UIBuilder.CreateButton(row, $"{item.price}金", 90, 35,
+                var buyBtn = UIBuilder.CreateButton(row.transform, $"{item.price}金", 90, 35,
                     () => BuyItem(capturedId, capturedPrice), 16, $"Buy_{i}");
                 buyBtn.interactable = canBuy;
                 buyBtn.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 0);
@@ -120,6 +120,7 @@ namespace Game.UI
 
         private void BuyItem(int itemId, int price)
         {
+            Debug.Log($"[商店] 购买物品 id={itemId} 价格={price}");
             var player = GameManager.Instance.Player;
             if (player.gold < price || player.bagItems.Count >= player.maxBagSize) return;
 

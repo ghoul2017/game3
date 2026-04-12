@@ -50,7 +50,7 @@ namespace Game.UI
             if (inner != null)
             {
                 for (int i = inner.childCount - 1; i >= 0; i--)
-                    Object.Destroy(inner.GetChild(i).gameObject);
+                    Object.DestroyImmediate(inner.GetChild(i).gameObject);
 
                 int idx = 0;
                 foreach (var kv in itemCounts)
@@ -84,9 +84,9 @@ namespace Game.UI
                         _ => ""
                     };
 
-                    var nameText = UIBuilder.CreateText(row, $"[{typeName}] {item.name} x{kv.Value}  {statStr}", 16, UIBuilder.TextWhite, TextAnchor.MiddleLeft);
-                    UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                        new Vector2(-350, 0), new Vector2(500, 40));
+                    var nameText = UIBuilder.CreateText(row.transform, $"[{typeName}] {item.name} x{kv.Value}  {statStr}", 16, UIBuilder.TextWhite, TextAnchor.MiddleLeft);
+                    UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                        new Vector2(-150, 0), new Vector2(500, 40));
 
                     int capturedId = kv.Key;
                     // 装备按钮（武器/防具/饰品）
@@ -98,12 +98,12 @@ namespace Game.UI
 
                         if (isEquipped)
                         {
-                            UIBuilder.CreateText(row, "已装备", 15, UIBuilder.Green, TextAnchor.MiddleCenter)
+                            UIBuilder.CreateText(row.transform, "已装备", 15, UIBuilder.Green, TextAnchor.MiddleCenter)
                                 .GetComponent<RectTransform>().anchoredPosition = new Vector2(280, 0);
                         }
                         else
                         {
-                            UIBuilder.CreateButton(row, "装备", 80, 30,
+                            UIBuilder.CreateButton(row.transform, "装备", 80, 30,
                                 () => EquipItem(capturedId), 14, $"Equip_{capturedId}")
                                 .GetComponent<RectTransform>().anchoredPosition = new Vector2(280, 0);
                         }
@@ -112,14 +112,14 @@ namespace Game.UI
                     // 使用按钮（消耗品）
                     if (item.type == ItemType.Consumable)
                     {
-                        UIBuilder.CreateButton(row, "使用", 80, 30,
+                        UIBuilder.CreateButton(row.transform, "使用", 80, 30,
                             () => UseItem(capturedId), 14, $"Use_{capturedId}")
                             .GetComponent<RectTransform>().anchoredPosition = new Vector2(280, 0);
                     }
 
                     // 出售
                     int sellPrice = item.price / 2;
-                    UIBuilder.CreateButton(row, $"卖{sellPrice}金", 80, 30,
+                    UIBuilder.CreateButton(row.transform, $"卖{sellPrice}金", 80, 30,
                         () => SellItem(capturedId, sellPrice), 14, $"Sell_{capturedId}")
                         .GetComponent<RectTransform>().anchoredPosition = new Vector2(370, 0);
 
@@ -138,7 +138,7 @@ namespace Game.UI
             if (infoBar != null)
             {
                 for (int i = infoBar.childCount - 1; i >= 0; i--)
-                    Object.Destroy(infoBar.GetChild(i).gameObject);
+                    Object.DestroyImmediate(infoBar.GetChild(i).gameObject);
                 string info = $"容量: {player.bagItems.Count}/{player.maxBagSize}    金币: {player.gold}";
                 var t = UIBuilder.CreateText(infoBar, info, 16, UIBuilder.Gold, TextAnchor.MiddleCenter);
                 UIBuilder.SetStretch(t.gameObject);
@@ -147,6 +147,7 @@ namespace Game.UI
 
         private void EquipItem(int itemId)
         {
+            Debug.Log($"[背包] 装备物品 id={itemId}");
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
@@ -175,6 +176,7 @@ namespace Game.UI
 
         private void UseItem(int itemId)
         {
+            Debug.Log($"[背包] 使用物品 id={itemId}");
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
@@ -190,6 +192,7 @@ namespace Game.UI
 
         private void SellItem(int itemId, int price)
         {
+            Debug.Log($"[背包] 出售物品 id={itemId} 价格={price}");
             var player = GameManager.Instance.Player;
             player.bagItems.Remove(itemId);
             player.gold += price;

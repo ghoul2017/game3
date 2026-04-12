@@ -36,6 +36,8 @@ namespace Game.Core
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 0.5f;
 
+            canvasObj.AddComponent<GraphicRaycaster>();
+
             canvasTransform = canvasObj.transform;
             Object.DontDestroyOnLoad(canvasObj);
 
@@ -51,6 +53,8 @@ namespace Game.Core
 
         public T ShowPanel<T>() where T : UIPanel
         {
+            string panelName = typeof(T).Name;
+            Debug.Log($"[UI] ShowPanel<{panelName}> 栈深度={panelStack.Count}");
             // 隐藏栈顶
             if (panelStack.Count > 0)
             {
@@ -69,6 +73,7 @@ namespace Game.Core
             if (panelStack.Count == 0) return;
 
             var current = panelStack.Pop();
+            Debug.Log($"[UI] Back 关闭={current.GetType().Name} 栈深度={panelStack.Count}");
             current.Hide();
 
             if (panelStack.Count > 0)
@@ -80,10 +85,16 @@ namespace Game.Core
 
         public T ReplacePanel<T>() where T : UIPanel
         {
+            string panelName = typeof(T).Name;
             if (panelStack.Count > 0)
             {
                 var old = panelStack.Pop();
+                Debug.Log($"[UI] ReplacePanel<{panelName}> 替换={old.GetType().Name}");
                 old.Hide();
+            }
+            else
+            {
+                Debug.Log($"[UI] ReplacePanel<{panelName}> (空栈)");
             }
             return ShowPanel<T>();
         }

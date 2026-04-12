@@ -6,3 +6,4 @@
 2026-04-12 INIT COMPLETED - 全部UI面板已创建（MainPanel, CreateRolePanel, TownPanel, DungeonPanel, BattlePanel, ShopPanel, BagPanel, SkillLearnPanel, RoleInfoPanel）
 2026-04-12 REFACTOR STARTED - UI架构系统性重设计：从销毁-重建模式改为缓存引用+原地更新模式
 2026-04-12 F008 COMPLETED - UIBuilder 新增 CreateButtonWithRef、PoolRow、CreatePoolRows
+2026-04-12 F009 COMPLETED - UIPanel.Hide() 改用 CanvasGroup alpha=0 替代 SetActive(false)

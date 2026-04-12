@@ -16,6 +16,7 @@ namespace Game.Battle
         public void StartBattle(BattleData battleData)
         {
             CurrentBattle = battleData;
+            Debug.Log($"[战斗] 开始战斗 怪物={battleData.monster.name} HP={battleData.monster.hp}");
             CurrentBattle.isPlayerTurn = true;
             CurrentBattle.isFinished = false;
             CurrentBattle.isVictory = false;
@@ -50,9 +51,9 @@ namespace Game.Battle
             if (b == null || b.isFinished || skill == null) return "";
             if (p.mp < skill.mpCost)
             {
-                string msg = "法力不足！";
-                b.log.Add(msg);
-                return msg;
+                string errMsg = "法力不足！";
+                b.log.Add(errMsg);
+                return errMsg;
             }
 
             p.mp -= skill.mpCost;
@@ -202,6 +203,7 @@ namespace Game.Battle
             p.AddExp(m.expReward);
             p.gold += m.goldReward;
 
+            Debug.Log($"[战斗] 胜利！怪物={m.name} 经验={m.expReward} 金币={m.goldReward}");
             string msg = $"击败了 {m.name}！获得 {m.expReward} 经验，{m.goldReward} 金币";
 
             // 掉落物品
@@ -231,6 +233,7 @@ namespace Game.Battle
 
             // 失败惩罚：损失10%金币
             int lostGold = p.gold / 10;
+            Debug.Log($"[战斗] 失败！损失金币={lostGold}");
             p.gold -= lostGold;
             p.dungeonFloor = Mathf.Max(1, p.dungeonFloor - 1);
             p.FullRestore();

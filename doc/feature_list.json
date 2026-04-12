@@ -7,8 +7,8 @@
   {"id":"F006","category":"framework","desc":"DataManager 数据管理，JSON 存档/读档","passes":true},
   {"id":"F007","category":"framework","desc":"ConfigManager 配置管理，加载职业/技能/物品配置","passes":true},
 
-  {"id":"F008","category":"framework","desc":"UIBuilder 对象池：CreateButtonWithRef、PoolRow、CreatePoolRow","passes":false},
-  {"id":"F009","category":"framework","desc":"UIPanel 基类 Hide 用 CanvasGroup 替代 SetActive","passes":false},
+  {"id":"F008","category":"framework","desc":"UIBuilder 对象池：CreateButtonWithRef、PoolRow、CreatePoolRow","passes":true},
+  {"id":"F009","category":"framework","desc":"UIPanel 基类 Hide 用 CanvasGroup 替代 SetActive","passes":true},
 
   {"id":"F010","category":"ui","desc":"主菜单面板 MainPanel：开始游戏、继续游戏","passes":true},
   {"id":"F011","category":"ui","desc":"角色创建面板 CreateRolePanel：缓存引用、零销毁刷新","passes":false},

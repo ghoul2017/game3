@@ -19,6 +19,7 @@ namespace Game.Data
             floor = floorNum;
             rooms.Clear();
             currentRoomIndex = 0;
+            Debug.Log($"[地牢] 生成第 {floorNum} 层");
 
             int roomCount = 8 + floorNum * 2;
             if (roomCount > 20) roomCount = 20;

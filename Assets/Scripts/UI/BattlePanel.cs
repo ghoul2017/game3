@@ -73,14 +73,14 @@ namespace Game.UI
             if (monsterPanel != null)
             {
                 for (int i = monsterPanel.childCount - 1; i >= 0; i--)
-                    Object.Destroy(monsterPanel.GetChild(i).gameObject);
+                    Object.DestroyImmediate(monsterPanel.GetChild(i).gameObject);
 
                 var nameText = UIBuilder.CreateText(monsterPanel, m.name, 28, UIBuilder.Red, TextAnchor.MiddleCenter, true);
                 UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -25), new Vector2(400, 35));
 
                 // HP条
                 var hpLabel = UIBuilder.CreateText(monsterPanel, $"HP: {m.hp}/{m.maxHp}", 18, UIBuilder.HpColor);
-                UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-250, -60), new Vector2(200, 28));
+                UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-200, -60), new Vector2(200, 28));
 
                 var hpSlider = UIBuilder.CreateSlider(monsterPanel, 300, 20, UIBuilder.HpColor, "MonsterHp");
                 hpSlider.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, -70);
@@ -95,15 +95,15 @@ namespace Game.UI
             if (logPanel != null)
             {
                 for (int i = logPanel.childCount - 1; i >= 0; i--)
-                    Object.Destroy(logPanel.GetChild(i).gameObject);
+                    Object.DestroyImmediate(logPanel.GetChild(i).gameObject);
 
                 int showCount = Mathf.Min(b.log.Count, 6);
                 int startIdx = b.log.Count - showCount;
                 for (int i = 0; i < showCount; i++)
                 {
                     var logText = UIBuilder.CreateText(logPanel, b.log[startIdx + i], 16, UIBuilder.TextWhite, TextAnchor.MiddleLeft);
-                    UIBuilder.SetAnchored(logText.gameObject, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                        new Vector2(-350, -15 - i * 28), new Vector2(700, 26));
+                    UIBuilder.SetAnchored(logText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                        new Vector2(0, -15 - i * 28), new Vector2(700, 26));
                 }
             }
 
@@ -112,7 +112,7 @@ namespace Game.UI
             if (playerBar != null)
             {
                 for (int i = playerBar.childCount - 1; i >= 0; i--)
-                    Object.Destroy(playerBar.GetChild(i).gameObject);
+                    Object.DestroyImmediate(playerBar.GetChild(i).gameObject);
                 string info = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{p.attack}  防御:{p.defense}";
                 var t = UIBuilder.CreateText(playerBar, info, 16, UIBuilder.Gold, TextAnchor.MiddleCenter);
                 UIBuilder.SetStretch(t.gameObject);
@@ -147,6 +147,7 @@ namespace Game.UI
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
 
+            Debug.Log("[战斗] 玩家攻击");
             string msg = BattleManager.Instance.PlayerAttack();
             if (!b.isFinished)
                 msg += "\n" + BattleManager.Instance.MonsterTurn();
@@ -166,7 +167,7 @@ namespace Game.UI
                 var inner = skillPanel.Find("Inner");
                 if (inner == null) return;
                 for (int i = inner.childCount - 1; i >= 0; i--)
-                    Object.Destroy(inner.GetChild(i).gameObject);
+                    Object.DestroyImmediate(inner.GetChild(i).gameObject);
 
                 var player = GameManager.Instance.Player;
                 int idx = 0;
@@ -194,6 +195,7 @@ namespace Game.UI
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
 
+            Debug.Log($"[战斗] 使用技能 id={skillId}");
             string msg = BattleManager.Instance.PlayerSkill(skillId);
             if (!b.isFinished)
                 msg += "\n" + BattleManager.Instance.MonsterTurn();
@@ -202,6 +204,7 @@ namespace Game.UI
 
         private void OnUseItem()
         {
+            Debug.Log("[战斗] 使用物品");
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
 
@@ -229,6 +232,7 @@ namespace Game.UI
 
         private void OnEscape()
         {
+            Debug.Log("[战斗] 尝试逃跑");
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
 
@@ -239,6 +243,7 @@ namespace Game.UI
         private void OnBattleEnd()
         {
             var b = BattleManager.Instance.CurrentBattle;
+            Debug.Log($"[战斗] 战斗结束 胜利={b.isVictory}");
             if (b.isVictory)
             {
                 // 继续探索，回到地牢

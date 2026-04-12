@@ -1,6 +1,7 @@
 using Game.Core;
 using Game.Config;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Game.UI
 {
@@ -24,6 +25,7 @@ namespace Game.UI
             // 按钮
             UIBuilder.CreateButton(transform, "开始冒险", 220, 50, () =>
             {
+                Debug.Log("[操作] 点击 开始冒险");
                 ConfigManager.Instance.Init();
                 GameManager.Instance.NewGame();
                 UIManager.Instance.ReplacePanel<CreateRolePanel>();
@@ -31,10 +33,13 @@ namespace Game.UI
 
             var btnContinue = UIBuilder.CreateButton(transform, "继续冒险", 220, 50, () =>
             {
+                Debug.Log("[操作] 点击 继续冒险");
                 ConfigManager.Instance.Init();
                 GameManager.Instance.ContinueGame();
                 if (GameManager.Instance.Player != null)
                     UIManager.Instance.ReplacePanel<TownPanel>();
+                else
+                    Debug.LogWarning("[操作] 继续冒险失败：无存档");
             }, 24, "BtnContinue");
 
             var btnContinueRt = btnContinue.GetComponent<RectTransform>();

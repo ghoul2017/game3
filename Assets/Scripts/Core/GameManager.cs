@@ -28,7 +28,7 @@ namespace Game.Core
         public void SetState(GameState state)
         {
             State = state;
-            Debug.Log($"[GameManager] 状态切换 -> {state}");
+            Debug.Log($"[Game] 状态切换 -> {state}");
         }
 
         public bool HasSave()

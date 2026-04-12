@@ -53,7 +53,7 @@ namespace Game.UI
             if (goldBar != null)
             {
                 for (int i = goldBar.childCount - 1; i >= 0; i--)
-                    Object.Destroy(goldBar.GetChild(i).gameObject);
+                    Object.DestroyImmediate(goldBar.GetChild(i).gameObject);
                 var goldText = UIBuilder.CreateText(goldBar, $"金币: {player.gold}    已装备技能: {player.equippedSkills.Count}/{player.maxSkillSlots}", 18, UIBuilder.Gold, TextAnchor.MiddleCenter);
                 UIBuilder.SetStretch(goldText.gameObject);
             }
@@ -63,7 +63,7 @@ namespace Game.UI
             if (inner != null)
             {
                 for (int i = inner.childCount - 1; i >= 0; i--)
-                    Object.Destroy(inner.GetChild(i).gameObject);
+                    Object.DestroyImmediate(inner.GetChild(i).gameObject);
 
                 var allSkills = ConfigManager.Instance.GetSkillsByProfession(player.profession);
                 int idx = 0;
@@ -95,20 +95,20 @@ namespace Game.UI
                         if (prereq != null) info += $"  (前置:{prereq.name})";
                     }
 
-                    var nameText = UIBuilder.CreateText(row, info, 15, learned ? UIBuilder.Green : UIBuilder.TextWhite, TextAnchor.MiddleLeft);
-                    UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                        new Vector2(-350, 0), new Vector2(550, 45));
+                    var nameText = UIBuilder.CreateText(row.transform, info, 15, learned ? UIBuilder.Green : UIBuilder.TextWhite, TextAnchor.MiddleLeft);
+                    UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                        new Vector2(-125, 0), new Vector2(550, 45));
 
                     if (learned)
                     {
-                        UIBuilder.CreateText(row, "已学", 16, UIBuilder.Green, TextAnchor.MiddleCenter)
+                        UIBuilder.CreateText(row.transform, "已学", 16, UIBuilder.Green, TextAnchor.MiddleCenter)
                             .GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 0);
                     }
                     else
                     {
                         int capturedId = skill.id;
                         int capturedCost = skill.learnCost;
-                        var btn = UIBuilder.CreateButton(row, $"{skill.learnCost}金", 90, 35,
+                        var btn = UIBuilder.CreateButton(row.transform, $"{skill.learnCost}金", 90, 35,
                             () => LearnSkill(capturedId, capturedCost), 16, $"Learn_{skill.id}");
                         btn.interactable = canLearn;
                         btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 0);
@@ -122,10 +122,10 @@ namespace Game.UI
             if (eqInner != null)
             {
                 for (int i = eqInner.childCount - 1; i >= 0; i--)
-                    Object.Destroy(eqInner.GetChild(i).gameObject);
+                    Object.DestroyImmediate(eqInner.GetChild(i).gameObject);
 
                 var label = UIBuilder.CreateText(eqInner, "已装备技能:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft);
-                UIBuilder.SetAnchored(label.gameObject, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                UIBuilder.SetAnchored(label.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                     new Vector2(-380, 0), new Vector2(120, 30));
 
                 int eqIdx = 0;
@@ -157,6 +157,7 @@ namespace Game.UI
 
         private void LearnSkill(int skillId, int cost)
         {
+            Debug.Log($"[技能] 学习技能 id={skillId} 花费={cost}");
             var player = GameManager.Instance.Player;
             if (player.gold < cost || player.learnedSkills.Contains(skillId)) return;
             player.gold -= cost;
@@ -169,6 +170,7 @@ namespace Game.UI
 
         private void EquipSkill(int skillId)
         {
+            Debug.Log($"[技能] 装备技能 id={skillId}");
             var player = GameManager.Instance.Player;
             if (player.equippedSkills.Count >= player.maxSkillSlots) return;
             if (!player.equippedSkills.Contains(skillId))
@@ -178,6 +180,7 @@ namespace Game.UI
 
         private void UnequipSkill(int skillId)
         {
+            Debug.Log($"[技能] 卸下技能 id={skillId}");
             GameManager.Instance.Player.equippedSkills.Remove(skillId);
             RefreshUI();
         }

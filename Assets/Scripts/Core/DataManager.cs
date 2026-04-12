@@ -16,7 +16,12 @@ namespace Game.Core
 
         public PlayerData Load()
         {
-            if (!File.Exists(SavePath)) return null;
+            if (!File.Exists(SavePath))
+            {
+                Debug.Log("[系统] 无存档文件");
+                return null;
+            }
+            Debug.Log("[系统] 加载存档");
             try
             {
                 var json = File.ReadAllText(SavePath);
@@ -31,6 +36,7 @@ namespace Game.Core
 
         public void Save(PlayerData data)
         {
+            Debug.Log("[系统] 保存存档");
             try
             {
                 var dir = Path.GetDirectoryName(SavePath);

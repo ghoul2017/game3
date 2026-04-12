@@ -27,15 +27,17 @@ namespace Game.Core
             if (!isInitialized)
             {
                 isInitialized = true;
+                Debug.Log($"[Panel] OnInit -> {GetType().Name}");
                 OnInit();
             }
 
-            canvasGroup.interactable = false;
-            StartCoroutine(FadeCoroutine(0f, 1f, 0.2f, () =>
-            {
-                canvasGroup.interactable = true;
-                canvasGroup.blocksRaycasts = true;
-            }));
+            Debug.Log($"[Panel] Show -> {GetType().Name} 子物体数={transform.childCount}");
+
+            // 停止之前的淡出协程，防止冲突
+            StopAllCoroutines();
+            canvasGroup.alpha = 1f;
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
             OnShow();
         }
 
@@ -44,10 +46,10 @@ namespace Game.Core
             EnsureCanvasGroup();
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
-            StartCoroutine(FadeCoroutine(1f, 0f, 0.2f, () =>
-            {
-                gameObject.SetActive(false);
-            }));
+
+            // 停止之前的淡入协程，防止冲突
+            StopAllCoroutines();
+            canvasGroup.alpha = 0f;
             OnHide();
         }
 
@@ -67,20 +69,6 @@ namespace Game.Core
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
             }
-        }
-
-        private IEnumerator FadeCoroutine(float from, float to, float duration, Action onComplete = null)
-        {
-            canvasGroup.alpha = from;
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                canvasGroup.alpha = Mathf.Lerp(from, to, elapsed / duration);
-                yield return null;
-            }
-            canvasGroup.alpha = to;
-            onComplete?.Invoke();
         }
 
         protected virtual void OnDestroy()
