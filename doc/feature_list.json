@@ -16,7 +16,7 @@
   {"id":"F013","category":"ui","desc":"地牢探索面板 DungeonPanel：对象池房间、缓存引用、零销毁刷新","passes":true},
   {"id":"F014","category":"ui","desc":"战斗面板 BattlePanel：缓存引用、零销毁刷新、物品选择子面板","passes":true},
   {"id":"F015","category":"ui","desc":"背包面板 BagPanel：对象池物品行、缓存引用、零销毁刷新","passes":true},
-  {"id":"F016","category":"ui","desc":"角色信息面板 RoleInfoPanel：缓存引用、零销毁刷新","passes":false},
+  {"id":"F016","category":"ui","desc":"角色信息面板 RoleInfoPanel：缓存引用、零销毁刷新","passes":true},
   {"id":"F017","category":"ui","desc":"商店面板 ShopPanel：对象池商品行、缓存引用、零销毁刷新","passes":false},
   {"id":"F018","category":"ui","desc":"技能学习面板 SkillLearnPanel：对象池技能行、缓存引用、零销毁刷新","passes":false},
 
