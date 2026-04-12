@@ -52,5 +52,15 @@
   {"id":"F074","category":"config","desc":"地牢层数配置：每层怪物强度、房间数","passes":true},
 
   {"id":"F080","category":"battle","desc":"Buff 技能系统：玩家 buff 效果、衰减、战斗结束清除","passes":true},
-  {"id":"F081","category":"battle","desc":"战斗物品选择子面板：可选择使用哪个消耗品","passes":true}
+  {"id":"F081","category":"battle","desc":"战斗物品选择子面板：可选择使用哪个消耗品","passes":true},
+
+  {"id":"F089","category":"framework","desc":"UIPanel 预制体加载框架：PrefabLoader 工具类 + Resources/Prefabs 目录 + ShowPanel 支持预制体加载","passes":false},
+  {"id":"F090","category":"ui","desc":"MainPanel 增强：添加「设置」按钮和「退出游戏」按钮入口","passes":false},
+  {"id":"F091","category":"ui","desc":"SettingsPanel 设置面板（预制体）：音效/音乐滑块、全屏切换、分辨率下拉、语言选择、返回按钮","passes":false},
+  {"id":"F092","category":"framework","desc":"SettingsManager 设置持久化：PlayerPrefs 保存/加载用户偏好设置（音量/全屏/分辨率/语言）","passes":false},
+  {"id":"F093","category":"dungeon","desc":"DungeonPanel 网格地图：房间瓦片改为网格布局 + 房间类型图标（怪物/宝箱/泉水/商店/空房/障碍）","passes":false},
+  {"id":"F094","category":"dungeon","desc":"DungeonPanel 右侧状态栏：HP/MP 进度条 + 金币/经验/层数信息面板","passes":false},
+  {"id":"F095","category":"dungeon","desc":"DungeonPanel 底部技能快捷栏：显示已装备技能 + MP 消耗标签","passes":false},
+  {"id":"F096","category":"battle","desc":"BattlePanel 技能按钮优化：显示 MP 消耗标签 + MP 不足时灰色不可用状态","passes":false},
+  {"id":"F097","category":"battle","desc":"BattlePanel 怪物区域增强：显示怪物类型图标 + 等级 + 状态文字描述","passes":false}
 ]
