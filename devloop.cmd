@@ -16,7 +16,7 @@ echo ========================================
 echo [DevLoop] Round %LOOP_COUNT%/%MAX_LOOPS%
 echo ========================================
 
-claude -p "Run /devloop" --dangerously-skip-permissions
+call claude -p "Run /dev" --dangerously-skip-permissions
 
 if %ERRORLEVEL% NEQ 0 (
     echo [DevLoop] Round %LOOP_COUNT% failed, stopping

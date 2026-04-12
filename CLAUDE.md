@@ -26,7 +26,11 @@ Assets/
     Game/
       Battle/       - 战斗系统（BattleManager）
       Config/       - 配置系统（ConfigManager, ConfigData, GameEnums）
-      Data/         - 数据模型（PlayerData, DungeonData, BattleData）
+      Data/         - 数据模型（PlayerData, DungeonData, BattleData, GameData）
+      Dungeon/      - 地牢系统（规划中）
+      Item/         - 物品系统（规划中）
+      Player/       - 玩家系统（规划中）
+      Town/         - 城镇系统（规划中）
     UI/             - UI面板（MainPanel, TownPanel, BattlePanel, DungeonPanel, ShopPanel, BagPanel, SkillLearnPanel, RoleInfoPanel, CreateRolePanel）
 doc/
   feature_list.json   - 功能清单（JSON格式，Agent 工作流核心文件）
@@ -36,7 +40,7 @@ doc/
 
 ## 自动化开发工作流
 
-基于 [Anthropic 长时间运行 Agent 最佳实践](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)，采用双 Agent 架构：
+基于 [Anthropic 长时间运行 Agent 最佳实践](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)，采用三 Agent 架构：
 
 ### 核心文件
 
@@ -46,10 +50,12 @@ doc/
 | `doc/progress.txt` | 跨 session 进度记录 |
 | `.claude/agents/initializer.md` | 初始化 Agent（首次运行） |
 | `.claude/agents/coding-agent.md` | 编码 Agent（每 session 一个功能） |
+| `.claude/agents/planner-agent.md` | 需求拆解 Agent（产品经理角色，交互式） |
 
 ### 开发流程
 
 ```
+/plan          → 交互式：讨论需求 → 拆解为原子功能 → 追加到 feature_list.json
 /init          → 首次：初始化环境、验证 features.json
 /dev           → 单次：读取进度 → 实现一个功能 → 测试 → commit
 /devloop       → 循环：连续执行 /dev，带配额守卫（8轮/session，3连失败停止）
