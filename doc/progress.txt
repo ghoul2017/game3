@@ -16,3 +16,4 @@
 2026-04-12 F017 COMPLETED - ShopPanel 重写：OnInit缓存引用（goldText/btnPrev/btnNext）+ PoolRow[8]对象池商品行 + BuildItemList一次性缓存 + RefreshUI零销毁零创建
 2026-04-12 F018 COMPLETED - SkillLearnPanel 重写：OnInit缓存引用（goldText/skillRows[8]对象池技能行/eqLabel/eqBtns[8]+eqBtnLabels[8]装备按钮池）+ RefreshUI零销毁零创建
 2026-04-12 F062 COMPLETED - 宝物系统：RecalcStats百分比加成(ATK/DEF/HP)、地牢宝箱拾取遗物(40%防重复)、战斗吸血/金币/经验宝物效果
+2026-04-12 F080 COMPLETED - Buff技能系统：BuffConfig配置表(5种buff) + BattleData玩家buff字段 + BattleManager buff施加/衰减/伤害计算集成 + BattlePanel buff状态显示

@@ -78,6 +78,16 @@ namespace Game.Config
     }
 
     [System.Serializable]
+    public class BuffConfig
+    {
+        public int id;
+        public string name;
+        public string desc;
+        public int effectType;  // 0=攻击加成 1=防御加成 2=攻防加成
+        public int effectValue; // 加成百分比
+    }
+
+    [System.Serializable]
     public class TreasureConfig
     {
         public int id;

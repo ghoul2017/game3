@@ -20,6 +20,9 @@ namespace Game.Battle
             CurrentBattle.isPlayerTurn = true;
             CurrentBattle.isFinished = false;
             CurrentBattle.isVictory = false;
+            CurrentBattle.playerBuffAttack = 0;
+            CurrentBattle.playerBuffDefense = 0;
+            CurrentBattle.playerBuffTurns = 0;
             CurrentBattle.log.Clear();
             CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
         }
@@ -30,7 +33,8 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
-            int dmg = CalcDamage(p.attack, b.monster.defense + b.monster.buffDefense);
+            int totalAtk = p.attack + b.playerBuffAttack;
+            int dmg = CalcDamage(totalAtk, b.monster.defense + b.monster.buffDefense);
             b.monster.hp -= dmg;
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
 
@@ -79,13 +83,36 @@ namespace Game.Battle
             if (skill.type == SkillType.Buff)
             {
                 // 对自己施加buff
-                msg = $"你使用了 {skill.name}！";
+                if (skill.buffId > 0)
+                {
+                    var buffCfg = ConfigManager.Instance.GetBuff(skill.buffId);
+                    if (buffCfg != null)
+                    {
+                        b.playerBuffAttack = 0;
+                        b.playerBuffDefense = 0;
+                        if (buffCfg.effectType == 0 || buffCfg.effectType == 2)
+                            b.playerBuffAttack = p.attack * buffCfg.effectValue / 100;
+                        if (buffCfg.effectType == 1 || buffCfg.effectType == 2)
+                            b.playerBuffDefense = p.defense * buffCfg.effectValue / 100;
+                        b.playerBuffTurns = skill.buffTurns;
+                        msg = $"你使用了 {skill.name}！攻击+{b.playerBuffAttack} 防御+{b.playerBuffDefense}，持续{skill.buffTurns}回合";
+                    }
+                    else
+                    {
+                        msg = $"你使用了 {skill.name}！";
+                    }
+                }
+                else
+                {
+                    msg = $"你使用了 {skill.name}！";
+                }
                 b.log.Add(msg);
                 return msg;
             }
 
             // 主动攻击技能
-            int dmg = CalcDamage((int)(p.attack * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
+            int totalAtk = p.attack + b.playerBuffAttack;
+            int dmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
@@ -141,7 +168,8 @@ namespace Game.Battle
             if (b == null || b.isFinished) return "";
 
             var m = b.monster;
-            int totalAtk = m.attack + m.buffAttack;
+            int monsterAtk = m.attack + m.buffAttack;
+            int playerDef = p.defense + b.playerBuffDefense;
 
             // 怪物有技能时，30%概率使用
             if (m.skillIds.Count > 0 && Random.value < 0.3f)
@@ -150,24 +178,36 @@ namespace Game.Battle
                 var skill = ConfigManager.Instance.GetSkill(sid);
                 if (skill != null)
                 {
-                    int dmg = CalcDamage((int)(totalAtk * skill.power / 100f), p.defense);
+                    int dmg = CalcDamage((int)(monsterAtk * skill.power / 100f), playerDef);
                     p.hp -= dmg;
                     if (p.hp < 0) p.hp = 0;
                     string msg = $"{m.name} 使用 {skill.name}，对你造成 {dmg} 点伤害";
                     b.log.Add(msg);
+
+                    DecayBuffs(b);
+
                     if (p.hp <= 0) return msg + "\n" + OnDefeat();
                     return msg;
                 }
             }
 
             // 普通攻击
-            int normalDmg = CalcDamage(totalAtk, p.defense);
+            int normalDmg = CalcDamage(monsterAtk, playerDef);
             p.hp -= normalDmg;
             if (p.hp < 0) p.hp = 0;
             string normalMsg = $"{m.name} 攻击了你，造成 {normalDmg} 点伤害";
             b.log.Add(normalMsg);
 
-            // 处理怪物buff衰减
+            DecayBuffs(b);
+
+            if (p.hp <= 0) return normalMsg + "\n" + OnDefeat();
+            return normalMsg;
+        }
+
+        private void DecayBuffs(BattleData b)
+        {
+            var m = b.monster;
+            // 怪物buff衰减
             if (m.buffTurns > 0)
             {
                 m.buffTurns--;
@@ -177,9 +217,17 @@ namespace Game.Battle
                     m.buffDefense = 0;
                 }
             }
-
-            if (p.hp <= 0) return normalMsg + "\n" + OnDefeat();
-            return normalMsg;
+            // 玩家buff衰减
+            if (b.playerBuffTurns > 0)
+            {
+                b.playerBuffTurns--;
+                if (b.playerBuffTurns <= 0)
+                {
+                    b.playerBuffAttack = 0;
+                    b.playerBuffDefense = 0;
+                    b.log.Add("你的增益效果消失了");
+                }
+            }
         }
 
         public string TryEscape()
@@ -258,6 +306,9 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             b.isFinished = true;
             b.isVictory = false;
+            b.playerBuffAttack = 0;
+            b.playerBuffDefense = 0;
+            b.playerBuffTurns = 0;
 
             // 失败惩罚：损失10%金币
             int lostGold = p.gold / 10;

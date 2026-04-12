@@ -17,6 +17,7 @@ namespace Game.Config
         private Dictionary<int, ItemConfig> items;
         private Dictionary<int, MonsterConfig> monsters;
         private Dictionary<int, TreasureConfig> treasures;
+        private Dictionary<int, BuffConfig> buffs;
 
         public void Init()
         {
@@ -25,6 +26,7 @@ namespace Game.Config
             InitItems();
             InitMonsters();
             InitTreasures();
+            InitBuffs();
             Debug.Log("[ConfigManager] 配置加载完成");
         }
 
@@ -57,6 +59,9 @@ namespace Game.Config
 
         public List<TreasureConfig> GetAllTreasures()
             => treasures.Values.ToList();
+
+        public BuffConfig GetBuff(int id)
+            => buffs.TryGetValue(id, out var c) ? c : null;
 
         // ---- 初始化配置 ----
 
@@ -118,31 +123,31 @@ namespace Game.Config
             {
                 // 战士技能
                 [1001] = new SkillConfig { id = 1001, name = "猛击", desc = "强力的物理攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 5, power = 150, level = 1 },
-                [1002] = new SkillConfig { id = 1002, name = "战吼", desc = "提升自身攻击力", type = SkillType.Buff, profession = Profession.Warrior, mpCost = 8, power = 0, level = 1, buffTurns = 3 },
+                [1002] = new SkillConfig { id = 1002, name = "战吼", desc = "提升自身攻击力", type = SkillType.Buff, profession = Profession.Warrior, mpCost = 8, power = 0, level = 1, buffId = 1, buffTurns = 3 },
                 [1003] = new SkillConfig { id = 1003, name = "旋风斩", desc = "强力横扫攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 12, power = 200, level = 3, prereqSkillId = 1001, isAoE = true },
                 [1004] = new SkillConfig { id = 1004, name = "狂战之怒", desc = "血量越低攻击越高", type = SkillType.Passive, profession = Profession.Warrior, mpCost = 0, power = 0, level = 5, prereqSkillId = 1002 },
 
                 // 游侠技能
                 [2001] = new SkillConfig { id = 2001, name = "精准射击", desc = "高暴击的远程攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 5, power = 140, level = 1 },
-                [2002] = new SkillConfig { id = 2002, name = "闪避姿态", desc = "提升闪避率", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 1, buffTurns = 3 },
+                [2002] = new SkillConfig { id = 2002, name = "闪避姿态", desc = "提升闪避率", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 1, buffId = 2, buffTurns = 3 },
                 [2003] = new SkillConfig { id = 2003, name = "连射", desc = "连续两次攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 10, power = 120, level = 3, prereqSkillId = 2001 },
                 [2004] = new SkillConfig { id = 2004, name = "致命一击", desc = "必定暴击的一击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 15, power = 250, level = 5, prereqSkillId = 2003 },
 
                 // 骑士技能
                 [3001] = new SkillConfig { id = 3001, name = "盾击", desc = "用盾牌攻击并降低敌人攻击", type = SkillType.Active, profession = Profession.Knight, mpCost = 5, power = 100, level = 1 },
-                [3002] = new SkillConfig { id = 3002, name = "铁壁", desc = "大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 8, power = 0, level = 1, buffTurns = 3 },
+                [3002] = new SkillConfig { id = 3002, name = "铁壁", desc = "大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 8, power = 0, level = 1, buffId = 3, buffTurns = 3 },
                 [3003] = new SkillConfig { id = 3003, name = "嘲讽", desc = "吸引敌人攻击并减伤", type = SkillType.Active, profession = Profession.Knight, mpCost = 6, power = 80, level = 3, prereqSkillId = 3001 },
                 [3004] = new SkillConfig { id = 3004, name = "坚守", desc = "生命低于30%时自动减伤", type = SkillType.Passive, profession = Profession.Knight, mpCost = 0, power = 0, level = 5, prereqSkillId = 3002 },
 
                 // 牧师技能
                 [4001] = new SkillConfig { id = 4001, name = "治疗术", desc = "恢复自身生命值", type = SkillType.Active, profession = Profession.Priest, mpCost = 8, power = 100, level = 1 },
-                [4002] = new SkillConfig { id = 4002, name = "祝福", desc = "提升全属性", type = SkillType.Buff, profession = Profession.Priest, mpCost = 10, power = 0, level = 1, buffTurns = 3 },
+                [4002] = new SkillConfig { id = 4002, name = "祝福", desc = "提升全属性", type = SkillType.Buff, profession = Profession.Priest, mpCost = 10, power = 0, level = 1, buffId = 4, buffTurns = 3 },
                 [4003] = new SkillConfig { id = 4003, name = "圣光", desc = "神圣伤害攻击", type = SkillType.Active, profession = Profession.Priest, mpCost = 12, power = 160, level = 3, prereqSkillId = 4001 },
                 [4004] = new SkillConfig { id = 4004, name = "复活", desc = "战斗中自动复活一次", type = SkillType.Passive, profession = Profession.Priest, mpCost = 0, power = 0, level = 5, prereqSkillId = 4002 },
 
                 // 法师技能
                 [5001] = new SkillConfig { id = 5001, name = "火球术", desc = "基础火系魔法", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 160, level = 1 },
-                [5002] = new SkillConfig { id = 5002, name = "冰甲", desc = "提升防御和减伤", type = SkillType.Buff, profession = Profession.Mage, mpCost = 8, power = 0, level = 1, buffTurns = 3 },
+                [5002] = new SkillConfig { id = 5002, name = "冰甲", desc = "提升防御和减伤", type = SkillType.Buff, profession = Profession.Mage, mpCost = 8, power = 0, level = 1, buffId = 5, buffTurns = 3 },
                 [5003] = new SkillConfig { id = 5003, name = "暴风雪", desc = "强力冰系范围攻击", type = SkillType.Active, profession = Profession.Mage, mpCost = 15, power = 220, level = 3, prereqSkillId = 5001, isAoE = true },
                 [5004] = new SkillConfig { id = 5004, name = "魔力涌动", desc = "每回合恢复法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 5, prereqSkillId = 5002 }
             };
@@ -209,6 +214,18 @@ namespace Game.Config
                 [4] = new TreasureConfig { id = 4, name = "吸血之牙", desc = "攻击时恢复10%伤害值的生命", effectType = 3, effectValue = 10 },
                 [5] = new TreasureConfig { id = 5, name = "幸运硬币", desc = "金币获取+30%", effectType = 3, effectValue = 30 },
                 [6] = new TreasureConfig { id = 6, name = "经验宝石", desc = "经验获取+20%", effectType = 3, effectValue = 20 }
+            };
+        }
+
+        private void InitBuffs()
+        {
+            buffs = new Dictionary<int, BuffConfig>
+            {
+                [1] = new BuffConfig { id = 1, name = "战吼强化", desc = "攻击力提升30%", effectType = 0, effectValue = 30 },
+                [2] = new BuffConfig { id = 2, name = "闪避强化", desc = "防御力提升25%", effectType = 1, effectValue = 25 },
+                [3] = new BuffConfig { id = 3, name = "铁壁强化", desc = "防御力提升50%", effectType = 1, effectValue = 50 },
+                [4] = new BuffConfig { id = 4, name = "祝福强化", desc = "攻防提升20%", effectType = 2, effectValue = 20 },
+                [5] = new BuffConfig { id = 5, name = "冰甲强化", desc = "防御力提升40%", effectType = 1, effectValue = 40 }
             };
         }
     }

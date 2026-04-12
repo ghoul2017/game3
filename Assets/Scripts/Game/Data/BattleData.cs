@@ -13,6 +13,11 @@ namespace Game.Data
         public bool isVictory;
         public string lastAction;
         public List<string> log = new List<string>();
+
+        // 玩家buff（与怪物buff对称）
+        public int playerBuffAttack;   // 攻击buff加成
+        public int playerBuffDefense;  // 防御buff加成
+        public int playerBuffTurns;    // buff剩余回合
     }
 
     [System.Serializable]

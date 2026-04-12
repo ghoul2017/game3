@@ -227,8 +227,14 @@ namespace Game.UI
                 }
             }
 
-            // 玩家信息
-            playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{p.attack}  防御:{p.defense}";
+            // 玩家信息（含buff加成）
+            int buffAtk = BattleManager.Instance.CurrentBattle?.playerBuffAttack ?? 0;
+            int buffDef = BattleManager.Instance.CurrentBattle?.playerBuffDefense ?? 0;
+            int buffTurns = BattleManager.Instance.CurrentBattle?.playerBuffTurns ?? 0;
+            string atkStr = buffAtk > 0 ? $"{p.attack}+{buffAtk}" : $"{p.attack}";
+            string defStr = buffDef > 0 ? $"{p.defense}+{buffDef}" : $"{p.defense}";
+            string buffInfo = buffTurns > 0 ? $"  [增益{buffTurns}回合]" : "";
+            playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}{buffInfo}";
 
             // 战斗结束处理
             if (b.isFinished)
