@@ -9,12 +9,23 @@ namespace Game.UI
 {
     public class SkillLearnPanel : UIPanel
     {
+        // 缓存引用
+        private Text goldText;
+        private const int SkillPoolSize = 8;
+        private const int EqBtnPoolSize = 8;
+        private List<UIBuilder.PoolRow> skillRows;
+
+        // 已装备技能区按钮池
+        private Text eqLabel;
+        private Button[] eqBtns;
+        private Text[] eqBtnLabels;
+
         public override void OnInit()
         {
             UIBuilder.CreateFullScreenBg(transform);
             UIBuilder.CreateTitleBar(transform, "技能学习");
 
-            // 金币
+            // 金币栏
             var goldBar = UIBuilder.CreatePanel(transform, 0, 40, "GoldBar");
             var goldRt = goldBar.GetComponent<RectTransform>();
             goldRt.anchorMin = new Vector2(0, 1);
@@ -23,15 +34,39 @@ namespace Game.UI
             goldRt.anchoredPosition = new Vector2(0, -70);
             goldRt.sizeDelta = new Vector2(0, 40);
             goldBar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+            goldText = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter);
+            UIBuilder.SetStretch(goldText.gameObject);
 
             // 技能列表
             var listPanel = UIBuilder.CreateBorderedPanel(transform, 900, 500, "SkillList");
             listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
+            var inner = listPanel.transform.Find("Inner");
+
+            // 对象池技能行
+            skillRows = UIBuilder.CreatePoolRows(inner, SkillPoolSize, 55, 210, 800);
 
             // 已装备技能区
-            var equippedPanel = UIBuilder.CreateBorderedPanel(transform, 900, 80, "EquippedSkills");
-            equippedPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -260);
+            var eqPanel = UIBuilder.CreateBorderedPanel(transform, 900, 80, "EquippedSkills");
+            eqPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -260);
+            var eqInner = eqPanel.transform.Find("Inner");
 
+            eqLabel = UIBuilder.CreateText(eqInner, "已装备技能:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft);
+            UIBuilder.SetAnchored(eqLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-380, 0), new Vector2(120, 30));
+
+            // 装备/卸下按钮池
+            eqBtns = new Button[EqBtnPoolSize];
+            eqBtnLabels = new Text[EqBtnPoolSize];
+            for (int i = 0; i < EqBtnPoolSize; i++)
+            {
+                var (btn, label) = UIBuilder.CreateButtonWithRef(eqInner, "", 110, 30, null, 14, $"EqBtn_{i}");
+                btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-220 + i * 130, 0);
+                btn.gameObject.SetActive(false);
+                eqBtns[i] = btn;
+                eqBtnLabels[i] = label;
+            }
+
+            // 返回按钮
             UIBuilder.CreateButton(transform, "返回", 200, 45, () =>
             {
                 UIManager.Instance.Back();
@@ -46,113 +81,116 @@ namespace Game.UI
         private void RefreshUI()
         {
             var player = GameManager.Instance.Player;
-            var profCfg = ConfigManager.Instance.GetProfession(player.profession);
 
             // 金币
-            var goldBar = transform.Find("GoldBar");
-            if (goldBar != null)
-            {
-                for (int i = goldBar.childCount - 1; i >= 0; i--)
-                    Object.DestroyImmediate(goldBar.GetChild(i).gameObject);
-                var goldText = UIBuilder.CreateText(goldBar, $"金币: {player.gold}    已装备技能: {player.equippedSkills.Count}/{player.maxSkillSlots}", 18, UIBuilder.Gold, TextAnchor.MiddleCenter);
-                UIBuilder.SetStretch(goldText.gameObject);
-            }
+            goldText.text = $"金币: {player.gold}    已装备技能: {player.equippedSkills.Count}/{player.maxSkillSlots}";
 
-            // 可学技能列表
-            var inner = transform.Find("SkillList/Inner");
-            if (inner != null)
+            // 技能列表
+            var allSkills = ConfigManager.Instance.GetSkillsByProfession(player.profession);
+            int shown = 0;
+            for (int si = 0; si < allSkills.Count && shown < SkillPoolSize; si++)
             {
-                for (int i = inner.childCount - 1; i >= 0; i--)
-                    Object.DestroyImmediate(inner.GetChild(i).gameObject);
+                var skill = allSkills[si];
+                bool learned = player.learnedSkills.Contains(skill.id);
+                bool canLearn = !learned
+                    && (skill.prereqSkillId == 0 || player.learnedSkills.Contains(skill.prereqSkillId))
+                    && player.gold >= skill.learnCost
+                    && player.level >= skill.level;
 
-                var allSkills = ConfigManager.Instance.GetSkillsByProfession(player.profession);
-                int idx = 0;
-                foreach (var skill in allSkills)
+                var row = skillRows[shown];
+                row.obj.SetActive(true);
+                row.rt.anchoredPosition = new Vector2(0, 210 - shown * 59);
+                row.bg.color = learned
+                    ? new Color(0.1f, 0.2f, 0.1f, 0.5f)
+                    : new Color(0.1f, 0.1f, 0.16f, 0.5f);
+
+                string typeStr = skill.type switch
                 {
-                    bool learned = player.learnedSkills.Contains(skill.id);
-                    bool canLearn = !learned
-                        && (skill.prereqSkillId == 0 || player.learnedSkills.Contains(skill.prereqSkillId))
-                        && player.gold >= skill.learnCost
-                        && player.level >= skill.level;
-
-                    float y = 200 - idx * 65;
-
-                    var row = new GameObject($"Skill_{skill.id}");
-                    row.transform.SetParent(inner, false);
-                    var rowRt = row.AddComponent<RectTransform>();
-                    rowRt.sizeDelta = new Vector2(800, 55);
-                    rowRt.anchoredPosition = new Vector2(0, y);
-
-                    var rowImg = row.AddComponent<Image>();
-                    rowImg.color = learned ? new Color(0.1f, 0.2f, 0.1f, 0.5f) : new Color(0.1f, 0.1f, 0.16f, 0.5f);
-
-                    string typeStr = skill.type switch { SkillType.Active => "主动", SkillType.Passive => "被动", SkillType.Buff => "增益", _ => "" };
-                    string statStr = skill.power > 0 ? $"威力:{skill.power}%" : "";
-                    string info = $"{skill.name} [{typeStr}] {statStr}  MP:{skill.mpCost}  {skill.desc}";
-                    if (skill.prereqSkillId > 0)
-                    {
-                        var prereq = ConfigManager.Instance.GetSkill(skill.prereqSkillId);
-                        if (prereq != null) info += $"  (前置:{prereq.name})";
-                    }
-
-                    var nameText = UIBuilder.CreateText(row.transform, info, 15, learned ? UIBuilder.Green : UIBuilder.TextWhite, TextAnchor.MiddleLeft);
-                    UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                        new Vector2(-125, 0), new Vector2(550, 45));
-
-                    if (learned)
-                    {
-                        UIBuilder.CreateText(row.transform, "已学", 16, UIBuilder.Green, TextAnchor.MiddleCenter)
-                            .GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 0);
-                    }
-                    else
-                    {
-                        int capturedId = skill.id;
-                        int capturedCost = skill.learnCost;
-                        var btn = UIBuilder.CreateButton(row.transform, $"{skill.learnCost}金", 90, 35,
-                            () => LearnSkill(capturedId, capturedCost), 16, $"Learn_{skill.id}");
-                        btn.interactable = canLearn;
-                        btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(300, 0);
-                    }
-                    idx++;
+                    SkillType.Active => "主动",
+                    SkillType.Passive => "被动",
+                    SkillType.Buff => "增益",
+                    _ => ""
+                };
+                string statStr = skill.power > 0 ? $"威力:{skill.power}%" : "";
+                string info = $"{skill.name} [{typeStr}] {statStr}  MP:{skill.mpCost}  {skill.desc}";
+                if (skill.prereqSkillId > 0)
+                {
+                    var prereq = ConfigManager.Instance.GetSkill(skill.prereqSkillId);
+                    if (prereq != null) info += $"  (前置:{prereq.name})";
                 }
-            }
+                row.nameText.text = info;
+                row.nameText.color = learned ? UIBuilder.Green : UIBuilder.TextWhite;
 
-            // 已装备技能
-            var eqInner = transform.Find("EquippedSkills/Inner");
-            if (eqInner != null)
-            {
-                for (int i = eqInner.childCount - 1; i >= 0; i--)
-                    Object.DestroyImmediate(eqInner.GetChild(i).gameObject);
+                // 学习按钮 / 已学标签
+                row.actionBtn.gameObject.SetActive(true);
+                row.actionBtn.onClick.RemoveAllListeners();
+                row.secondBtn.gameObject.SetActive(false);
 
-                var label = UIBuilder.CreateText(eqInner, "已装备技能:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft);
-                UIBuilder.SetAnchored(label.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                    new Vector2(-380, 0), new Vector2(120, 30));
-
-                int eqIdx = 0;
-                foreach (var skillId in player.equippedSkills)
+                if (learned)
                 {
-                    var skill = ConfigManager.Instance.GetSkill(skillId);
-                    if (skill == null) continue;
-                    int capturedSkillId = skillId;
-                    var btn = UIBuilder.CreateButton(eqInner, $"{skill.name} ×", 110, 30,
-                        () => UnequipSkill(capturedSkillId), 14, $"Uneq_{skillId}");
-                    btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-220 + eqIdx * 130, 0);
-                    eqIdx++;
+                    row.actionBtn.interactable = false;
+                    row.actionBtnLabel.text = "已学";
+                    row.actionBtnLabel.color = UIBuilder.Green;
+                    row.actionBtn.image.color = new Color(0.1f, 0.2f, 0.1f, 0.5f);
+                }
+                else
+                {
+                    row.actionBtn.interactable = canLearn;
+                    row.actionBtnLabel.text = $"{skill.learnCost}金";
+                    row.actionBtnLabel.color = canLearn ? UIBuilder.Gold : UIBuilder.TextDim;
+                    row.actionBtn.image.color = UIBuilder.ButtonNormal;
+                    int capturedId = skill.id;
+                    int capturedCost = skill.learnCost;
+                    row.actionBtn.onClick.AddListener(() => LearnSkill(capturedId, capturedCost));
                 }
 
-                // 未装备的已学技能可以装备
-                foreach (var skillId in player.learnedSkills)
-                {
-                    if (player.equippedSkills.Contains(skillId)) continue;
-                    var skill = ConfigManager.Instance.GetSkill(skillId);
-                    if (skill == null || player.equippedSkills.Count >= player.maxSkillSlots) continue;
-                    int capturedSkillId = skillId;
-                    var btn = UIBuilder.CreateButton(eqInner, $"{skill.name} +", 110, 30,
-                        () => EquipSkill(capturedSkillId), 14, $"Eq_{skillId}");
-                    btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-220 + eqIdx * 130, 0);
-                    eqIdx++;
-                }
+                shown++;
             }
+
+            // 隐藏未使用的技能行
+            for (int i = shown; i < SkillPoolSize; i++)
+                skillRows[i].obj.SetActive(false);
+
+            // 已装备技能 → 卸下按钮
+            int eqIdx = 0;
+            foreach (var skillId in player.equippedSkills)
+            {
+                var skill = ConfigManager.Instance.GetSkill(skillId);
+                if (skill == null || eqIdx >= EqBtnPoolSize) continue;
+                var btn = eqBtns[eqIdx];
+                btn.gameObject.SetActive(true);
+                btn.interactable = true;
+                eqBtnLabels[eqIdx].text = $"{skill.name} ×";
+                eqBtnLabels[eqIdx].color = UIBuilder.Red;
+                btn.image.color = UIBuilder.ButtonNormal;
+                btn.onClick.RemoveAllListeners();
+                int capturedSkillId = skillId;
+                btn.onClick.AddListener(() => UnequipSkill(capturedSkillId));
+                eqIdx++;
+            }
+
+            // 未装备的已学技能 → 装备按钮
+            foreach (var skillId in player.learnedSkills)
+            {
+                if (player.equippedSkills.Contains(skillId)) continue;
+                if (player.equippedSkills.Count >= player.maxSkillSlots) continue;
+                var skill = ConfigManager.Instance.GetSkill(skillId);
+                if (skill == null || eqIdx >= EqBtnPoolSize) continue;
+                var btn = eqBtns[eqIdx];
+                btn.gameObject.SetActive(true);
+                btn.interactable = true;
+                eqBtnLabels[eqIdx].text = $"{skill.name} +";
+                eqBtnLabels[eqIdx].color = UIBuilder.Green;
+                btn.image.color = UIBuilder.ButtonNormal;
+                btn.onClick.RemoveAllListeners();
+                int capturedSkillId = skillId;
+                btn.onClick.AddListener(() => EquipSkill(capturedSkillId));
+                eqIdx++;
+            }
+
+            // 隐藏未使用的按钮
+            for (int i = eqIdx; i < EqBtnPoolSize; i++)
+                eqBtns[i].gameObject.SetActive(false);
         }
 
         private void LearnSkill(int skillId, int cost)
