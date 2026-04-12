@@ -7,3 +7,4 @@
 2026-04-12 REFACTOR STARTED - UI架构系统性重设计：从销毁-重建模式改为缓存引用+原地更新模式
 2026-04-12 F008 COMPLETED - UIBuilder 新增 CreateButtonWithRef、PoolRow、CreatePoolRows
 2026-04-12 F009 COMPLETED - UIPanel.Hide() 改用 CanvasGroup alpha=0 替代 SetActive(false)
+2026-04-12 F011 COMPLETED - CreateRolePanel 重写：OnInit缓存所有控件引用、RefreshUI零销毁刷新、新增角色名输入

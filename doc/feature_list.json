@@ -11,7 +11,7 @@
   {"id":"F009","category":"framework","desc":"UIPanel 基类 Hide 用 CanvasGroup 替代 SetActive","passes":true},
 
   {"id":"F010","category":"ui","desc":"主菜单面板 MainPanel：开始游戏、继续游戏","passes":true},
-  {"id":"F011","category":"ui","desc":"角色创建面板 CreateRolePanel：缓存引用、零销毁刷新","passes":false},
+  {"id":"F011","category":"ui","desc":"角色创建面板 CreateRolePanel：缓存引用、零销毁刷新","passes":true},
   {"id":"F012","category":"ui","desc":"城镇面板 TownPanel：缓存引用、零销毁刷新","passes":false},
   {"id":"F013","category":"ui","desc":"地牢探索面板 DungeonPanel：对象池房间、缓存引用、零销毁刷新","passes":false},
   {"id":"F014","category":"ui","desc":"战斗面板 BattlePanel：缓存引用、零销毁刷新、物品选择子面板","passes":false},
