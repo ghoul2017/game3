@@ -292,14 +292,20 @@ namespace Game.UI
                 if (idx >= MaxSkillRows) break;
 
                 var row = skillRows[idx];
-                row.label.text = $"{skill.name} (MP:{skill.mpCost})";
+                bool canUse = player.mp >= skill.mpCost;
+                row.label.text = $"{skill.name}  (MP:{skill.mpCost})";
+                row.label.color = canUse ? UIBuilder.Gold : UIBuilder.TextDim;
+                row.btn.interactable = canUse;
                 row.btn.onClick.RemoveAllListeners();
-                int captured = skillId;
-                row.btn.onClick.AddListener(() =>
+                if (canUse)
                 {
-                    skillPanel.gameObject.SetActive(false);
-                    OnUseSkill(captured);
-                });
+                    int captured = skillId;
+                    row.btn.onClick.AddListener(() =>
+                    {
+                        skillPanel.gameObject.SetActive(false);
+                        OnUseSkill(captured);
+                    });
+                }
                 row.obj.SetActive(true);
                 idx++;
             }
