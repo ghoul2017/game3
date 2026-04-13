@@ -31,6 +31,11 @@ namespace Game.UI
         private Text goldText;
         private Text statsText;
 
+        // 底部技能栏引用
+        private const int MaxSkillSlots = 4;
+        private Text[] skillLabels = new Text[MaxSkillSlots];
+        private Text[] skillMpLabels = new Text[MaxSkillSlots];
+
         // 房间对象池
         private RoomCell[] roomCells;
 
@@ -99,8 +104,11 @@ namespace Game.UI
                 RefreshUI();
             }, 20, "BtnContinue").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
 
+            // 底部技能快捷栏
+            CreateSkillBar();
+
             // 底部按钮区
-            float btnY = -220;
+            float btnY = -310;
 
             UIBuilder.CreateButton(transform, "返回城镇", 200, 45, () =>
             {
@@ -121,6 +129,32 @@ namespace Game.UI
             {
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             }, 20, "BtnRole").GetComponent<RectTransform>().anchoredPosition = new Vector2(200, btnY);
+        }
+
+        private void UpdateSkillBar(PlayerData player)
+        {
+            for (int i = 0; i < MaxSkillSlots; i++)
+            {
+                if (i < player.equippedSkills.Count)
+                {
+                    var skillCfg = ConfigManager.Instance.GetSkill(player.equippedSkills[i]);
+                    if (skillCfg != null)
+                    {
+                        skillLabels[i].text = skillCfg.name;
+                        skillMpLabels[i].text = $"MP {skillCfg.mpCost}";
+                    }
+                    else
+                    {
+                        skillLabels[i].text = "???";
+                        skillMpLabels[i].text = "";
+                    }
+                }
+                else
+                {
+                    skillLabels[i].text = "空";
+                    skillMpLabels[i].text = "";
+                }
+            }
         }
 
         private void CreateStatusPanel()
@@ -195,6 +229,40 @@ namespace Game.UI
             statsText = UIBuilder.CreateText(inner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
             UIBuilder.SetAnchored(statsText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0, y), new Vector2(260, 26));
+        }
+
+        private void CreateSkillBar()
+        {
+            float slotW = 140;
+            float slotH = 50;
+            float gap = 20;
+            float totalW = MaxSkillSlots * slotW + (MaxSkillSlots - 1) * gap;
+            float startX = -totalW / 2 + slotW / 2;
+            float barY = -240;
+
+            for (int i = 0; i < MaxSkillSlots; i++)
+            {
+                var slot = UIBuilder.CreateBorderedPanel(transform, slotW, slotH, $"SkillSlot_{i}");
+                UIBuilder.SetAnchored(slot,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    new Vector2(startX + i * (slotW + gap), barY), new Vector2(slotW, slotH));
+
+                // 技能名称
+                var nameLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 16, UIBuilder.TextWhite,
+                    TextAnchor.MiddleCenter, false, "SkillName");
+                UIBuilder.SetAnchored(nameLabel.gameObject,
+                    new Vector2(0, 0.35f), new Vector2(1, 1),
+                    new Vector2(0, 0), new Vector2(0, 0));
+                skillLabels[i] = nameLabel;
+
+                // MP消耗标签
+                var mpLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 12, UIBuilder.MpColor,
+                    TextAnchor.MiddleCenter, false, "SkillMp");
+                UIBuilder.SetAnchored(mpLabel.gameObject,
+                    new Vector2(0, 0), new Vector2(1, 0.4f),
+                    new Vector2(0, 0), new Vector2(0, 0));
+                skillMpLabels[i] = mpLabel;
+            }
         }
 
         private RoomCell CreateRoomCell(Transform parent, int index)
@@ -293,6 +361,9 @@ namespace Game.UI
             floorText.text = $"第 {dungeon.floor} 层";
             goldText.text = $"金币: {player.gold}";
             statsText.text = $"攻击: {player.attack}  防御: {player.defense}";
+
+            // 底部技能栏
+            UpdateSkillBar(player);
 
             // 房间地图
             UpdateRoomMap(dungeon);
