@@ -50,16 +50,14 @@ namespace Game.UI
             public Button btn;
         }
 
-        public override void OnInit()
+        /// <summary>仅供 PrefabGenerator 调用</summary>
+        public static void CreateVisuals(Transform parent)
         {
-            UIBuilder.CreateFullScreenBg(transform);
-
-            // 标题栏
-            UIBuilder.CreateTitleBar(transform, "地牢");
-            titleText = transform.Find("TitleBar/Title").GetComponent<Text>();
+            UIBuilder.CreateFullScreenBg(parent);
+            UIBuilder.CreateTitleBar(parent, "地牢");
 
             // 状态栏
-            var bar = UIBuilder.CreatePanel(transform, 0, 45, "StatusBar");
+            var bar = UIBuilder.CreatePanel(parent, 0, 45, "StatusBar");
             var barRt = bar.GetComponent<RectTransform>();
             barRt.anchorMin = new Vector2(0, 1);
             barRt.anchorMax = new Vector2(1, 1);
@@ -67,50 +65,285 @@ namespace Game.UI
             barRt.anchoredPosition = new Vector2(0, -65);
             barRt.sizeDelta = new Vector2(0, 45);
             bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
-            statusText = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
-            UIBuilder.SetStretch(statusText.gameObject);
+            var statusTextObj = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
+            UIBuilder.SetStretch(statusTextObj.gameObject);
 
             // 地图面板（缩窄为右侧状态栏让出空间）
-            var mapPanel = UIBuilder.CreateBorderedPanel(transform, 1050, 480, "MapPanel");
+            var mapPanel = UIBuilder.CreateBorderedPanel(parent, 1050, 480, "MapPanel");
             mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(-160, 80);
-            var inner = mapPanel.transform.Find("Inner");
 
             // ===== 右侧状态面板 =====
-            CreateStatusPanel();
+            CreateStatusPanelVisuals(parent);
 
             // 创建房间对象池（最大 20 个房间）
-            roomCells = new RoomCell[MaxRooms];
+            var inner = mapPanel.transform.Find("Inner");
             for (int i = 0; i < MaxRooms; i++)
             {
-                roomCells[i] = CreateRoomCell(inner, i);
-                roomCells[i].obj.SetActive(false);
+                CreateRoomCellVisual(inner, i);
             }
 
             // 消息覆盖层（默认隐藏）
-            msgOverlay = new GameObject("MsgOverlay");
+            var msgOverlay = new GameObject("MsgOverlay");
             msgOverlay.transform.SetParent(inner, false);
             UIBuilder.SetStretch(msgOverlay);
             var oImg = msgOverlay.AddComponent<Image>();
             oImg.color = new Color(0, 0, 0, 0.75f);
-            var overlayCg = msgOverlay.AddComponent<CanvasGroup>();
+            msgOverlay.AddComponent<CanvasGroup>();
             msgOverlay.SetActive(false);
 
-            msgText = UIBuilder.CreateText(msgOverlay.transform, "", 26, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "MsgText");
-            UIBuilder.SetStretch(msgText.gameObject);
+            var msgTextObj = UIBuilder.CreateText(msgOverlay.transform, "", 26, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "MsgText");
+            UIBuilder.SetStretch(msgTextObj.gameObject);
 
-            UIBuilder.CreateButton(msgOverlay.transform, "继续", 160, 40, () =>
-            {
-                pendingMessage = null;
-                RefreshUI();
-            }, 20, "BtnContinue").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
+            var (btnContinue, _) = UIBuilder.CreateButtonWithRef(msgOverlay.transform, "继续", 160, 40, null, 20, "BtnContinue");
+            UIBuilder.SetAnchored(btnContinue.gameObject,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -60), new Vector2(160, 40));
 
             // 底部技能快捷栏
-            CreateSkillBar();
+            CreateSkillBarVisuals(parent);
 
             // 底部按钮区
             float btnY = -310;
 
-            UIBuilder.CreateButton(transform, "返回城镇", 200, 45, () =>
+            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回城镇", 200, 45, null, 22, "BtnBack");
+            UIBuilder.SetAnchored(btnBack.gameObject,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, btnY), new Vector2(200, 45));
+
+            var (btnBag, _) = UIBuilder.CreateButtonWithRef(parent, "背包", 140, 40, null, 20, "BtnBag");
+            UIBuilder.SetAnchored(btnBag.gameObject,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-200, btnY), new Vector2(140, 40));
+
+            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色", 140, 40, null, 20, "BtnRole");
+            UIBuilder.SetAnchored(btnRole.gameObject,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(200, btnY), new Vector2(140, 40));
+        }
+
+        private static void CreateStatusPanelVisuals(Transform parent)
+        {
+            var panel = UIBuilder.CreateBorderedPanel(parent, 300, 480, "StatusPanel");
+            UIBuilder.SetAnchored(panel,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(535, 80), new Vector2(300, 480));
+            var inner = panel.transform.Find("Inner");
+
+            float y = 200;
+            float sliderW = 250;
+            float barH = 20;
+            float rowGap = 65;
+
+            // HP 条
+            var hpLabel = UIBuilder.CreateText(inner, "HP", 16, UIBuilder.HpColor, TextAnchor.MiddleLeft, true, "HpLabel");
+            UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-85, y), new Vector2(40, 24));
+            var hpSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.HpColor, "HpSlider");
+            UIBuilder.SetAnchored(hpSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(30, y), new Vector2(sliderW, barH));
+            var hpTextObj = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "HpText");
+            UIBuilder.SetAnchored(hpTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+
+            y -= rowGap;
+
+            // MP 条
+            var mpLabel = UIBuilder.CreateText(inner, "MP", 16, UIBuilder.MpColor, TextAnchor.MiddleLeft, true, "MpLabel");
+            UIBuilder.SetAnchored(mpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-85, y), new Vector2(40, 24));
+            var mpSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.MpColor, "MpSlider");
+            UIBuilder.SetAnchored(mpSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(30, y), new Vector2(sliderW, barH));
+            var mpTextObj = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "MpText");
+            UIBuilder.SetAnchored(mpTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+
+            y -= rowGap;
+
+            // EXP 条
+            var expLabel = UIBuilder.CreateText(inner, "EXP", 16, UIBuilder.ExpColor, TextAnchor.MiddleLeft, true, "ExpLabel");
+            UIBuilder.SetAnchored(expLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-85, y), new Vector2(40, 24));
+            var expSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.ExpColor, "ExpSlider");
+            UIBuilder.SetAnchored(expSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(30, y), new Vector2(sliderW, barH));
+            var expTextObj = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ExpText");
+            UIBuilder.SetAnchored(expTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+
+            y -= rowGap + 10;
+
+            // 分隔线
+            var div = UIBuilder.CreateDivider(inner);
+            var divRt = div.GetComponent<RectTransform>();
+            divRt.anchoredPosition = new Vector2(0, y + 10);
+            divRt.sizeDelta = new Vector2(260, 2);
+
+            y -= 15;
+
+            // 层数/金币/攻防信息
+            var floorTextObj = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, true, "FloorText");
+            UIBuilder.SetAnchored(floorTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y), new Vector2(260, 26));
+            y -= 30;
+            var goldTextObj = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, false, "GoldText");
+            UIBuilder.SetAnchored(goldTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y), new Vector2(260, 26));
+            y -= 30;
+            var statsTextObj = UIBuilder.CreateText(inner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
+            UIBuilder.SetAnchored(statsTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y), new Vector2(260, 26));
+        }
+
+        private static void CreateSkillBarVisuals(Transform parent)
+        {
+            float slotW = 140;
+            float slotH = 50;
+            float gap = 20;
+            float totalW = MaxSkillSlots * slotW + (MaxSkillSlots - 1) * gap;
+            float startX = -totalW / 2 + slotW / 2;
+            float barY = -240;
+
+            for (int i = 0; i < MaxSkillSlots; i++)
+            {
+                var slot = UIBuilder.CreateBorderedPanel(parent, slotW, slotH, $"SkillSlot_{i}");
+                UIBuilder.SetAnchored(slot,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    new Vector2(startX + i * (slotW + gap), barY), new Vector2(slotW, slotH));
+
+                // 技能名称
+                var nameLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 16, UIBuilder.TextWhite,
+                    TextAnchor.MiddleCenter, false, "SkillName");
+                UIBuilder.SetAnchored(nameLabel.gameObject,
+                    new Vector2(0, 0.35f), new Vector2(1, 1),
+                    new Vector2(0, 0), new Vector2(0, 0));
+
+                // MP消耗标签
+                var mpLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 12, UIBuilder.MpColor,
+                    TextAnchor.MiddleCenter, false, "SkillMp");
+                UIBuilder.SetAnchored(mpLabel.gameObject,
+                    new Vector2(0, 0), new Vector2(1, 0.4f),
+                    new Vector2(0, 0), new Vector2(0, 0));
+            }
+        }
+
+        private static void CreateRoomCellVisual(Transform parent, int index)
+        {
+            // 外层：边框
+            var obj = new GameObject($"Room_{index}");
+            obj.transform.SetParent(parent, false);
+            var rt = obj.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
+
+            var border = obj.AddComponent<Image>();
+            border.color = new Color(0.3f, 0.3f, 0.3f, 0.6f);
+
+            // 内层：背景
+            var innerObj = new GameObject("Inner");
+            innerObj.transform.SetParent(obj.transform, false);
+            var innerRt = innerObj.AddComponent<RectTransform>();
+            innerRt.anchorMin = Vector2.zero;
+            innerRt.anchorMax = Vector2.one;
+            innerRt.offsetMin = new Vector2(3, 3);
+            innerRt.offsetMax = new Vector2(-3, -3);
+            var bg = innerObj.AddComponent<Image>();
+            bg.color = Color.gray;
+
+            // 图标
+            var iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(innerObj.transform, false);
+            var iconRt = iconObj.AddComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0, 0.35f);
+            iconRt.anchorMax = new Vector2(1, 1);
+            iconRt.offsetMin = Vector2.zero;
+            iconRt.offsetMax = Vector2.zero;
+            var iconText = iconObj.AddComponent<Text>();
+            iconText.fontSize = 26;
+            iconText.color = Color.white;
+            iconText.alignment = TextAnchor.MiddleCenter;
+            iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 26);
+            iconText.raycastTarget = false;
+
+            // 类型标签
+            var labelObj = new GameObject("TypeLabel");
+            labelObj.transform.SetParent(innerObj.transform, false);
+            var labelRt = labelObj.AddComponent<RectTransform>();
+            labelRt.anchorMin = new Vector2(0, 0);
+            labelRt.anchorMax = new Vector2(1, 0.35f);
+            labelRt.offsetMin = Vector2.zero;
+            labelRt.offsetMax = Vector2.zero;
+            var typeLabel = labelObj.AddComponent<Text>();
+            typeLabel.fontSize = 11;
+            typeLabel.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
+            typeLabel.alignment = TextAnchor.MiddleCenter;
+            typeLabel.font = Font.CreateDynamicFontFromOSFont("Arial", 11);
+            typeLabel.raycastTarget = false;
+
+            obj.AddComponent<Button>();
+        }
+
+        protected override void BindReferences()
+        {
+            titleText = FindComponent<Text>("TitleBar/Title");
+            statusText = FindComponent<Text>("StatusBar/StatusText");
+
+            // 地图面板房间池
+            roomCells = new RoomCell[MaxRooms];
+            for (int i = 0; i < MaxRooms; i++)
+            {
+                string path = $"MapPanel/Inner/Room_{i}";
+                var cellObj = transform.Find(path).gameObject;
+                roomCells[i] = new RoomCell
+                {
+                    obj = cellObj,
+                    rt = cellObj.GetComponent<RectTransform>(),
+                    border = cellObj.GetComponent<Image>(),
+                    bg = cellObj.transform.Find("Inner").GetComponent<Image>(),
+                    iconText = cellObj.transform.Find("Inner/Icon").GetComponent<Text>(),
+                    typeLabel = cellObj.transform.Find("Inner/TypeLabel").GetComponent<Text>(),
+                    btn = cellObj.GetComponent<Button>()
+                };
+                cellObj.SetActive(false);
+            }
+
+            // 消息覆盖
+            msgOverlay = transform.Find("MapPanel/Inner/MsgOverlay").gameObject;
+            msgText = FindComponent<Text>("MapPanel/Inner/MsgOverlay/MsgText");
+
+            // 右侧状态面板
+            hpSlider = FindComponent<Slider>("StatusPanel/Inner/HpSlider");
+            hpText = FindComponent<Text>("StatusPanel/Inner/HpText");
+            mpSlider = FindComponent<Slider>("StatusPanel/Inner/MpSlider");
+            mpText = FindComponent<Text>("StatusPanel/Inner/MpText");
+            expSlider = FindComponent<Slider>("StatusPanel/Inner/ExpSlider");
+            expText = FindComponent<Text>("StatusPanel/Inner/ExpText");
+            floorText = FindComponent<Text>("StatusPanel/Inner/FloorText");
+            goldText = FindComponent<Text>("StatusPanel/Inner/GoldText");
+            statsText = FindComponent<Text>("StatusPanel/Inner/StatsText");
+
+            // 底部技能栏
+            for (int i = 0; i < MaxSkillSlots; i++)
+            {
+                skillLabels[i] = FindComponent<Text>($"SkillSlot_{i}/Inner/SkillName");
+                skillMpLabels[i] = FindComponent<Text>($"SkillSlot_{i}/Inner/SkillMp");
+            }
+        }
+
+        protected override void BindEvents()
+        {
+            for (int i = 0; i < MaxRooms; i++)
+            {
+                int capturedIndex = i;
+                roomCells[i].btn.onClick.AddListener(() => OnClickRoom(capturedIndex));
+            }
+
+            FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnContinue").onClick.AddListener(() =>
+            {
+                pendingMessage = null;
+                RefreshUI();
+            });
+
+            FindComponent<Button>("BtnBack").onClick.AddListener(() =>
             {
                 Debug.Log("[操作] 返回城镇");
                 GameManager.Instance.Dungeon.OnReturnTown();
@@ -118,17 +351,17 @@ namespace Game.UI
                 GameManager.Instance.SetState(GameState.InTown);
                 GameManager.Instance.SaveGame();
                 UIManager.Instance.ReplacePanel<TownPanel>();
-            }, 22, "BtnBack").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, btnY);
+            });
 
-            UIBuilder.CreateButton(transform, "背包", 140, 40, () =>
+            FindComponent<Button>("BtnBag").onClick.AddListener(() =>
             {
                 UIManager.Instance.ShowPanel<BagPanel>();
-            }, 20, "BtnBag").GetComponent<RectTransform>().anchoredPosition = new Vector2(-200, btnY);
+            });
 
-            UIBuilder.CreateButton(transform, "角色", 140, 40, () =>
+            FindComponent<Button>("BtnRole").onClick.AddListener(() =>
             {
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
-            }, 20, "BtnRole").GetComponent<RectTransform>().anchoredPosition = new Vector2(200, btnY);
+            });
         }
 
         private void UpdateSkillBar(PlayerData player)
@@ -155,177 +388,6 @@ namespace Game.UI
                     skillMpLabels[i].text = "";
                 }
             }
-        }
-
-        private void CreateStatusPanel()
-        {
-            var panel = UIBuilder.CreateBorderedPanel(transform, 300, 480, "StatusPanel");
-            UIBuilder.SetAnchored(panel,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(535, 80), new Vector2(300, 480));
-            var inner = panel.transform.Find("Inner");
-
-            float y = 200;
-            float sliderW = 250;
-            float barH = 20;
-            float rowGap = 65;
-
-            // HP 条
-            var hpLabel = UIBuilder.CreateText(inner, "HP", 16, UIBuilder.HpColor, TextAnchor.MiddleLeft, true, "HpLabel");
-            UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-85, y), new Vector2(40, 24));
-            hpSlider = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.HpColor, "HpSlider");
-            UIBuilder.SetAnchored(hpSlider.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(30, y), new Vector2(sliderW, barH));
-            hpText = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "HpText");
-            UIBuilder.SetAnchored(hpText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 20), new Vector2(sliderW, 18));
-
-            y -= rowGap;
-
-            // MP 条
-            var mpLabel = UIBuilder.CreateText(inner, "MP", 16, UIBuilder.MpColor, TextAnchor.MiddleLeft, true, "MpLabel");
-            UIBuilder.SetAnchored(mpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-85, y), new Vector2(40, 24));
-            mpSlider = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.MpColor, "MpSlider");
-            UIBuilder.SetAnchored(mpSlider.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(30, y), new Vector2(sliderW, barH));
-            mpText = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "MpText");
-            UIBuilder.SetAnchored(mpText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 20), new Vector2(sliderW, 18));
-
-            y -= rowGap;
-
-            // EXP 条
-            var expLabel = UIBuilder.CreateText(inner, "EXP", 16, UIBuilder.ExpColor, TextAnchor.MiddleLeft, true, "ExpLabel");
-            UIBuilder.SetAnchored(expLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-85, y), new Vector2(40, 24));
-            expSlider = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.ExpColor, "ExpSlider");
-            UIBuilder.SetAnchored(expSlider.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(30, y), new Vector2(sliderW, barH));
-            expText = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ExpText");
-            UIBuilder.SetAnchored(expText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 20), new Vector2(sliderW, 18));
-
-            y -= rowGap + 10;
-
-            // 分隔线
-            var div = UIBuilder.CreateDivider(inner);
-            var divRt = div.GetComponent<RectTransform>();
-            divRt.anchoredPosition = new Vector2(0, y + 10);
-            divRt.sizeDelta = new Vector2(260, 2);
-
-            y -= 15;
-
-            // 层数/金币/攻防信息
-            floorText = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, true, "FloorText");
-            UIBuilder.SetAnchored(floorText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(260, 26));
-            y -= 30;
-            goldText = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, false, "GoldText");
-            UIBuilder.SetAnchored(goldText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(260, 26));
-            y -= 30;
-            statsText = UIBuilder.CreateText(inner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
-            UIBuilder.SetAnchored(statsText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(260, 26));
-        }
-
-        private void CreateSkillBar()
-        {
-            float slotW = 140;
-            float slotH = 50;
-            float gap = 20;
-            float totalW = MaxSkillSlots * slotW + (MaxSkillSlots - 1) * gap;
-            float startX = -totalW / 2 + slotW / 2;
-            float barY = -240;
-
-            for (int i = 0; i < MaxSkillSlots; i++)
-            {
-                var slot = UIBuilder.CreateBorderedPanel(transform, slotW, slotH, $"SkillSlot_{i}");
-                UIBuilder.SetAnchored(slot,
-                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                    new Vector2(startX + i * (slotW + gap), barY), new Vector2(slotW, slotH));
-
-                // 技能名称
-                var nameLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 16, UIBuilder.TextWhite,
-                    TextAnchor.MiddleCenter, false, "SkillName");
-                UIBuilder.SetAnchored(nameLabel.gameObject,
-                    new Vector2(0, 0.35f), new Vector2(1, 1),
-                    new Vector2(0, 0), new Vector2(0, 0));
-                skillLabels[i] = nameLabel;
-
-                // MP消耗标签
-                var mpLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 12, UIBuilder.MpColor,
-                    TextAnchor.MiddleCenter, false, "SkillMp");
-                UIBuilder.SetAnchored(mpLabel.gameObject,
-                    new Vector2(0, 0), new Vector2(1, 0.4f),
-                    new Vector2(0, 0), new Vector2(0, 0));
-                skillMpLabels[i] = mpLabel;
-            }
-        }
-
-        private RoomCell CreateRoomCell(Transform parent, int index)
-        {
-            // 外层：边框
-            var obj = new GameObject($"Room_{index}");
-            obj.transform.SetParent(parent, false);
-            var rt = obj.AddComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
-
-            var border = obj.AddComponent<Image>();
-            border.color = new Color(0.3f, 0.3f, 0.3f, 0.6f);
-
-            // 内层：背景
-            var inner = new GameObject("Inner");
-            inner.transform.SetParent(obj.transform, false);
-            var innerRt = inner.AddComponent<RectTransform>();
-            innerRt.anchorMin = Vector2.zero;
-            innerRt.anchorMax = Vector2.one;
-            innerRt.offsetMin = new Vector2(3, 3);
-            innerRt.offsetMax = new Vector2(-3, -3);
-            var bg = inner.AddComponent<Image>();
-            bg.color = Color.gray;
-
-            // 图标
-            var iconObj = new GameObject("Icon");
-            iconObj.transform.SetParent(inner.transform, false);
-            var iconRt = iconObj.AddComponent<RectTransform>();
-            iconRt.anchorMin = new Vector2(0, 0.35f);
-            iconRt.anchorMax = new Vector2(1, 1);
-            iconRt.offsetMin = Vector2.zero;
-            iconRt.offsetMax = Vector2.zero;
-            var iconText = iconObj.AddComponent<Text>();
-            iconText.fontSize = 26;
-            iconText.color = Color.white;
-            iconText.alignment = TextAnchor.MiddleCenter;
-            iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 26);
-            iconText.raycastTarget = false;
-
-            // 类型标签
-            var labelObj = new GameObject("TypeLabel");
-            labelObj.transform.SetParent(inner.transform, false);
-            var labelRt = labelObj.AddComponent<RectTransform>();
-            labelRt.anchorMin = new Vector2(0, 0);
-            labelRt.anchorMax = new Vector2(1, 0.35f);
-            labelRt.offsetMin = Vector2.zero;
-            labelRt.offsetMax = Vector2.zero;
-            var typeLabel = labelObj.AddComponent<Text>();
-            typeLabel.fontSize = 11;
-            typeLabel.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
-            typeLabel.alignment = TextAnchor.MiddleCenter;
-            typeLabel.font = Font.CreateDynamicFontFromOSFont("Arial", 11);
-            typeLabel.raycastTarget = false;
-
-            var btn = obj.AddComponent<Button>();
-            int capturedIndex = index;
-            btn.onClick.AddListener(() => OnClickRoom(capturedIndex));
-
-            return new RoomCell
-            {
-                obj = obj, rt = rt, border = border, bg = bg,
-                iconText = iconText, typeLabel = typeLabel, btn = btn
-            };
         }
 
         public override void OnShow()
