@@ -12,39 +12,65 @@ namespace Game.UI
         // 缓存引用
         private Text infoText;
         private Text emptyText;
-        private const int PoolSize = 20; // maxBagSize 同步
+        private const int PoolSize = 20;
         private List<UIBuilder.PoolRow> itemRows;
 
-        public override void OnInit()
+        /// <summary>仅供 PrefabGenerator 调用，运行时不执行</summary>
+        public static void CreateVisuals(Transform parent)
         {
-            UIBuilder.CreateFullScreenBg(transform);
-            UIBuilder.CreateTitleBar(transform, "背  包");
+            UIBuilder.CreateFullScreenBg(parent);
+            UIBuilder.CreateTitleBar(parent, "背  包");
 
-            // 物品列表容器
-            var listPanel = UIBuilder.CreateBorderedPanel(transform, 900, 450, "ItemList");
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 450, "ItemList");
             listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 50);
 
             var inner = listPanel.transform.Find("Inner");
+            var empty = UIBuilder.CreateText(inner, "背包是空的", 20, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "EmptyText");
+            UIBuilder.SetStretch(empty.gameObject);
+            empty.gameObject.SetActive(false);
 
-            // 空背包提示（预创建，默认隐藏）
-            emptyText = UIBuilder.CreateText(inner, "背包是空的", 20, UIBuilder.TextDim, TextAnchor.MiddleCenter);
-            UIBuilder.SetStretch(emptyText.gameObject);
-            emptyText.gameObject.SetActive(false);
+            UIBuilder.CreatePoolRows(inner, PoolSize, 45, 190, 800);
 
-            // 物品行对象池（预创建 PoolSize 行）
-            itemRows = UIBuilder.CreatePoolRows(inner, PoolSize, 45, 190, 800);
-
-            // 底部信息栏（预创建文本）
-            var infoBar = UIBuilder.CreatePanel(transform, 900, 50, "InfoBar");
+            var infoBar = UIBuilder.CreatePanel(parent, 900, 50, "InfoBar");
             infoBar.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -210);
-            infoText = UIBuilder.CreateText(infoBar.transform, "", 16, UIBuilder.Gold, TextAnchor.MiddleCenter);
-            UIBuilder.SetStretch(infoText.gameObject);
+            var info = UIBuilder.CreateText(infoBar.transform, "", 16, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
+            UIBuilder.SetStretch(info.gameObject);
 
-            // 返回按钮
-            UIBuilder.CreateButton(transform, "返回", 200, 45, () =>
+            UIBuilder.CreateButton(parent, "返回", 200, 45, null, 22, "BtnBack")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -280);
+        }
+
+        protected override void BindReferences()
+        {
+            infoText = FindComponent<Text>("InfoBar/InfoText");
+            emptyText = FindComponent<Text>("ItemList/Inner/EmptyText");
+
+            // 从预制体中重建对象池引用
+            var inner = FindChild("ItemList/Inner");
+            itemRows = new List<UIBuilder.PoolRow>();
+            for (int i = 0; i < inner.childCount && itemRows.Count < PoolSize; i++)
             {
-                UIManager.Instance.Back();
-            }, 22, "BtnBack").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -280);
+                var child = inner.GetChild(i);
+                if (child.name == "PoolRow")
+                {
+                    itemRows.Add(new UIBuilder.PoolRow
+                    {
+                        obj = child.gameObject,
+                        rt = child as RectTransform,
+                        bg = child.GetComponent<Image>(),
+                        nameText = child.Find("NameText")?.GetComponent<Text>(),
+                        actionBtn = child.Find("ActionBtn")?.GetComponent<Button>(),
+                        actionBtnLabel = child.Find("ActionBtn/Label")?.GetComponent<Text>(),
+                        secondBtn = child.Find("SecondBtn")?.GetComponent<Button>(),
+                        secondBtnLabel = child.Find("SecondBtn/Label")?.GetComponent<Text>()
+                    });
+                }
+            }
+        }
+
+        protected override void BindEvents()
+        {
+            FindComponent<Button>("BtnBack").onClick.AddListener(() => UIManager.Instance.Back());
         }
 
         public override void OnShow()
@@ -55,8 +81,6 @@ namespace Game.UI
         private void RefreshUI()
         {
             var player = GameManager.Instance.Player;
-
-            // 统计物品
             var itemCounts = new Dictionary<int, int>();
             foreach (var itemId in player.bagItems)
             {
@@ -68,7 +92,6 @@ namespace Game.UI
             foreach (var kv in itemCounts)
             {
                 if (idx >= PoolSize) break;
-
                 var item = ConfigManager.Instance.GetItem(kv.Key);
                 if (item == null) continue;
 
@@ -79,7 +102,6 @@ namespace Game.UI
                     ? new Color(0.1f, 0.1f, 0.16f, 0.5f)
                     : new Color(0.08f, 0.08f, 0.12f, 0.5f);
 
-                // 物品名+属性
                 string statStr = "";
                 if (item.atk > 0) statStr += $"攻+{item.atk} ";
                 if (item.def > 0) statStr += $"防+{item.def} ";
@@ -89,16 +111,11 @@ namespace Game.UI
 
                 string typeName = item.type switch
                 {
-                    ItemType.Weapon => "武器",
-                    ItemType.Armor => "防具",
-                    ItemType.Accessory => "饰品",
-                    ItemType.Consumable => "消耗品",
-                    _ => ""
+                    ItemType.Weapon => "武器", ItemType.Armor => "防具",
+                    ItemType.Accessory => "饰品", ItemType.Consumable => "消耗品", _ => ""
                 };
-
                 row.nameText.text = $"[{typeName}] {item.name} x{kv.Value}  {statStr}";
 
-                // 操作按钮（装备/使用/已装备）
                 int capturedId = kv.Key;
                 bool isEquipType = item.type == ItemType.Weapon || item.type == ItemType.Armor || item.type == ItemType.Accessory;
 
@@ -108,22 +125,15 @@ namespace Game.UI
                         || (item.type == ItemType.Armor && player.armorId == capturedId)
                         || (item.type == ItemType.Accessory && player.accessoryId == capturedId);
 
-                    if (isEquipped)
+                    row.actionBtn.gameObject.SetActive(true);
+                    row.actionBtn.interactable = !isEquipped;
+                    row.actionBtnLabel.text = isEquipped ? "已装备" : "装备";
+                    row.actionBtnLabel.color = isEquipped ? UIBuilder.Green : UIBuilder.Gold;
+                    row.actionBtn.image.color = isEquipped
+                        ? new Color(0.08f, 0.2f, 0.1f, 0.5f)
+                        : UIBuilder.ButtonNormal;
+                    if (!isEquipped)
                     {
-                        // 显示"已装备"文字：把按钮当标签用
-                        row.actionBtn.gameObject.SetActive(true);
-                        row.actionBtn.interactable = false;
-                        row.actionBtnLabel.text = "已装备";
-                        row.actionBtnLabel.color = UIBuilder.Green;
-                        row.actionBtn.image.color = new Color(0.08f, 0.2f, 0.1f, 0.5f);
-                    }
-                    else
-                    {
-                        row.actionBtn.gameObject.SetActive(true);
-                        row.actionBtn.interactable = true;
-                        row.actionBtnLabel.text = "装备";
-                        row.actionBtnLabel.color = UIBuilder.Gold;
-                        row.actionBtn.image.color = UIBuilder.ButtonNormal;
                         row.actionBtn.onClick.RemoveAllListeners();
                         int id = capturedId;
                         row.actionBtn.onClick.AddListener(() => EquipItem(id));
@@ -145,7 +155,6 @@ namespace Game.UI
                     row.actionBtn.gameObject.SetActive(false);
                 }
 
-                // 出售按钮
                 int sellPrice = item.price / 2;
                 row.secondBtn.gameObject.SetActive(true);
                 row.secondBtn.interactable = true;
@@ -160,14 +169,10 @@ namespace Game.UI
                 idx++;
             }
 
-            // 隐藏未使用的行
             for (int i = idx; i < PoolSize; i++)
                 itemRows[i].obj.SetActive(false);
 
-            // 空背包提示
             emptyText.gameObject.SetActive(idx == 0);
-
-            // 底部信息
             infoText.text = $"容量: {player.bagItems.Count}/{player.maxBagSize}    金币: {player.gold}";
         }
 
@@ -182,18 +187,14 @@ namespace Game.UI
             {
                 case ItemType.Weapon:
                     if (player.weaponId != 0) player.bagItems.Add(player.weaponId);
-                    player.weaponId = itemId;
-                    break;
+                    player.weaponId = itemId; break;
                 case ItemType.Armor:
                     if (player.armorId != 0) player.bagItems.Add(player.armorId);
-                    player.armorId = itemId;
-                    break;
+                    player.armorId = itemId; break;
                 case ItemType.Accessory:
                     if (player.accessoryId != 0) player.bagItems.Add(player.accessoryId);
-                    player.accessoryId = itemId;
-                    break;
+                    player.accessoryId = itemId; break;
             }
-
             player.bagItems.Remove(itemId);
             player.RecalcStats();
             RefreshUI();
@@ -205,12 +206,8 @@ namespace Game.UI
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
-
-            if (item.restoreHp > 0)
-                player.hp = Mathf.Min(player.hp + item.restoreHp, player.maxHp);
-            if (item.restoreMp > 0)
-                player.mp = Mathf.Min(player.mp + item.restoreMp, player.maxMp);
-
+            if (item.restoreHp > 0) player.hp = Mathf.Min(player.hp + item.restoreHp, player.maxHp);
+            if (item.restoreMp > 0) player.mp = Mathf.Min(player.mp + item.restoreMp, player.maxMp);
             player.bagItems.Remove(itemId);
             RefreshUI();
         }
