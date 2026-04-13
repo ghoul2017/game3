@@ -18,6 +18,19 @@ namespace Game.Core
         public virtual void OnHide() { }
         public virtual void OnDestroyed() { }
 
+        /// <summary>
+        /// Editor 用：强制触发 OnInit（用于 PrefabGenerator 生成预制体）
+        /// 运行时不要调用，由 Show() 自动管理。
+        /// </summary>
+        public void InvokeInit()
+        {
+            if (!isInitialized)
+            {
+                isInitialized = true;
+                OnInit();
+            }
+        }
+
         public void Show()
         {
             gameObject.SetActive(true);
