@@ -7,31 +7,35 @@ namespace Game.UI
 {
     public class MainPanel : UIPanel
     {
-        public override void OnInit()
+        // ---- 缓存引用 ----
+        private Text titleText;
+        private Text subtitleText;
+        private Button btnNewGame;
+        private Button btnContinue;
+        private Image btnContinueBg;
+        private Text btnContinueLabel;
+
+        protected override void BindReferences()
         {
-            UIBuilder.CreateFullScreenBg(transform);
+            titleText = FindComponent<Text>("Title");
+            subtitleText = FindComponent<Text>("Subtitle");
+            btnNewGame = FindComponent<Button>("BtnNewGame");
+            btnContinue = FindComponent<Button>("BtnContinue");
+            btnContinueBg = FindComponent<Image>("BtnContinue");
+            btnContinueLabel = FindComponent<Text>("BtnContinue/Label");
+        }
 
-            // 标题
-            var title = UIBuilder.CreateText(transform, "方块与地下城", 48, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "Title");
-            UIBuilder.SetAnchored(title.gameObject,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 180), new Vector2(600, 80));
-
-            var subtitle = UIBuilder.CreateText(transform, "冒险，从城镇开始...", 22, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "Subtitle");
-            UIBuilder.SetAnchored(subtitle.gameObject,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 120), new Vector2(400, 40));
-
-            // 按钮组 — 4 个按钮等距排列
-            UIBuilder.CreateButton(transform, "开始冒险", 220, 50, () =>
+        protected override void BindEvents()
+        {
+            btnNewGame.onClick.AddListener(() =>
             {
                 Debug.Log("[操作] 点击 开始冒险");
                 ConfigManager.Instance.Init();
                 GameManager.Instance.NewGame();
                 UIManager.Instance.ReplacePanel<CreateRolePanel>();
-            }, 24, "BtnNewGame").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 60);
+            });
 
-            var btnContinue = UIBuilder.CreateButton(transform, "继续冒险", 220, 50, () =>
+            btnContinue.onClick.AddListener(() =>
             {
                 Debug.Log("[操作] 点击 继续冒险");
                 ConfigManager.Instance.Init();
@@ -40,33 +44,39 @@ namespace Game.UI
                     UIManager.Instance.ReplacePanel<TownPanel>();
                 else
                     Debug.LogWarning("[操作] 继续冒险失败：无存档");
-            }, 24, "BtnContinue");
+            });
 
-            var btnContinueRt = btnContinue.GetComponent<RectTransform>();
-            btnContinueRt.anchoredPosition = new Vector2(0, 0);
-
-            if (!GameManager.Instance.HasSave())
-            {
-                btnContinue.interactable = false;
-                btnContinue.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
-            }
-
-            // 设置按钮
-            UIBuilder.CreateButton(transform, "设    置", 220, 50, () =>
+            var btnSettings = FindComponent<Button>("BtnSettings");
+            btnSettings.onClick.AddListener(() =>
             {
                 Debug.Log("[操作] 点击 设置");
                 UIManager.Instance.ShowPanel<SettingsPanel>();
-            }, 24, "BtnSettings").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
+            });
 
-            // 退出游戏按钮
-            UIBuilder.CreateButton(transform, "退出游戏", 220, 50, () =>
+            var btnQuit = FindComponent<Button>("BtnQuit");
+            btnQuit.onClick.AddListener(() =>
             {
                 Debug.Log("[操作] 点击 退出游戏");
                 Application.Quit();
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
 #endif
-            }, 24, "BtnQuit").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -120);
+            });
+        }
+
+        public override void OnShow()
+        {
+            // 每次显示时检查存档状态
+            if (!GameManager.Instance.HasSave())
+            {
+                btnContinue.interactable = false;
+                btnContinueBg.color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+            }
+            else
+            {
+                btnContinue.interactable = true;
+                btnContinueBg.color = Color.white;
+            }
         }
     }
 }

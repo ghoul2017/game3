@@ -29,3 +29,4 @@
 2026-04-13 F097 COMPLETED - BattlePanel怪物区域增强：类型图标(怪/王) + BOSS/等级标签 + BattleMonster新增isBoss/level字段
 2026-04-13 F100 COMPLETED - UIPanel基类重构：BindReferences/BindEvents虚方法 + FindComponent辅助 + 旧面板向后兼容
 2026-04-13 F101 COMPLETED - PrefabGenerator全面板支持：9个面板（Main/CreateRole/Town/Dungeon/Battle/Bag/RoleInfo/Shop/SkillLearn/Settings）
+2026-04-13 F102 COMPLETED - MainPanel+CreateRolePanel+TownPanel预制体迁移：删除UIBuilder代码，改用BindReferences/BindEvents
