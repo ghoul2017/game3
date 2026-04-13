@@ -115,15 +115,24 @@ namespace Game.Core
             if (panelCache.TryGetValue(typeName, out var cached))
                 return (T)cached;
 
-            // 始终代码构建：创建根对象并调用 CreateVisuals
-            var panelObj = new GameObject(typeName);
-            panelObj.AddComponent<RectTransform>();
-            panelObj.transform.SetParent(canvasTransform, false);
-
-            var cvMethod = typeof(T).GetMethod("CreateVisuals",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (cvMethod != null)
-                cvMethod.Invoke(null, new object[] { panelObj.transform });
+            // 从 Resources/UI/{TypeName} 加载预制体
+            var prefab = PrefabLoader.LoadPanelPrefab(typeName);
+            GameObject panelObj;
+            if (prefab != null)
+            {
+                panelObj = PrefabLoader.Instantiate(prefab, canvasTransform, typeName);
+            }
+            else
+            {
+                // 无预制体时回退到 CreateVisuals
+                panelObj = new GameObject(typeName);
+                panelObj.AddComponent<RectTransform>();
+                panelObj.transform.SetParent(canvasTransform, false);
+                var cvMethod = typeof(T).GetMethod("CreateVisuals",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (cvMethod != null)
+                    cvMethod.Invoke(null, new object[] { panelObj.transform });
+            }
 
             var panel = panelObj.GetOrAddComponent<T>();
             panelCache[typeName] = panel;
