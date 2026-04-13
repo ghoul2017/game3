@@ -11,6 +11,57 @@ namespace Game.UI
         // ---- 缓存引用 ----
         private Text infoText;
 
+        /// <summary>仅供 PrefabGenerator 调用</summary>
+        public static void CreateVisuals(Transform parent)
+        {
+            UIBuilder.CreateFullScreenBg(parent);
+
+            // 标题栏
+            UIBuilder.CreateTitleBar(parent, "城  镇");
+
+            // 角色信息栏（顶部）
+            var bar = UIBuilder.CreatePanel(parent, 0, 50, "InfoBar");
+            var barRt = bar.GetComponent<RectTransform>();
+            barRt.anchorMin = new Vector2(0, 1);
+            barRt.anchorMax = new Vector2(1, 1);
+            barRt.pivot = new Vector2(0.5f, 1);
+            barRt.anchoredPosition = new Vector2(0, -65);
+            barRt.sizeDelta = new Vector2(0, 50);
+            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+
+            var infoTextObj = UIBuilder.CreateText(bar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
+            UIBuilder.SetStretch(infoTextObj.gameObject);
+
+            // 功能按钮区
+            float centerX = 0;
+            float startY = 100;
+            float gap = 70;
+
+            var (btnDungeon, _) = UIBuilder.CreateButtonWithRef(parent, "进入地牢", 260, 55, null, 26, "BtnDungeon");
+            UIBuilder.SetAnchored(btnDungeon.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(centerX, startY), new Vector2(260, 55));
+
+            var (btnRest, _) = UIBuilder.CreateButtonWithRef(parent, "休息恢复", 260, 55, null, 24, "BtnRest");
+            UIBuilder.SetAnchored(btnRest.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(centerX, startY - gap), new Vector2(260, 55));
+
+            var (btnShop, _) = UIBuilder.CreateButtonWithRef(parent, "商店", 260, 55, null, 24, "BtnShop");
+            UIBuilder.SetAnchored(btnShop.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(centerX, startY - gap * 2), new Vector2(260, 55));
+
+            var (btnSkill, _) = UIBuilder.CreateButtonWithRef(parent, "技能学习", 260, 55, null, 24, "BtnSkill");
+            UIBuilder.SetAnchored(btnSkill.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(centerX, startY - gap * 3), new Vector2(260, 55));
+
+            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色信息", 260, 55, null, 24, "BtnRole");
+            UIBuilder.SetAnchored(btnRole.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(centerX, startY - gap * 4), new Vector2(260, 55));
+
+            var (btnSave, _) = UIBuilder.CreateButtonWithRef(parent, "存档退出", 260, 55, null, 24, "BtnSave");
+            UIBuilder.SetAnchored(btnSave.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(centerX, startY - gap * 5), new Vector2(260, 55));
+        }
+
         protected override void BindReferences()
         {
             infoText = FindComponent<Text>("InfoBar/InfoText");

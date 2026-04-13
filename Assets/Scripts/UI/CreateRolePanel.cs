@@ -21,6 +21,123 @@ namespace Game.UI
         private InputField nameInput;
         private Text hintText;
 
+        /// <summary>仅供 PrefabGenerator 调用</summary>
+        public static void CreateVisuals(Transform parent)
+        {
+            UIBuilder.CreateFullScreenBg(parent);
+
+            // ---- 标题 ----
+            var title = UIBuilder.CreateText(parent, "选择职业", 36, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "Title");
+            UIBuilder.SetAnchored(title.gameObject,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0, -60), new Vector2(300, 50));
+
+            // ---- 职业按钮（5 个）----
+            var professions = new[] { "Warrior", "Ranger", "Knight", "Priest", "Mage" };
+            float startX = -480;
+            for (int i = 0; i < professions.Length; i++)
+            {
+                var (btn, _) = UIBuilder.CreateButtonWithRef(parent, "", 160, 45, null, 22, $"Btn_{professions[i]}");
+                UIBuilder.SetAnchored(btn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    new Vector2(startX + i * 200, 260), new Vector2(160, 45));
+            }
+
+            // ---- 职业详情面板（边框）----
+            var detailPanel = UIBuilder.CreateBorderedPanel(parent, 500, 300, "DetailPanel");
+            detailPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 20);
+
+            var profName = UIBuilder.CreateText(detailPanel.transform, "", 28, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "ProfName");
+            UIBuilder.SetAnchored(profName.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0, -30), new Vector2(300, 40));
+
+            var profDesc = UIBuilder.CreateText(detailPanel.transform, "", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "ProfDesc");
+            UIBuilder.SetAnchored(profDesc.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0, -65), new Vector2(450, 30));
+
+            // 基础属性（力量、敏捷、智力、体力）
+            for (int i = 0; i < 4; i++)
+            {
+                var attr = UIBuilder.CreateText(detailPanel.transform, "", 18, UIBuilder.TextWhite, TextAnchor.MiddleLeft, false, $"Attr_{i}");
+                UIBuilder.SetAnchored(attr.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                    new Vector2(0, -110 - i * 30), new Vector2(360, 28));
+            }
+
+            // 战斗属性（两列）
+            for (int i = 0; i < 6; i++)
+            {
+                int col = i / 3;
+                int row = i % 3;
+                var battle = UIBuilder.CreateText(detailPanel.transform, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, $"Battle_{i}");
+                UIBuilder.SetAnchored(battle.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                    new Vector2(-100 + col * 250, -250 - row * 26), new Vector2(200, 24));
+            }
+
+            // ---- 角色名输入区 ----
+            var nameLabel = UIBuilder.CreateText(parent, "角色名:", 20, UIBuilder.TextWhite, TextAnchor.MiddleRight, false, "NameLabel");
+            UIBuilder.SetAnchored(nameLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-80, -145), new Vector2(100, 35));
+
+            var inputObj = new GameObject("NameInput");
+            inputObj.transform.SetParent(parent, false);
+            var inputRt = inputObj.AddComponent<RectTransform>();
+            inputRt.sizeDelta = new Vector2(200, 35);
+            inputRt.anchorMin = new Vector2(0.5f, 0.5f);
+            inputRt.anchorMax = new Vector2(0.5f, 0.5f);
+            inputRt.pivot = new Vector2(0.5f, 0.5f);
+            inputRt.anchoredPosition = new Vector2(50, -145);
+
+            var inputBg = inputObj.AddComponent<Image>();
+            inputBg.color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
+            inputObj.AddComponent<InputField>();
+
+            var inputTextObj = new GameObject("Text");
+            inputTextObj.transform.SetParent(inputObj.transform, false);
+            var inputTextRt = inputTextObj.AddComponent<RectTransform>();
+            inputTextRt.anchorMin = Vector2.zero;
+            inputTextRt.anchorMax = Vector2.one;
+            inputTextRt.offsetMin = new Vector2(8, 2);
+            inputTextRt.offsetMax = new Vector2(-8, -2);
+            var inputText = inputTextObj.AddComponent<Text>();
+            inputText.text = "冒险者";
+            inputText.fontSize = 20;
+            inputText.color = UIBuilder.TextWhite;
+            inputText.alignment = TextAnchor.MiddleLeft;
+            inputText.font = Font.CreateDynamicFontFromOSFont("Arial", 20);
+
+            var placeholderObj = new GameObject("Placeholder");
+            placeholderObj.transform.SetParent(inputObj.transform, false);
+            var placeholderRt = placeholderObj.AddComponent<RectTransform>();
+            placeholderRt.anchorMin = Vector2.zero;
+            placeholderRt.anchorMax = Vector2.one;
+            placeholderRt.offsetMin = new Vector2(8, 2);
+            placeholderRt.offsetMax = new Vector2(-8, -2);
+            var placeholder = placeholderObj.AddComponent<Text>();
+            placeholder.text = "输入角色名";
+            placeholder.fontSize = 20;
+            placeholder.color = UIBuilder.TextDim;
+            placeholder.alignment = TextAnchor.MiddleLeft;
+            placeholder.font = Font.CreateDynamicFontFromOSFont("Arial", 20);
+
+            var inputField = inputObj.GetComponent<InputField>();
+            inputField.textComponent = inputText;
+            inputField.placeholder = placeholder;
+            inputField.characterLimit = 8;
+
+            // ---- 提示文本 ----
+            var hint = UIBuilder.CreateText(parent, "", 16, UIBuilder.Red, TextAnchor.MiddleCenter, false, "HintText");
+            UIBuilder.SetAnchored(hint.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -180), new Vector2(400, 28));
+
+            // ---- 底部按钮 ----
+            var (btnStart, _) = UIBuilder.CreateButtonWithRef(parent, "开始游戏", 200, 50, null, 24, "BtnStart");
+            UIBuilder.SetAnchored(btnStart.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -220), new Vector2(200, 50));
+
+            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回", 200, 50, null, 24, "BtnBack");
+            UIBuilder.SetAnchored(btnBack.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -290), new Vector2(200, 50));
+        }
+
         protected override void BindReferences()
         {
             // 职业按钮
