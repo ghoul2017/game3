@@ -181,6 +181,13 @@ namespace Game.UI
 
         public override void OnShow()
         {
+            // 首次显示时设置职业按钮文字（CreateVisuals 无法访问 ConfigManager）
+            foreach (var kv in professionBtnLabels)
+            {
+                var profCfg = ConfigManager.Instance.GetProfession(kv.Key);
+                if (profCfg != null)
+                    kv.Value.text = profCfg.name;
+            }
             SelectProfession(Profession.Warrior);
         }
 
