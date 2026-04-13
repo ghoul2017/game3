@@ -21,13 +21,14 @@ namespace Game.UI
         private List<ItemConfig> allItems;
         private int scrollOffset;
 
-        public override void OnInit()
+        /// <summary>仅供 PrefabGenerator 调用</summary>
+        public static void CreateVisuals(Transform parent)
         {
-            UIBuilder.CreateFullScreenBg(transform);
-            UIBuilder.CreateTitleBar(transform, "商  店");
+            UIBuilder.CreateFullScreenBg(parent);
+            UIBuilder.CreateTitleBar(parent, "商  店");
 
             // 玩家金币栏
-            var goldBar = UIBuilder.CreatePanel(transform, 900, 40, "GoldBar");
+            var goldBar = UIBuilder.CreatePanel(parent, 900, 40, "GoldBar");
             var goldRt = goldBar.GetComponent<RectTransform>();
             goldRt.anchorMin = new Vector2(0, 1);
             goldRt.anchorMax = new Vector2(1, 1);
@@ -35,39 +36,70 @@ namespace Game.UI
             goldRt.anchoredPosition = new Vector2(0, -70);
             goldRt.sizeDelta = new Vector2(0, 40);
             goldBar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
-            goldText = UIBuilder.CreateText(goldBar.transform, "", 20, UIBuilder.Gold, TextAnchor.MiddleCenter);
-            UIBuilder.SetStretch(goldText.gameObject);
+            var gold = UIBuilder.CreateText(goldBar.transform, "", 20, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
+            UIBuilder.SetStretch(gold.gameObject);
 
             // 商品列表
-            var listPanel = UIBuilder.CreateBorderedPanel(transform, 900, 500, "ItemList");
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 500, "ItemList");
             listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
             var inner = listPanel.transform.Find("Inner");
-
-            // 对象池商品行（预创建 PageSize 行）
-            itemRows = UIBuilder.CreatePoolRows(inner, PoolSize, 50, 210, 800);
+            UIBuilder.CreatePoolRows(inner, PoolSize, 50, 210, 800);
 
             // 底部按钮
-            UIBuilder.CreateButton(transform, "返回", 200, 45, () =>
+            UIBuilder.CreateButton(parent, "返回", 200, 45, null, 22, "BtnBack")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -300);
+
+            // 翻页按钮
+            UIBuilder.CreateButton(parent, "上一页", 120, 35, null, 18, "BtnPrev")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(-150, -260);
+
+            UIBuilder.CreateButton(parent, "下一页", 120, 35, null, 18, "BtnNext")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(150, -260);
+        }
+
+        protected override void BindReferences()
+        {
+            goldText = FindComponent<Text>("GoldBar/GoldText");
+            btnPrev = FindComponent<Button>("BtnPrev");
+            btnNext = FindComponent<Button>("BtnNext");
+
+            // 从预制体中重建对象池引用
+            var inner = FindChild("ItemList/Inner");
+            itemRows = new List<UIBuilder.PoolRow>();
+            for (int i = 0; i < inner.childCount && itemRows.Count < PoolSize; i++)
+            {
+                var child = inner.GetChild(i);
+                if (child.name == "PoolRow")
+                {
+                    itemRows.Add(new UIBuilder.PoolRow
+                    {
+                        obj = child.gameObject,
+                        rt = child as RectTransform,
+                        bg = child.GetComponent<Image>(),
+                        nameText = child.Find("NameText")?.GetComponent<Text>(),
+                        actionBtn = child.Find("ActionBtn")?.GetComponent<Button>(),
+                        actionBtnLabel = child.Find("ActionBtn/Label")?.GetComponent<Text>(),
+                        secondBtn = child.Find("SecondBtn")?.GetComponent<Button>(),
+                        secondBtnLabel = child.Find("SecondBtn/Label")?.GetComponent<Text>()
+                    });
+                }
+            }
+        }
+
+        protected override void BindEvents()
+        {
+            FindComponent<Button>("BtnBack").onClick.AddListener(() =>
             {
                 scrollOffset = 0;
                 UIManager.Instance.Back();
-            }, 22, "BtnBack").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -300);
-
-            // 翻页按钮（缓存引用以便控制 interactable）
-            btnPrev = UIBuilder.CreateButton(transform, "上一页", 120, 35,
-                () => { scrollOffset = Mathf.Max(0, scrollOffset - PageSize); RefreshUI(); }, 18, "BtnPrev");
-            btnPrev.GetComponent<RectTransform>().anchoredPosition = new Vector2(-150, -260);
-
-            btnNext = UIBuilder.CreateButton(transform, "下一页", 120, 35,
-                () => { scrollOffset += PageSize; RefreshUI(); }, 18, "BtnNext");
-            btnNext.GetComponent<RectTransform>().anchoredPosition = new Vector2(150, -260);
-
-            // 缓存所有商品（OnInit 时构建一次，避免每次 RefreshUI 重复查询）
-            BuildItemList();
+            });
+            btnPrev.onClick.AddListener(() => { scrollOffset = Mathf.Max(0, scrollOffset - PageSize); RefreshUI(); });
+            btnNext.onClick.AddListener(() => { scrollOffset += PageSize; RefreshUI(); });
         }
 
         public override void OnShow()
         {
+            BuildItemList();
             scrollOffset = 0;
             RefreshUI();
         }

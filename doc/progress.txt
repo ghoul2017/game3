@@ -32,3 +32,4 @@
 2026-04-13 F102 COMPLETED - MainPanel+CreateRolePanel+TownPanel预制体迁移：删除UIBuilder代码，改用BindReferences/BindEvents
 2026-04-13 F103 COMPLETED - BagPanel预制体迁移：CreateVisuals静态方法 + BindReferences重建对象池引用 + PrefabGenerator改为调用CreateVisuals
 2026-04-13 F104 COMPLETED - RoleInfoPanel预制体迁移：CreateVisuals静态方法 + BindReferences绑定属性/装备/技能/宝物引用
+2026-04-13 F105 COMPLETED - ShopPanel预制体迁移：CreateVisuals静态方法 + BindReferences绑定金币栏/商品池/翻页按钮引用
