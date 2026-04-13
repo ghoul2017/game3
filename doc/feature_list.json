@@ -65,7 +65,7 @@
   {"id":"F097","category":"battle","desc":"BattlePanel 怪物区域增强：显示怪物类型图标 + 等级 + 状态文字描述","passes":true},
 
   {"id":"F100","category":"framework","desc":"UIPanel 预制体基类重构：新增 BindReferences()/BindEvents() 虚方法，OnInit 不再创建视觉","passes":true},
-  {"id":"F101","category":"framework","desc":"PrefabGenerator 全面板支持：9个面板批量生成预制体到 Resources/UI/","passes":false},
+  {"id":"F101","category":"framework","desc":"PrefabGenerator 全面板支持：9个面板批量生成预制体到 Resources/UI/","passes":true},
   {"id":"F102","category":"ui","desc":"MainPanel + CreateRolePanel + TownPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定","passes":false},
   {"id":"F103","category":"ui","desc":"BagPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定对象池引用","passes":false},
   {"id":"F104","category":"ui","desc":"RoleInfoPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定属性/装备/技能/宝物引用","passes":false},

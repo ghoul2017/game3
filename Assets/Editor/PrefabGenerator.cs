@@ -31,11 +31,19 @@ public static class PrefabGenerator
             return;
         }
 
-        // 需要生成预制体的面板列表
+        // 需要生成预制体的面板列表（全部9个面板）
         var panelTypes = new System.Type[]
         {
-            typeof(SettingsPanel),
-            // 后续面板在此添加
+            typeof(MainPanel),
+            typeof(CreateRolePanel),
+            typeof(TownPanel),
+            typeof(DungeonPanel),
+            typeof(BattlePanel),
+            typeof(BagPanel),
+            typeof(RoleInfoPanel),
+            typeof(ShopPanel),
+            typeof(SkillLearnPanel),
+            typeof(SettingsPanel)
         };
 
         foreach (var type in panelTypes)
