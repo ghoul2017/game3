@@ -23,3 +23,4 @@
 2026-04-13 F091 COMPLETED - SettingsPanel完整设置面板：音乐/音效滑块 + 全屏切换 + 分辨率选择 + 语言选择 + 返回 + PlayerPrefs持久化
 2026-04-13 F092 COMPLETED - SettingsManager单例：PlayerPrefs读写封装 + Load/Save/Apply API + SettingsPanel重构使用Manager
 2026-04-13 F093 COMPLETED - DungeonPanel网格地图增强：房间瓦片边框 + 类型标签 + 当前房间金色高亮 + 80px瓦片尺寸
+2026-04-13 F094 COMPLETED - DungeonPanel右侧状态面板：HP/MP/EXP进度条 + 金币/层数/攻防信息 + 地图面板缩窄让位

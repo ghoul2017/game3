@@ -20,6 +20,17 @@ namespace Game.UI
         private GameObject msgOverlay;
         private Text msgText;
 
+        // 右侧状态栏引用
+        private Slider hpSlider;
+        private Text hpText;
+        private Slider mpSlider;
+        private Text mpText;
+        private Slider expSlider;
+        private Text expText;
+        private Text floorText;
+        private Text goldText;
+        private Text statsText;
+
         // 房间对象池
         private RoomCell[] roomCells;
 
@@ -54,10 +65,13 @@ namespace Game.UI
             statusText = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
             UIBuilder.SetStretch(statusText.gameObject);
 
-            // 地图面板
-            var mapPanel = UIBuilder.CreateBorderedPanel(transform, 1400, 480, "MapPanel");
-            mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 80);
+            // 地图面板（缩窄为右侧状态栏让出空间）
+            var mapPanel = UIBuilder.CreateBorderedPanel(transform, 1050, 480, "MapPanel");
+            mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(-160, 80);
             var inner = mapPanel.transform.Find("Inner");
+
+            // ===== 右侧状态面板 =====
+            CreateStatusPanel();
 
             // 创建房间对象池（最大 20 个房间）
             roomCells = new RoomCell[MaxRooms];
@@ -107,6 +121,80 @@ namespace Game.UI
             {
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             }, 20, "BtnRole").GetComponent<RectTransform>().anchoredPosition = new Vector2(200, btnY);
+        }
+
+        private void CreateStatusPanel()
+        {
+            var panel = UIBuilder.CreateBorderedPanel(transform, 300, 480, "StatusPanel");
+            UIBuilder.SetAnchored(panel,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(535, 80), new Vector2(300, 480));
+            var inner = panel.transform.Find("Inner");
+
+            float y = 200;
+            float sliderW = 250;
+            float barH = 20;
+            float rowGap = 65;
+
+            // HP 条
+            var hpLabel = UIBuilder.CreateText(inner, "HP", 16, UIBuilder.HpColor, TextAnchor.MiddleLeft, true, "HpLabel");
+            UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-85, y), new Vector2(40, 24));
+            hpSlider = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.HpColor, "HpSlider");
+            UIBuilder.SetAnchored(hpSlider.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(30, y), new Vector2(sliderW, barH));
+            hpText = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "HpText");
+            UIBuilder.SetAnchored(hpText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+
+            y -= rowGap;
+
+            // MP 条
+            var mpLabel = UIBuilder.CreateText(inner, "MP", 16, UIBuilder.MpColor, TextAnchor.MiddleLeft, true, "MpLabel");
+            UIBuilder.SetAnchored(mpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-85, y), new Vector2(40, 24));
+            mpSlider = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.MpColor, "MpSlider");
+            UIBuilder.SetAnchored(mpSlider.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(30, y), new Vector2(sliderW, barH));
+            mpText = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "MpText");
+            UIBuilder.SetAnchored(mpText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+
+            y -= rowGap;
+
+            // EXP 条
+            var expLabel = UIBuilder.CreateText(inner, "EXP", 16, UIBuilder.ExpColor, TextAnchor.MiddleLeft, true, "ExpLabel");
+            UIBuilder.SetAnchored(expLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-85, y), new Vector2(40, 24));
+            expSlider = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.ExpColor, "ExpSlider");
+            UIBuilder.SetAnchored(expSlider.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(30, y), new Vector2(sliderW, barH));
+            expText = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ExpText");
+            UIBuilder.SetAnchored(expText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+
+            y -= rowGap + 10;
+
+            // 分隔线
+            var div = UIBuilder.CreateDivider(inner);
+            var divRt = div.GetComponent<RectTransform>();
+            divRt.anchoredPosition = new Vector2(0, y + 10);
+            divRt.sizeDelta = new Vector2(260, 2);
+
+            y -= 15;
+
+            // 层数/金币/攻防信息
+            floorText = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, true, "FloorText");
+            UIBuilder.SetAnchored(floorText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y), new Vector2(260, 26));
+            y -= 30;
+            goldText = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, false, "GoldText");
+            UIBuilder.SetAnchored(goldText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y), new Vector2(260, 26));
+            y -= 30;
+            statsText = UIBuilder.CreateText(inner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
+            UIBuilder.SetAnchored(statsText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, y), new Vector2(260, 26));
         }
 
         private RoomCell CreateRoomCell(Transform parent, int index)
@@ -189,8 +277,22 @@ namespace Game.UI
             // 标题
             titleText.text = $"地牢 第{dungeon.floor} 层";
 
-            // 状态栏
-            statusText.text = $"HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}  攻击:{player.attack}  防御:{player.defense}  金币:{player.gold}";
+            // 顶部状态栏（简要）
+            statusText.text = $"房间 {dungeon.currentRoomIndex + 1}/{dungeon.rooms.Count}";
+
+            // 右侧状态面板
+            hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
+            hpText.text = $"HP  {player.hp}/{player.maxHp}";
+            mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0;
+            mpText.text = $"MP  {player.mp}/{player.maxMp}";
+
+            int expNeeded = player.level * 100;
+            expSlider.value = expNeeded > 0 ? (float)player.exp / expNeeded : 0;
+            expText.text = $"Lv.{player.level}  {player.exp}/{expNeeded}";
+
+            floorText.text = $"第 {dungeon.floor} 层";
+            goldText.text = $"金币: {player.gold}";
+            statsText.text = $"攻击: {player.attack}  防御: {player.defense}";
 
             // 房间地图
             UpdateRoomMap(dungeon);
