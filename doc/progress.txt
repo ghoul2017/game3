@@ -21,3 +21,4 @@
 2026-04-12 F089 COMPLETED - PrefabLoader 预制体加载框架：缓存加载 + UIManager 集成 + Resources/Prefabs 目录
 2026-04-13 F090 COMPLETED - MainPanel已有设置+退出按钮（代码确认，无需修改）
 2026-04-13 F091 COMPLETED - SettingsPanel完整设置面板：音乐/音效滑块 + 全屏切换 + 分辨率选择 + 语言选择 + 返回 + PlayerPrefs持久化
+2026-04-13 F092 COMPLETED - SettingsManager单例：PlayerPrefs读写封装 + Load/Save/Apply API + SettingsPanel重构使用Manager
