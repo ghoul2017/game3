@@ -106,6 +106,12 @@ namespace Game.Core
         protected void EnsureRectTransform()
         {
             var rt = transform as RectTransform;
+            if (rt == null)
+            {
+                // 预制体可能以 Transform 保存，需要升级为 RectTransform
+                gameObject.AddComponent<RectTransform>();
+                rt = transform as RectTransform;
+            }
             if (rt != null && rt.parent != null)
             {
                 rt.anchorMin = Vector2.zero;

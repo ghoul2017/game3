@@ -52,8 +52,9 @@ public static class PrefabGenerator
         string typeName = panelType.Name;
         string prefabPath = $"{OutputPath}/{typeName}.prefab";
 
-        // 创建临时 GameObject
+        // 创建临时 GameObject（添加 RectTransform 以兼容 Canvas）
         var tempObj = new GameObject(typeName);
+        tempObj.AddComponent<RectTransform>();
 
         // 调用面板的 CreateVisuals 静态方法
         var method = panelType.GetMethod("CreateVisuals",

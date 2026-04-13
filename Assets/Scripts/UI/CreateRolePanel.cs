@@ -150,14 +150,14 @@ namespace Game.UI
             }
 
             // 详情面板
-            nameText = FindComponent<Text>("DetailPanel/Inner/ProfName");
-            descText = FindComponent<Text>("DetailPanel/Inner/ProfDesc");
+            nameText = FindComponent<Text>("DetailPanel/ProfName");
+            descText = FindComponent<Text>("DetailPanel/ProfDesc");
 
             for (int i = 0; i < 4; i++)
-                attrTexts[i] = FindComponent<Text>($"DetailPanel/Inner/Attr_{i}");
+                attrTexts[i] = FindComponent<Text>($"DetailPanel/Attr_{i}");
 
             for (int i = 0; i < 6; i++)
-                battleTexts[i] = FindComponent<Text>($"DetailPanel/Inner/Battle_{i}");
+                battleTexts[i] = FindComponent<Text>($"DetailPanel/Battle_{i}");
 
             // 角色名输入
             nameInput = FindComponent<InputField>("NameInput");
