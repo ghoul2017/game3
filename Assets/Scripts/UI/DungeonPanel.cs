@@ -9,8 +9,8 @@ namespace Game.UI
 {
     public class DungeonPanel : UIPanel
     {
-        private const int RoomBtnSize = 70;
-        private const int RoomGap = 10;
+        private const int RoomBtnSize = 80;
+        private const int RoomGap = 8;
         private const int MaxRooms = 20;
         private string pendingMessage;
 
@@ -27,8 +27,10 @@ namespace Game.UI
         {
             public GameObject obj;
             public RectTransform rt;
+            public Image border;
             public Image bg;
             public Text iconText;
+            public Text typeLabel;
             public Button btn;
         }
 
@@ -53,7 +55,7 @@ namespace Game.UI
             UIBuilder.SetStretch(statusText.gameObject);
 
             // 地图面板
-            var mapPanel = UIBuilder.CreateBorderedPanel(transform, 1400, 450, "MapPanel");
+            var mapPanel = UIBuilder.CreateBorderedPanel(transform, 1400, 480, "MapPanel");
             mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 80);
             var inner = mapPanel.transform.Find("Inner");
 
@@ -109,23 +111,55 @@ namespace Game.UI
 
         private RoomCell CreateRoomCell(Transform parent, int index)
         {
+            // 外层：边框
             var obj = new GameObject($"Room_{index}");
             obj.transform.SetParent(parent, false);
             var rt = obj.AddComponent<RectTransform>();
             rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
 
-            var bg = obj.AddComponent<Image>();
+            var border = obj.AddComponent<Image>();
+            border.color = new Color(0.3f, 0.3f, 0.3f, 0.6f);
+
+            // 内层：背景
+            var inner = new GameObject("Inner");
+            inner.transform.SetParent(obj.transform, false);
+            var innerRt = inner.AddComponent<RectTransform>();
+            innerRt.anchorMin = Vector2.zero;
+            innerRt.anchorMax = Vector2.one;
+            innerRt.offsetMin = new Vector2(3, 3);
+            innerRt.offsetMax = new Vector2(-3, -3);
+            var bg = inner.AddComponent<Image>();
             bg.color = Color.gray;
 
+            // 图标
             var iconObj = new GameObject("Icon");
-            iconObj.transform.SetParent(obj.transform, false);
-            UIBuilder.SetStretch(iconObj);
+            iconObj.transform.SetParent(inner.transform, false);
+            var iconRt = iconObj.AddComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0, 0.35f);
+            iconRt.anchorMax = new Vector2(1, 1);
+            iconRt.offsetMin = Vector2.zero;
+            iconRt.offsetMax = Vector2.zero;
             var iconText = iconObj.AddComponent<Text>();
-            iconText.fontSize = 24;
+            iconText.fontSize = 26;
             iconText.color = Color.white;
             iconText.alignment = TextAnchor.MiddleCenter;
-            iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 24);
+            iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 26);
             iconText.raycastTarget = false;
+
+            // 类型标签
+            var labelObj = new GameObject("TypeLabel");
+            labelObj.transform.SetParent(inner.transform, false);
+            var labelRt = labelObj.AddComponent<RectTransform>();
+            labelRt.anchorMin = new Vector2(0, 0);
+            labelRt.anchorMax = new Vector2(1, 0.35f);
+            labelRt.offsetMin = Vector2.zero;
+            labelRt.offsetMax = Vector2.zero;
+            var typeLabel = labelObj.AddComponent<Text>();
+            typeLabel.fontSize = 11;
+            typeLabel.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
+            typeLabel.alignment = TextAnchor.MiddleCenter;
+            typeLabel.font = Font.CreateDynamicFontFromOSFont("Arial", 11);
+            typeLabel.raycastTarget = false;
 
             var btn = obj.AddComponent<Button>();
             int capturedIndex = index;
@@ -133,8 +167,8 @@ namespace Game.UI
 
             return new RoomCell
             {
-                obj = obj, rt = rt, bg = bg,
-                iconText = iconText, btn = btn
+                obj = obj, rt = rt, border = border, bg = bg,
+                iconText = iconText, typeLabel = typeLabel, btn = btn
             };
         }
 
@@ -189,6 +223,7 @@ namespace Game.UI
                 if (i < total)
                 {
                     var room = dungeon.rooms[i];
+                    bool isCurrent = i == dungeon.currentRoomIndex;
                     cell.obj.SetActive(true);
 
                     int col = i % cols;
@@ -197,11 +232,13 @@ namespace Game.UI
                         offsetX + col * (RoomBtnSize + RoomGap),
                         offsetY - row * (RoomBtnSize + RoomGap));
 
-                    cell.bg.color = GetRoomColor(room, i == dungeon.currentRoomIndex);
+                    cell.bg.color = GetRoomColor(room, isCurrent);
+                    cell.border.color = isCurrent ? UIBuilder.Gold : new Color(0.3f, 0.3f, 0.3f, 0.6f);
                     cell.iconText.text = GetRoomIcon(room);
+                    cell.typeLabel.text = GetRoomTypeName(room, isCurrent);
 
                     // 只有当前房间和下一房间可交互
-                    cell.btn.interactable = (i == dungeon.currentRoomIndex || i == dungeon.currentRoomIndex + 1);
+                    cell.btn.interactable = (isCurrent || i == dungeon.currentRoomIndex + 1);
                 }
                 else
                 {
@@ -239,6 +276,23 @@ namespace Game.UI
                 DungeonEventType.Merchant => "商",
                 DungeonEventType.Exit => "梯",
                 _ => "○"
+            };
+        }
+
+        private string GetRoomTypeName(DungeonRoom room, bool isCurrent)
+        {
+            if (isCurrent) return "当前";
+            if (room.cleared) return "已清";
+            return room.type switch
+            {
+                DungeonEventType.Monster => "怪物",
+                DungeonEventType.Elite => "精英",
+                DungeonEventType.Boss => "BOSS",
+                DungeonEventType.Treasure => "宝箱",
+                DungeonEventType.Spring => "泉水",
+                DungeonEventType.Merchant => "商人",
+                DungeonEventType.Exit => "出口",
+                _ => ""
             };
         }
 
