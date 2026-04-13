@@ -236,24 +236,6 @@ namespace Game.Core
             return slider;
         }
 
-        public static GameObject CreateSection(Transform parent, string label, string name = "Section")
-        {
-            var obj = CreateBorderedPanel(parent, 400, 200, name);
-            var tagObj = CreateUI(obj.transform, "Tag");
-            var tagText = tagObj.AddComponent<Text>();
-            tagText.text = label;
-            tagText.fontSize = 18;
-            tagText.color = Gold;
-            tagText.font = Font.CreateDynamicFontFromOSFont("Arial", 18);
-            var tagRt = tagObj.GetComponent<RectTransform>();
-            tagRt.anchorMin = new Vector2(0, 1);
-            tagRt.anchorMax = new Vector2(0, 1);
-            tagRt.pivot = new Vector2(0, 1);
-            tagRt.anchoredPosition = new Vector2(10, -6);
-            tagRt.sizeDelta = new Vector2(200, 24);
-            return obj;
-        }
-
         // --- 布局辅助 ---
 
         public static void SetStretch(GameObject obj)
@@ -318,7 +300,7 @@ namespace Game.Core
             return rows;
         }
 
-        public static PoolRow CreatePoolRow(Transform parent, float height, float y, float width)
+        private static PoolRow CreatePoolRow(Transform parent, float height, float y, float width)
         {
             var obj = CreateUI(parent, "PoolRow");
             var rt = obj.GetComponent<RectTransform>();
@@ -347,27 +329,6 @@ namespace Game.Core
                 actionBtn = actionBtn, actionBtnLabel = actionBtnLabel,
                 secondBtn = secondBtn, secondBtnLabel = secondBtnLabel
             };
-        }
-
-        /// <summary>
-        /// 更新池行位置（Y 坐标）
-        /// </summary>
-        public static void RepositionPoolRows(List<PoolRow> rows, float startY, float rowHeight, float gap = 4)
-        {
-            for (int i = 0; i < rows.Count; i++)
-            {
-                if (rows[i].obj.activeSelf)
-                    rows[i].rt.anchoredPosition = new Vector2(0, startY - i * (rowHeight + gap));
-            }
-        }
-
-        /// <summary>
-        /// 隐藏所有池行
-        /// </summary>
-        public static void HideAllRows(List<PoolRow> rows)
-        {
-            foreach (var row in rows)
-                row.obj.SetActive(false);
         }
 
         private static GameObject CreateUI(Transform parent, string name)
