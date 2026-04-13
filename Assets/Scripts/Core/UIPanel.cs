@@ -18,10 +18,25 @@ namespace Game.Core
         // ---- 生命周期 ----
 
         /// <summary>首次显示时调用。默认调用 BindReferences + BindEvents。</summary>
+        private static Font runtimeFont;
+
         public virtual void OnInit()
         {
             BindReferences();
             BindEvents();
+            FixFonts();
+        }
+
+        /// <summary>
+        /// 修复预制体中字体引用：Resources.GetBuiltinResource 生成的字体在运行时可能无法渲染中文，
+        /// 用 Font.CreateDynamicFontFromOSFont 替换确保所有 Text 正常显示。
+        /// </summary>
+        private void FixFonts()
+        {
+            if (runtimeFont == null)
+                runtimeFont = Font.CreateDynamicFontFromOSFont("Arial", 14);
+            foreach (var text in GetComponentsInChildren<Text>(true))
+                text.font = runtimeFont;
         }
 
         /// <summary>每次显示时调用。</summary>
