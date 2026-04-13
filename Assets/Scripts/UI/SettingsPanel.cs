@@ -4,10 +4,6 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
-    /// <summary>
-    /// 设置面板：音效/音乐滑块、全屏切换、分辨率选择、语言选择、返回按钮
-    /// 数据通过 SettingsManager 单例管理持久化
-    /// </summary>
     public class SettingsPanel : UIPanel
     {
         // --- 缓存引用 ---
@@ -22,10 +18,11 @@ namespace Game.UI
         private int resIndex;
         private int langIndex;
 
-        public override void OnInit()
+        /// <summary>仅供 PrefabGenerator 调用</summary>
+        public static void CreateVisuals(Transform parent)
         {
-            UIBuilder.CreateFullScreenBg(transform);
-            UIBuilder.CreateTitleBar(transform, "设    置");
+            UIBuilder.CreateFullScreenBg(parent);
+            UIBuilder.CreateTitleBar(parent, "设    置");
 
             float startY = 180f;
             float rowH = 65f;
@@ -34,37 +31,34 @@ namespace Game.UI
             float labelW = 160f;
 
             // ===== 音乐音量 =====
-            CreateSettingLabel("音乐音量", labelX, startY, labelW);
-            musicSlider = UIBuilder.CreateInteractiveSlider(transform, 300, 22, UIBuilder.Blue, "MusicSlider");
-            UIBuilder.SetAnchored(musicSlider.gameObject,
+            CreateVisualLabel(parent, "音乐音量", labelX, startY, labelW);
+            var ms = UIBuilder.CreateInteractiveSlider(parent, 300, 22, UIBuilder.Blue, "MusicSlider");
+            UIBuilder.SetAnchored(ms.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX, startY), new Vector2(300, 22));
-            musicValueText = UIBuilder.CreateText(transform, "100", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "MusicValue");
-            UIBuilder.SetAnchored(musicValueText.gameObject,
+            var mv = UIBuilder.CreateText(parent, "100", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "MusicValue");
+            UIBuilder.SetAnchored(mv.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX + 195, startY), new Vector2(60, 30));
-            musicSlider.onValueChanged.AddListener(OnMusicChanged);
 
             startY -= rowH;
 
             // ===== 音效音量 =====
-            CreateSettingLabel("音效音量", labelX, startY, labelW);
-            sfxSlider = UIBuilder.CreateInteractiveSlider(transform, 300, 22, UIBuilder.Green, "SfxSlider");
-            UIBuilder.SetAnchored(sfxSlider.gameObject,
+            CreateVisualLabel(parent, "音效音量", labelX, startY, labelW);
+            var ss = UIBuilder.CreateInteractiveSlider(parent, 300, 22, UIBuilder.Green, "SfxSlider");
+            UIBuilder.SetAnchored(ss.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX, startY), new Vector2(300, 22));
-            sfxValueText = UIBuilder.CreateText(transform, "100", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "SfxValue");
-            UIBuilder.SetAnchored(sfxValueText.gameObject,
+            var sv = UIBuilder.CreateText(parent, "100", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "SfxValue");
+            UIBuilder.SetAnchored(sv.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX + 195, startY), new Vector2(60, 30));
-            sfxSlider.onValueChanged.AddListener(OnSfxChanged);
 
             startY -= rowH;
 
             // ===== 全屏模式 =====
-            CreateSettingLabel("全屏模式", labelX, startY, labelW);
-            var (fsBtn, fsLabel) = UIBuilder.CreateButtonWithRef(transform, "全屏", 160, 38, OnFullscreenToggle, 20, "BtnFullscreen");
-            fullscreenLabel = fsLabel;
+            CreateVisualLabel(parent, "全屏模式", labelX, startY, labelW);
+            var (fsBtn, fsLbl) = UIBuilder.CreateButtonWithRef(parent, "全屏", 160, 38, null, 20, "BtnFullscreen");
             UIBuilder.SetAnchored(fsBtn.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX, startY), new Vector2(160, 38));
@@ -72,18 +66,16 @@ namespace Game.UI
             startY -= rowH;
 
             // ===== 分辨率 =====
-            CreateSettingLabel("分 辨 率", labelX, startY, labelW);
-            var (btnResPrev, _) = UIBuilder.CreateButtonWithRef(transform, "<", 40, 38,
-                () => CycleResolution(-1), 20, "BtnResPrev");
+            CreateVisualLabel(parent, "分 辨 率", labelX, startY, labelW);
+            var (btnResPrev, _) = UIBuilder.CreateButtonWithRef(parent, "<", 40, 38, null, 20, "BtnResPrev");
             UIBuilder.SetAnchored(btnResPrev.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX - 90, startY), new Vector2(40, 38));
-            resText = UIBuilder.CreateText(transform, "1920x1080", 20, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ResText");
-            UIBuilder.SetAnchored(resText.gameObject,
+            var rt = UIBuilder.CreateText(parent, "1920x1080", 20, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ResText");
+            UIBuilder.SetAnchored(rt.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX, startY), new Vector2(140, 30));
-            var (btnResNext, _) = UIBuilder.CreateButtonWithRef(transform, ">", 40, 38,
-                () => CycleResolution(1), 20, "BtnResNext");
+            var (btnResNext, _) = UIBuilder.CreateButtonWithRef(parent, ">", 40, 38, null, 20, "BtnResNext");
             UIBuilder.SetAnchored(btnResNext.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX + 90, startY), new Vector2(40, 38));
@@ -91,32 +83,60 @@ namespace Game.UI
             startY -= rowH;
 
             // ===== 语言 =====
-            CreateSettingLabel("语    言", labelX, startY, labelW);
-            var (btnLangPrev, _) = UIBuilder.CreateButtonWithRef(transform, "<", 40, 38,
-                () => CycleLanguage(-1), 20, "BtnLangPrev");
+            CreateVisualLabel(parent, "语    言", labelX, startY, labelW);
+            var (btnLangPrev, _) = UIBuilder.CreateButtonWithRef(parent, "<", 40, 38, null, 20, "BtnLangPrev");
             UIBuilder.SetAnchored(btnLangPrev.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX - 70, startY), new Vector2(40, 38));
-            langText = UIBuilder.CreateText(transform, "中文", 20, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "LangText");
-            UIBuilder.SetAnchored(langText.gameObject,
+            var lt = UIBuilder.CreateText(parent, "中文", 20, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "LangText");
+            UIBuilder.SetAnchored(lt.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX, startY), new Vector2(100, 30));
-            var (btnLangNext, _) = UIBuilder.CreateButtonWithRef(transform, ">", 40, 38,
-                () => CycleLanguage(1), 20, "BtnLangNext");
+            var (btnLangNext, _) = UIBuilder.CreateButtonWithRef(parent, ">", 40, 38, null, 20, "BtnLangNext");
             UIBuilder.SetAnchored(btnLangNext.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(sliderX + 70, startY), new Vector2(40, 38));
 
             // ===== 返回按钮 =====
-            var (btnBack, _) = UIBuilder.CreateButtonWithRef(transform, "返    回", 200, 48,
-                () =>
-                {
-                    SettingsManager.Instance.Save();
-                    UIManager.Instance.Back();
-                }, 24, "BtnBack");
+            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返    回", 200, 48, null, 24, "BtnBack");
             UIBuilder.SetAnchored(btnBack.gameObject,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0, 60), new Vector2(200, 48));
+        }
+
+        private static void CreateVisualLabel(Transform parent, string text, float x, float y, float w)
+        {
+            var label = UIBuilder.CreateText(parent, text, 22, UIBuilder.TextWhite, TextAnchor.MiddleRight, false, text + "Label");
+            UIBuilder.SetAnchored(label.gameObject,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(x, y), new Vector2(w, 40));
+        }
+
+        protected override void BindReferences()
+        {
+            musicSlider = FindComponent<Slider>("MusicSlider");
+            musicValueText = FindComponent<Text>("MusicValue");
+            sfxSlider = FindComponent<Slider>("SfxSlider");
+            sfxValueText = FindComponent<Text>("SfxValue");
+            fullscreenLabel = FindComponent<Text>("BtnFullscreen/Label");
+            resText = FindComponent<Text>("ResText");
+            langText = FindComponent<Text>("LangText");
+        }
+
+        protected override void BindEvents()
+        {
+            musicSlider.onValueChanged.AddListener(OnMusicChanged);
+            sfxSlider.onValueChanged.AddListener(OnSfxChanged);
+            FindComponent<Button>("BtnFullscreen").onClick.AddListener(OnFullscreenToggle);
+            FindComponent<Button>("BtnResPrev").onClick.AddListener(() => CycleResolution(-1));
+            FindComponent<Button>("BtnResNext").onClick.AddListener(() => CycleResolution(1));
+            FindComponent<Button>("BtnLangPrev").onClick.AddListener(() => CycleLanguage(-1));
+            FindComponent<Button>("BtnLangNext").onClick.AddListener(() => CycleLanguage(1));
+            FindComponent<Button>("BtnBack").onClick.AddListener(() =>
+            {
+                SettingsManager.Instance.Save();
+                UIManager.Instance.Back();
+            });
         }
 
         public override void OnShow()
@@ -185,14 +205,6 @@ namespace Game.UI
             langIndex = (langIndex + dir + SettingsManager.Languages.Length) % SettingsManager.Languages.Length;
             sm.LangIndex = langIndex;
             langText.text = SettingsManager.Languages[langIndex];
-        }
-
-        private void CreateSettingLabel(string text, float x, float y, float w)
-        {
-            var label = UIBuilder.CreateText(transform, text, 22, UIBuilder.TextWhite, TextAnchor.MiddleRight, false, text + "Label");
-            UIBuilder.SetAnchored(label.gameObject,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(x, y), new Vector2(w, 40));
         }
     }
 }

@@ -71,7 +71,7 @@
   {"id":"F104","category":"ui","desc":"RoleInfoPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定属性/装备/技能/宝物引用","passes":true},
   {"id":"F105","category":"ui","desc":"ShopPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定商品池引用","passes":true},
   {"id":"F106","category":"ui","desc":"SkillLearnPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定技能池引用","passes":true},
-  {"id":"F107","category":"ui","desc":"SettingsPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定滑块/按钮引用","passes":false},
+  {"id":"F107","category":"ui","desc":"SettingsPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定滑块/按钮引用","passes":true},
   {"id":"F108","category":"ui","desc":"DungeonPanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定地图池+状态面板+技能栏引用","passes":false},
   {"id":"F109","category":"ui","desc":"BattlePanel 预制体迁移：删除 UIBuilder 代码，BindReferences 绑定技能池+物品池+怪物区+日志区引用","passes":false},
   {"id":"F110","category":"framework","desc":"UIBuilder 瘦身：移除已无调用者的工厂方法，保留仍使用的工具方法","passes":false}
