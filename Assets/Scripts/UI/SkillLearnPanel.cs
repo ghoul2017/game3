@@ -20,13 +20,14 @@ namespace Game.UI
         private Button[] eqBtns;
         private Text[] eqBtnLabels;
 
-        public override void OnInit()
+        /// <summary>仅供 PrefabGenerator 调用</summary>
+        public static void CreateVisuals(Transform parent)
         {
-            UIBuilder.CreateFullScreenBg(transform);
-            UIBuilder.CreateTitleBar(transform, "技能学习");
+            UIBuilder.CreateFullScreenBg(parent);
+            UIBuilder.CreateTitleBar(parent, "技能学习");
 
             // 金币栏
-            var goldBar = UIBuilder.CreatePanel(transform, 0, 40, "GoldBar");
+            var goldBar = UIBuilder.CreatePanel(parent, 0, 40, "GoldBar");
             var goldRt = goldBar.GetComponent<RectTransform>();
             goldRt.anchorMin = new Vector2(0, 1);
             goldRt.anchorMax = new Vector2(1, 1);
@@ -34,43 +35,77 @@ namespace Game.UI
             goldRt.anchoredPosition = new Vector2(0, -70);
             goldRt.sizeDelta = new Vector2(0, 40);
             goldBar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
-            goldText = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter);
-            UIBuilder.SetStretch(goldText.gameObject);
+            var gold = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
+            UIBuilder.SetStretch(gold.gameObject);
 
             // 技能列表
-            var listPanel = UIBuilder.CreateBorderedPanel(transform, 900, 500, "SkillList");
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 500, "SkillList");
             listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
             var inner = listPanel.transform.Find("Inner");
-
-            // 对象池技能行
-            skillRows = UIBuilder.CreatePoolRows(inner, SkillPoolSize, 55, 210, 800);
+            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 55, 210, 800);
 
             // 已装备技能区
-            var eqPanel = UIBuilder.CreateBorderedPanel(transform, 900, 80, "EquippedSkills");
+            var eqPanel = UIBuilder.CreateBorderedPanel(parent, 900, 80, "EquippedSkills");
             eqPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -260);
             var eqInner = eqPanel.transform.Find("Inner");
 
-            eqLabel = UIBuilder.CreateText(eqInner, "已装备技能:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft);
-            UIBuilder.SetAnchored(eqLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            var eqLbl = UIBuilder.CreateText(eqInner, "已装备技能:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft, name: "EqLabel");
+            UIBuilder.SetAnchored(eqLbl.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(-380, 0), new Vector2(120, 30));
+
+            // 装备/卸下按钮池
+            for (int i = 0; i < EqBtnPoolSize; i++)
+            {
+                var (btn, label) = UIBuilder.CreateButtonWithRef(eqInner, "", 110, 30, null, 14, $"EqBtn_{i}");
+                btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-220 + i * 130, 0);
+                btn.gameObject.SetActive(false);
+            }
+
+            // 返回按钮
+            UIBuilder.CreateButton(parent, "返回", 200, 45, null, 22, "BtnBack")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -340);
+        }
+
+        protected override void BindReferences()
+        {
+            goldText = FindComponent<Text>("GoldBar/GoldText");
+            eqLabel = FindComponent<Text>("EquippedSkills/Inner/EqLabel");
+
+            // 从预制体中重建技能行对象池引用
+            var inner = FindChild("SkillList/Inner");
+            skillRows = new List<UIBuilder.PoolRow>();
+            for (int i = 0; i < inner.childCount && skillRows.Count < SkillPoolSize; i++)
+            {
+                var child = inner.GetChild(i);
+                if (child.name == "PoolRow")
+                {
+                    skillRows.Add(new UIBuilder.PoolRow
+                    {
+                        obj = child.gameObject,
+                        rt = child as RectTransform,
+                        bg = child.GetComponent<Image>(),
+                        nameText = child.Find("NameText")?.GetComponent<Text>(),
+                        actionBtn = child.Find("ActionBtn")?.GetComponent<Button>(),
+                        actionBtnLabel = child.Find("ActionBtn/Label")?.GetComponent<Text>(),
+                        secondBtn = child.Find("SecondBtn")?.GetComponent<Button>(),
+                        secondBtnLabel = child.Find("SecondBtn/Label")?.GetComponent<Text>()
+                    });
+                }
+            }
 
             // 装备/卸下按钮池
             eqBtns = new Button[EqBtnPoolSize];
             eqBtnLabels = new Text[EqBtnPoolSize];
             for (int i = 0; i < EqBtnPoolSize; i++)
             {
-                var (btn, label) = UIBuilder.CreateButtonWithRef(eqInner, "", 110, 30, null, 14, $"EqBtn_{i}");
-                btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-220 + i * 130, 0);
-                btn.gameObject.SetActive(false);
-                eqBtns[i] = btn;
-                eqBtnLabels[i] = label;
+                eqBtns[i] = FindComponent<Button>($"EquippedSkills/Inner/EqBtn_{i}");
+                eqBtnLabels[i] = FindComponent<Text>($"EquippedSkills/Inner/EqBtn_{i}/Label");
             }
+        }
 
-            // 返回按钮
-            UIBuilder.CreateButton(transform, "返回", 200, 45, () =>
-            {
-                UIManager.Instance.Back();
-            }, 22, "BtnBack").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -340);
+        protected override void BindEvents()
+        {
+            FindComponent<Button>("BtnBack").onClick.AddListener(() => UIManager.Instance.Back());
         }
 
         public override void OnShow()
