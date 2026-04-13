@@ -19,3 +19,5 @@
 2026-04-12 F080 COMPLETED - Buff技能系统：BuffConfig配置表(5种buff) + BattleData玩家buff字段 + BattleManager buff施加/衰减/伤害计算集成 + BattlePanel buff状态显示
 2026-04-12 F081 COMPLETED - 战斗物品选择子面板：物品按ID分组显示数量(x3)、空状态提示文本、零销毁刷新
 2026-04-12 F089 COMPLETED - PrefabLoader 预制体加载框架：缓存加载 + UIManager 集成 + Resources/Prefabs 目录
+2026-04-13 F090 COMPLETED - MainPanel已有设置+退出按钮（代码确认，无需修改）
+2026-04-13 F091 COMPLETED - SettingsPanel完整设置面板：音乐/音效滑块 + 全屏切换 + 分辨率选择 + 语言选择 + 返回 + PlayerPrefs持久化

@@ -183,6 +183,59 @@ namespace Game.Core
             return obj;
         }
 
+        /// <summary>
+        /// 创建可交互滑块（带拖拽手柄）
+        /// </summary>
+        public static Slider CreateInteractiveSlider(Transform parent, float w, float h, Color fillColor, string name = "InteractiveSlider")
+        {
+            var obj = CreateUI(parent, name);
+            var bgImg = obj.AddComponent<Image>();
+            bgImg.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+            var rt = obj.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(w, h);
+
+            var slider = obj.AddComponent<Slider>();
+            slider.interactable = true;
+
+            // Fill Area
+            var fillArea = CreateUI(obj.transform, "Fill Area");
+            var fillAreaRt = fillArea.GetComponent<RectTransform>();
+            fillAreaRt.anchorMin = Vector2.zero;
+            fillAreaRt.anchorMax = Vector2.one;
+            fillAreaRt.offsetMin = Vector2.zero;
+            fillAreaRt.offsetMax = Vector2.zero;
+
+            var fill = CreateUI(fillArea.transform, "Fill");
+            var fillImg = fill.AddComponent<Image>();
+            fillImg.color = fillColor;
+            var fillRt = fill.GetComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = new Vector2(1, 1);
+            fillRt.offsetMin = Vector2.zero;
+            fillRt.offsetMax = Vector2.zero;
+
+            // Handle
+            var handleArea = CreateUI(obj.transform, "Handle Slide Area");
+            var handleAreaRt = handleArea.GetComponent<RectTransform>();
+            handleAreaRt.anchorMin = Vector2.zero;
+            handleAreaRt.anchorMax = Vector2.one;
+            handleAreaRt.offsetMin = Vector2.zero;
+            handleAreaRt.offsetMax = Vector2.zero;
+
+            var handle = CreateUI(handleArea.transform, "Handle");
+            var handleImg = handle.AddComponent<Image>();
+            handleImg.color = Color.white;
+            var handleRt = handle.GetComponent<RectTransform>();
+            handleRt.sizeDelta = new Vector2(20, h + 8);
+
+            slider.fillRect = fillRt;
+            slider.handleRect = handleRt;
+            slider.targetGraphic = handleImg;
+            slider.value = 1f;
+
+            return slider;
+        }
+
         public static GameObject CreateSection(Transform parent, string label, string name = "Section")
         {
             var obj = CreateBorderedPanel(parent, 400, 200, name);
