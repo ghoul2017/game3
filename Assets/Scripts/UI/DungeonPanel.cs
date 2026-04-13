@@ -261,7 +261,7 @@ namespace Game.UI
             iconText.fontSize = 26;
             iconText.color = Color.white;
             iconText.alignment = TextAnchor.MiddleCenter;
-            iconText.font = Font.CreateDynamicFontFromOSFont("Arial", 26);
+            iconText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             iconText.raycastTarget = false;
 
             // 类型标签
@@ -276,7 +276,7 @@ namespace Game.UI
             typeLabel.fontSize = 11;
             typeLabel.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
             typeLabel.alignment = TextAnchor.MiddleCenter;
-            typeLabel.font = Font.CreateDynamicFontFromOSFont("Arial", 11);
+            typeLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             typeLabel.raycastTarget = false;
 
             obj.AddComponent<Button>();

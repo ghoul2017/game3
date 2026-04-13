@@ -102,7 +102,7 @@ namespace Game.UI
             inputText.fontSize = 20;
             inputText.color = UIBuilder.TextWhite;
             inputText.alignment = TextAnchor.MiddleLeft;
-            inputText.font = Font.CreateDynamicFontFromOSFont("Arial", 20);
+            inputText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
             var placeholderObj = new GameObject("Placeholder");
             placeholderObj.transform.SetParent(inputObj.transform, false);
@@ -116,7 +116,7 @@ namespace Game.UI
             placeholder.fontSize = 20;
             placeholder.color = UIBuilder.TextDim;
             placeholder.alignment = TextAnchor.MiddleLeft;
-            placeholder.font = Font.CreateDynamicFontFromOSFont("Arial", 20);
+            placeholder.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
             var inputField = inputObj.GetComponent<InputField>();
             inputField.textComponent = inputText;

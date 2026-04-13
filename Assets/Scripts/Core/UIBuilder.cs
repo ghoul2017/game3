@@ -73,7 +73,7 @@ namespace Game.Core
             text.fontSize = fontSize;
             text.color = color ?? TextWhite;
             text.alignment = alignment;
-            text.font = Font.CreateDynamicFontFromOSFont("Arial", fontSize);
+            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             if (bold) text.fontStyle = FontStyle.Bold;
             return text;
         }
@@ -100,7 +100,7 @@ namespace Game.Core
             text.fontSize = fontSize;
             text.color = Gold;
             text.alignment = TextAnchor.MiddleCenter;
-            text.font = Font.CreateDynamicFontFromOSFont("Arial", fontSize);
+            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             SetStretch(childRt);
 
             if (onClick != null)
@@ -163,7 +163,7 @@ namespace Game.Core
             text.fontSize = 28;
             text.color = Gold;
             text.alignment = TextAnchor.MiddleCenter;
-            text.font = Font.CreateDynamicFontFromOSFont("Arial", 28);
+            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             text.fontStyle = FontStyle.Bold;
             SetStretch(label);
 
