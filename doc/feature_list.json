@@ -62,5 +62,5 @@
   {"id":"F094","category":"dungeon","desc":"DungeonPanel 右侧状态栏：HP/MP 进度条 + 金币/经验/层数信息面板","passes":true},
   {"id":"F095","category":"dungeon","desc":"DungeonPanel 底部技能快捷栏：显示已装备技能 + MP 消耗标签","passes":true},
   {"id":"F096","category":"battle","desc":"BattlePanel 技能按钮优化：显示 MP 消耗标签 + MP 不足时灰色不可用状态","passes":true},
-  {"id":"F097","category":"battle","desc":"BattlePanel 怪物区域增强：显示怪物类型图标 + 等级 + 状态文字描述","passes":false}
+  {"id":"F097","category":"battle","desc":"BattlePanel 怪物区域增强：显示怪物类型图标 + 等级 + 状态文字描述","passes":true}
 ]

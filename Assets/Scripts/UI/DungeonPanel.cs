@@ -501,7 +501,9 @@ namespace Game.UI
                                 attack = monsterCfg.attack, defense = monsterCfg.defense,
                                 speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
                                 expReward = monsterCfg.expReward, goldReward = monsterCfg.goldReward,
-                                drops = monsterCfg.drops
+                                drops = monsterCfg.drops,
+                                isBoss = monsterCfg.isBoss,
+                                level = monsterCfg.minFloor * 2 + 1
                             },
                             room = room
                         };

@@ -15,10 +15,12 @@ namespace Game.UI
         private const int MaxItemRows = 8;
 
         // ---- 缓存引用：怪物信息 ----
+        private Text monsterIconText;
         private Text monsterNameText;
         private Text monsterHpText;
         private Slider monsterHpSlider;
         private Text monsterAtkDefText;
+        private Text monsterTypeText;
 
         // ---- 缓存引用：战斗日志池 ----
         private Text[] logTexts;
@@ -71,9 +73,19 @@ namespace Game.UI
             UIBuilder.CreateTitleBar(transform, "战  斗");
 
             // === 怪物信息区 ===
-            var monsterPanelObj = UIBuilder.CreateBorderedPanel(transform, 800, 160, "MonsterPanel");
-            monsterPanelObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 220);
+            var monsterPanelObj = UIBuilder.CreateBorderedPanel(transform, 800, 180, "MonsterPanel");
+            monsterPanelObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 230);
             var monsterInner = monsterPanelObj.transform.Find("Inner");
+
+            // 怪物类型图标（左侧大字）
+            monsterIconText = UIBuilder.CreateText(monsterInner, "", 52, UIBuilder.Red, TextAnchor.MiddleCenter, true, "MonsterIcon");
+            UIBuilder.SetAnchored(monsterIconText.gameObject, new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+                new Vector2(-310, -10), new Vector2(80, 80));
+
+            // 怪物类型标签（右侧顶部）
+            monsterTypeText = UIBuilder.CreateText(monsterInner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleRight, false, "MonsterType");
+            UIBuilder.SetAnchored(monsterTypeText.gameObject, new Vector2(1, 1f), new Vector2(1, 1f),
+                new Vector2(-15, -22), new Vector2(120, 24));
 
             monsterNameText = UIBuilder.CreateText(monsterInner, "", 28, UIBuilder.Red, TextAnchor.MiddleCenter, true, "MonsterName");
             UIBuilder.SetAnchored(monsterNameText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -25), new Vector2(400, 35));
@@ -213,6 +225,9 @@ namespace Game.UI
 
             // 怪物信息
             monsterNameText.text = m.name;
+            monsterIconText.text = m.isBoss ? "王" : "怪";
+            monsterIconText.color = m.isBoss ? UIBuilder.Gold : UIBuilder.Red;
+            monsterTypeText.text = m.isBoss ? "BOSS" : (m.level > 0 ? $"Lv.{m.level}" : "");
             monsterHpText.text = $"HP: {m.hp}/{m.maxHp}";
             monsterHpSlider.value = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0;
             monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}";

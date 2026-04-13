@@ -36,6 +36,8 @@ namespace Game.Data
         public int expReward;
         public int goldReward;
         public List<ItemDropConfig> drops = new List<ItemDropConfig>();
+        public bool isBoss;
+        public int level;
         public int buffAttack;   // 攻击buff加成
         public int buffDefense;  // 防御buff加成
         public int buffTurns;    // buff剩余回合
