@@ -124,9 +124,13 @@ namespace Game.Core
             }
             else
             {
-                // 纯代码创建
+                // 纯代码创建：尝试调用 CreateVisuals 构建视觉层级
                 panelObj = new GameObject(typeName);
                 panelObj.transform.SetParent(canvasTransform, false);
+                var cvMethod = typeof(T).GetMethod("CreateVisuals",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (cvMethod != null)
+                    cvMethod.Invoke(null, new object[] { panelObj.transform });
             }
 
             var panel = panelObj.GetOrAddComponent<T>();
