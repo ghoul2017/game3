@@ -25,7 +25,7 @@ namespace Game.UI
         public static void CreateVisuals(Transform parent)
         {
             UIBuilder.CreateFullScreenBg(parent);
-            UIBuilder.CreateTitleBar(parent, "商  店");
+            UIBuilder.CreateTitleBar(parent, "商       店");
 
             // 玩家金币栏
             var goldBar = UIBuilder.CreatePanel(parent, 900, 40, "GoldBar");
@@ -35,26 +35,32 @@ namespace Game.UI
             goldRt.pivot = new Vector2(0.5f, 1);
             goldRt.anchoredPosition = new Vector2(0, -70);
             goldRt.sizeDelta = new Vector2(0, 40);
-            goldBar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
-            var gold = UIBuilder.CreateText(goldBar.transform, "", 20, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
+            goldBar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
+            var gold = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
             UIBuilder.SetStretch(gold.gameObject);
 
             // 商品列表
-            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 500, "ItemList");
-            listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 480, "ItemList");
+            var listRt = listPanel.GetComponent<RectTransform>();
+            listRt.anchorMin = new Vector2(0, 1);
+            listRt.anchorMax = new Vector2(1, 1);
+            listRt.pivot = new Vector2(0.5f, 1);
+            listRt.anchoredPosition = new Vector2(0, -115);
+            listRt.sizeDelta = new Vector2(0, 480);
+
             var inner = listPanel.transform.Find("Inner");
             UIBuilder.CreatePoolRows(inner, PoolSize, 50, 210, 800);
 
-            // 底部按钮
-            UIBuilder.CreateButton(parent, "返回", 200, 45, null, 22, "BtnBack")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -300);
-
             // 翻页按钮
-            UIBuilder.CreateButton(parent, "上一页", 120, 35, null, 18, "BtnPrev")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(-150, -260);
+            UIBuilder.CreateButton(parent, "上一页", 130, 38, null, 16, "BtnPrev")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(-160, -275);
 
-            UIBuilder.CreateButton(parent, "下一页", 120, 35, null, 18, "BtnNext")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(150, -260);
+            UIBuilder.CreateButton(parent, "下一页", 130, 38, null, 16, "BtnNext")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(160, -275);
+
+            // 底部按钮
+            UIBuilder.CreateButton(parent, "返回", 180, 45, null, 20, "BtnBack")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -330);
         }
 
         protected override void BindReferences()
@@ -128,9 +134,7 @@ namespace Game.UI
                 var row = itemRows[shown];
                 row.obj.SetActive(true);
                 row.rt.anchoredPosition = new Vector2(0, 210 - shown * 60);
-                row.bg.color = shown % 2 == 0
-                    ? new Color(0.1f, 0.1f, 0.16f, 0.5f)
-                    : new Color(0.08f, 0.08f, 0.12f, 0.5f);
+                row.bg.color = shown % 2 == 0 ? UIBuilder.RowEven : UIBuilder.RowOdd;
 
                 // 物品名+属性
                 string statStr = "";

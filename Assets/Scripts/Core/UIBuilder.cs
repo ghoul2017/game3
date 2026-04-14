@@ -5,25 +5,101 @@ using UnityEngine.UI;
 namespace Game.Core
 {
     /// <summary>
-    /// UI 控件静态工厂，纯代码构建 UI
+    /// UI 控件静态工厂 — 暗金RPG风格
+    /// 配色方案：暗炭底 + 琥珀金强调 + 宝石功能色
     /// </summary>
     public static class UIBuilder
     {
-        // RPG 暗色配色
-        public static readonly Color DarkBg = new Color(0.08f, 0.08f, 0.14f, 0.95f);
-        public static readonly Color PanelBg = new Color(0.12f, 0.12f, 0.20f, 0.95f);
-        public static readonly Color Gold = new Color(0.886f, 0.718f, 0.078f);
-        public static readonly Color TextWhite = new Color(0.9f, 0.9f, 0.9f);
-        public static readonly Color TextDim = new Color(0.6f, 0.6f, 0.6f);
-        public static readonly Color ButtonNormal = new Color(0.15f, 0.12f, 0.25f, 0.9f);
-        public static readonly Color ButtonHover = new Color(0.25f, 0.20f, 0.35f, 0.9f);
-        public static readonly Color Red = new Color(0.85f, 0.2f, 0.2f);
-        public static readonly Color Green = new Color(0.2f, 0.75f, 0.3f);
-        public static readonly Color Blue = new Color(0.2f, 0.5f, 0.85f);
-        public static readonly Color BorderColor = new Color(0.4f, 0.35f, 0.2f, 0.8f);
-        public static readonly Color HpColor = new Color(0.8f, 0.15f, 0.15f);
-        public static readonly Color MpColor = new Color(0.15f, 0.4f, 0.8f);
-        public static readonly Color ExpColor = new Color(0.15f, 0.7f, 0.3f);
+        // ============ 配色系统 ============
+
+        // 背景
+        public static readonly Color DarkBg       = new Color(0.06f, 0.06f, 0.10f, 0.97f);   // 深炭黑底
+        public static readonly Color PanelBg      = new Color(0.10f, 0.10f, 0.16f, 0.96f);   // 面板内底
+        public static readonly Color CardBg       = new Color(0.12f, 0.12f, 0.20f, 0.95f);   // 卡片背景
+
+        // 文字
+        public static readonly Color Gold         = new Color(1.0f, 0.84f, 0.0f);            // 琥珀金 #FFD700
+        public static readonly Color GoldDim      = new Color(0.85f, 0.65f, 0.13f);          // 暗金
+        public static readonly Color TextWhite    = new Color(0.95f, 0.95f, 0.95f);          // 纯白文字
+        public static readonly Color TextDim      = new Color(0.55f, 0.55f, 0.60f);          // 灰色次要
+
+        // 按钮
+        public static readonly Color ButtonNormal = new Color(0.14f, 0.12f, 0.20f, 0.95f);   // 深紫黑
+        public static readonly Color ButtonHover  = new Color(0.22f, 0.18f, 0.30f, 0.95f);   // 淡紫高亮
+        public static readonly Color ButtonPress  = new Color(0.10f, 0.08f, 0.16f, 0.95f);   // 按下更深
+        public static readonly Color ButtonGold   = new Color(0.30f, 0.22f, 0.06f, 0.95f);   // 金色按钮（重要操作）
+
+        // 边框
+        public static readonly Color BorderColor  = new Color(0.45f, 0.35f, 0.15f, 0.70f);   // 金色边框
+        public static readonly Color BorderDim    = new Color(0.25f, 0.20f, 0.12f, 0.50f);   // 暗淡边框
+
+        // 功能色
+        public static readonly Color Red          = new Color(0.90f, 0.25f, 0.20f);          // 危险红
+        public static readonly Color Green        = new Color(0.20f, 0.78f, 0.35f);          // 治愈绿
+        public static readonly Color Blue         = new Color(0.25f, 0.55f, 0.90f);          // 法力蓝
+        public static readonly Color Purple       = new Color(0.60f, 0.30f, 0.85f);          // 魔法紫
+        public static readonly Color Orange       = new Color(0.90f, 0.55f, 0.15f);          // 警告橙
+
+        // 状态条
+        public static readonly Color HpColor      = new Color(0.85f, 0.18f, 0.18f);          // 生命红
+        public static readonly Color MpColor      = new Color(0.20f, 0.45f, 0.85f);          // 法力蓝
+        public static readonly Color ExpColor     = new Color(0.90f, 0.75f, 0.10f);          // 经验金
+
+        // 房间颜色
+        public static readonly Color RoomCurrent  = new Color(0.25f, 0.60f, 0.95f, 0.90f);   // 当前房间
+        public static readonly Color RoomCleared  = new Color(0.18f, 0.18f, 0.22f, 0.60f);   // 已清房间
+        public static readonly Color RoomMonster  = new Color(0.70f, 0.20f, 0.18f, 0.80f);   // 怪物
+        public static readonly Color RoomElite    = new Color(0.75f, 0.15f, 0.55f, 0.80f);   // 精英
+        public static readonly Color RoomBoss     = new Color(0.88f, 0.12f, 0.12f, 0.90f);   // BOSS
+        public static readonly Color RoomTreasure = new Color(0.85f, 0.70f, 0.10f, 0.80f);   // 宝箱
+        public static readonly Color RoomSpring   = new Color(0.10f, 0.60f, 0.35f, 0.80f);   // 泉水
+        public static readonly Color RoomMerchant = new Color(0.60f, 0.45f, 0.15f, 0.80f);   // 商人
+        public static readonly Color RoomExit     = new Color(0.20f, 0.45f, 0.85f, 0.90f);   // 出口
+
+        // 交替行色
+        public static readonly Color RowEven      = new Color(0.12f, 0.12f, 0.20f, 0.45f);
+        public static readonly Color RowOdd       = new Color(0.08f, 0.08f, 0.14f, 0.40f);
+
+        // 信息栏背景
+        public static readonly Color InfoBarBg    = new Color(0.05f, 0.05f, 0.09f, 0.92f);
+        // 标题栏背景
+        public static readonly Color TitleBarBg   = new Color(0.08f, 0.06f, 0.14f, 0.95f);
+        // 滑块底色
+        public static readonly Color SliderBg     = new Color(0.08f, 0.08f, 0.12f, 0.85f);
+
+        // ============ 装饰角标 ============
+
+        /// <summary>在面板四角添加金色装饰角标</summary>
+        private static void AddCornerDecor(Transform parent, float w, float h)
+        {
+            float cornerSize = 12f;
+            float inset = 6f;
+            Color cornerColor = new Color(Gold.r, Gold.g, Gold.b, 0.5f);
+
+            // 四个角的位置
+            var positions = new[]
+            {
+                new Vector2(-w/2 + inset, h/2 - inset),  // 左上
+                new Vector2(w/2 - inset, h/2 - inset),   // 右上
+                new Vector2(-w/2 + inset, -h/2 + inset), // 左下
+                new Vector2(w/2 - inset, -h/2 + inset)   // 右下
+            };
+
+            for (int i = 0; i < 4; i++)
+            {
+                var corner = CreateUI(parent, $"Corner_{i}");
+                var cImg = corner.AddComponent<Image>();
+                cImg.color = cornerColor;
+                var cRt = corner.GetComponent<RectTransform>();
+                cRt.anchorMin = new Vector2(0.5f, 0.5f);
+                cRt.anchorMax = new Vector2(0.5f, 0.5f);
+                cRt.pivot = new Vector2(0.5f, 0.5f);
+                cRt.anchoredPosition = positions[i];
+                cRt.sizeDelta = new Vector2(cornerSize, cornerSize);
+            }
+        }
+
+        // ============ 控件工厂 ============
 
         public static GameObject CreateFullScreenBg(Transform parent, string name = "Bg")
         {
@@ -31,6 +107,13 @@ namespace Game.Core
             var img = obj.AddComponent<Image>();
             img.color = DarkBg;
             SetStretch(obj);
+
+            // 添加微弱的中心渐变光效
+            var glow = CreateUI(obj.transform, "CenterGlow");
+            var glowImg = glow.AddComponent<Image>();
+            glowImg.color = new Color(0.12f, 0.10f, 0.20f, 0.30f);
+            SetStretch(glow);
+
             return obj;
         }
 
@@ -61,6 +144,9 @@ namespace Game.Core
             innerRt.offsetMin = new Vector2(2, 2);
             innerRt.offsetMax = new Vector2(-2, -2);
 
+            // 角标装饰
+            AddCornerDecor(outer.transform, w, h);
+
             return outer;
         }
 
@@ -75,6 +161,45 @@ namespace Game.Core
             text.alignment = alignment;
             text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             if (bold) text.fontStyle = FontStyle.Bold;
+            // 文字阴影效果（用描边模拟）
+            text.material = null;
+            return text;
+        }
+
+        /// <summary>创建带阴影效果的文字</summary>
+        public static Text CreateShadowText(Transform parent, string content, int fontSize = 24,
+            Color? color = null, Color? shadowColor = null,
+            TextAnchor alignment = TextAnchor.MiddleLeft, bool bold = false, string name = "ShadowText")
+        {
+            // 先创建阴影层
+            var shadowObj = CreateUI(parent, "Shadow");
+            var shadow = shadowObj.AddComponent<Text>();
+            shadow.text = content;
+            shadow.fontSize = fontSize;
+            shadow.color = shadowColor ?? new Color(0, 0, 0, 0.5f);
+            shadow.alignment = alignment;
+            shadow.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (bold) shadow.fontStyle = FontStyle.Bold;
+            var sRt = shadowObj.GetComponent<RectTransform>();
+
+            // 主文字层
+            var mainObj = CreateUI(parent, name);
+            var text = mainObj.AddComponent<Text>();
+            text.text = content;
+            text.fontSize = fontSize;
+            text.color = color ?? TextWhite;
+            text.alignment = alignment;
+            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (bold) text.fontStyle = FontStyle.Bold;
+
+            // 阴影偏移
+            var mRt = mainObj.GetComponent<RectTransform>();
+            mRt.anchorMin = sRt.anchorMin;
+            mRt.anchorMax = sRt.anchorMax;
+            mRt.pivot = sRt.pivot;
+            mRt.anchoredPosition = sRt.anchoredPosition + new Vector2(1, -1);
+            mRt.sizeDelta = sRt.sizeDelta;
+
             return text;
         }
 
@@ -90,10 +215,35 @@ namespace Game.Core
             var btn = obj.AddComponent<Button>();
             var colors = btn.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.2f, 1.2f, 1.2f);
-            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f);
+            colors.highlightedColor = new Color(1.3f, 1.25f, 1.1f);  // 金色倾向高亮
+            colors.pressedColor = new Color(0.75f, 0.70f, 0.60f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.12f;
             btn.colors = colors;
 
+            // 底部高光线
+            var highlight = CreateUI(obj.transform, "Highlight");
+            var hImg = highlight.AddComponent<Image>();
+            hImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.15f);
+            var hRt = highlight.GetComponent<RectTransform>();
+            hRt.anchorMin = new Vector2(0, 0);
+            hRt.anchorMax = new Vector2(1, 0);
+            hRt.pivot = new Vector2(0.5f, 0);
+            hRt.offsetMin = new Vector2(4, 0);
+            hRt.offsetMax = new Vector2(-4, 3);
+
+            // 顶部暗线
+            var topLine = CreateUI(obj.transform, "TopLine");
+            var tImg = topLine.AddComponent<Image>();
+            tImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.08f);
+            var tRt = topLine.GetComponent<RectTransform>();
+            tRt.anchorMin = new Vector2(0, 1);
+            tRt.anchorMax = new Vector2(1, 1);
+            tRt.pivot = new Vector2(0.5f, 1);
+            tRt.offsetMin = new Vector2(4, -2);
+            tRt.offsetMax = new Vector2(-4, 0);
+
+            // 按钮文字
             var childRt = CreateUI(obj.transform, "Label");
             var text = childRt.AddComponent<Text>();
             text.text = label;
@@ -109,11 +259,56 @@ namespace Game.Core
             return btn;
         }
 
+        /// <summary>创建重要操作的金色按钮</summary>
+        public static Button CreateGoldButton(Transform parent, string label, float w, float h,
+            System.Action onClick = null, int fontSize = 24, string name = "GoldBtn")
+        {
+            var obj = CreateUI(parent, name);
+            var img = obj.AddComponent<Image>();
+            img.color = ButtonGold;
+            var rt = obj.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(w, h);
+
+            var btn = obj.AddComponent<Button>();
+            var colors = btn.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.4f, 1.3f, 1.0f);
+            colors.pressedColor = new Color(0.7f, 0.65f, 0.45f);
+            colors.fadeDuration = 0.1f;
+            btn.colors = colors;
+
+            // 金色边框线
+            var border = CreateUI(obj.transform, "Border");
+            var bImg = border.AddComponent<Image>();
+            bImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.35f);
+            var bRt = border.GetComponent<RectTransform>();
+            bRt.anchorMin = Vector2.zero;
+            bRt.anchorMax = Vector2.one;
+            bRt.offsetMin = new Vector2(1, 1);
+            bRt.offsetMax = new Vector2(-1, -1);
+
+            // 按钮文字
+            var childRt = CreateUI(obj.transform, "Label");
+            var text = childRt.AddComponent<Text>();
+            text.text = label;
+            text.fontSize = fontSize;
+            text.color = Gold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.fontStyle = FontStyle.Bold;
+            SetStretch(childRt);
+
+            if (onClick != null)
+                btn.onClick.AddListener(() => onClick());
+
+            return btn;
+        }
+
         public static Slider CreateSlider(Transform parent, float w, float h, Color fillColor, string name = "Slider")
         {
             var obj = CreateUI(parent, name);
             var bgImg = obj.AddComponent<Image>();
-            bgImg.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+            bgImg.color = SliderBg;
             var rt = obj.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(w, h);
 
@@ -124,8 +319,8 @@ namespace Game.Core
             var fillAreaRt = fillArea.GetComponent<RectTransform>();
             fillAreaRt.anchorMin = Vector2.zero;
             fillAreaRt.anchorMax = Vector2.one;
-            fillAreaRt.offsetMin = Vector2.zero;
-            fillAreaRt.offsetMax = Vector2.zero;
+            fillAreaRt.offsetMin = new Vector2(2, 2);
+            fillAreaRt.offsetMax = new Vector2(-2, -2);
 
             var fill = CreateUI(fillArea.transform, "Fill");
             var fillImg = fill.AddComponent<Image>();
@@ -147,7 +342,7 @@ namespace Game.Core
         {
             var bar = CreateUI(parent, name);
             var img = bar.AddComponent<Image>();
-            img.color = new Color(0.1f, 0.08f, 0.16f, 0.9f);
+            img.color = TitleBarBg;
             var barRt = bar.GetComponent<RectTransform>();
             barRt.sizeDelta = new Vector2(0, 60);
             barRt.anchorMin = new Vector2(0, 1);
@@ -155,8 +350,32 @@ namespace Game.Core
             barRt.pivot = new Vector2(0.5f, 1);
             barRt.anchoredPosition = Vector2.zero;
 
+            // 分隔线
             CreateDivider(bar.transform);
 
+            // 左侧装饰线
+            var leftDecor = CreateUI(bar.transform, "LeftDecor");
+            var ldImg = leftDecor.AddComponent<Image>();
+            ldImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.25f);
+            var ldRt = leftDecor.GetComponent<RectTransform>();
+            ldRt.anchorMin = new Vector2(0, 0.2f);
+            ldRt.anchorMax = new Vector2(0, 0.8f);
+            ldRt.pivot = new Vector2(0, 0.5f);
+            ldRt.anchoredPosition = new Vector2(20, 0);
+            ldRt.sizeDelta = new Vector2(3, 0);
+
+            // 右侧装饰线
+            var rightDecor = CreateUI(bar.transform, "RightDecor");
+            var rdImg = rightDecor.AddComponent<Image>();
+            rdImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.25f);
+            var rdRt = rightDecor.GetComponent<RectTransform>();
+            rdRt.anchorMin = new Vector2(1, 0.2f);
+            rdRt.anchorMax = new Vector2(1, 0.8f);
+            rdRt.pivot = new Vector2(1, 0.5f);
+            rdRt.anchoredPosition = new Vector2(-20, 0);
+            rdRt.sizeDelta = new Vector2(3, 0);
+
+            // 标题文字（带阴影）
             var label = CreateUI(bar.transform, "Title");
             var text = label.AddComponent<Text>();
             text.text = title;
@@ -167,6 +386,16 @@ namespace Game.Core
             text.fontStyle = FontStyle.Bold;
             SetStretch(label);
 
+            // 底部发光线
+            var glow = CreateUI(bar.transform, "Glow");
+            var gImg = glow.AddComponent<Image>();
+            gImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.12f);
+            var gRt = glow.GetComponent<RectTransform>();
+            gRt.sizeDelta = new Vector2(0, 1);
+            gRt.anchorMin = new Vector2(0, 0);
+            gRt.anchorMax = new Vector2(1, 0);
+            gRt.anchoredPosition = Vector2.zero;
+
             return bar;
         }
 
@@ -174,9 +403,9 @@ namespace Game.Core
         {
             var obj = CreateUI(parent, name);
             var img = obj.AddComponent<Image>();
-            img.color = new Color(Gold.r, Gold.g, Gold.b, 0.3f);
+            img.color = new Color(Gold.r, Gold.g, Gold.b, 0.20f);
             var rt = obj.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(0, 2);
+            rt.sizeDelta = new Vector2(0, 1);
             rt.anchorMin = new Vector2(0, 0);
             rt.anchorMax = new Vector2(1, 0);
             rt.anchoredPosition = Vector2.zero;
@@ -190,7 +419,7 @@ namespace Game.Core
         {
             var obj = CreateUI(parent, name);
             var bgImg = obj.AddComponent<Image>();
-            bgImg.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+            bgImg.color = SliderBg;
             var rt = obj.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(w, h);
 
@@ -224,9 +453,9 @@ namespace Game.Core
 
             var handle = CreateUI(handleArea.transform, "Handle");
             var handleImg = handle.AddComponent<Image>();
-            handleImg.color = Color.white;
+            handleImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.8f);
             var handleRt = handle.GetComponent<RectTransform>();
-            handleRt.sizeDelta = new Vector2(20, h + 8);
+            handleRt.sizeDelta = new Vector2(16, h + 10);
 
             slider.fillRect = fillRt;
             slider.handleRect = handleRt;
@@ -236,7 +465,7 @@ namespace Game.Core
             return slider;
         }
 
-        // --- 布局辅助 ---
+        // ============ 布局辅助 ============
 
         public static void SetStretch(GameObject obj)
         {
@@ -269,6 +498,8 @@ namespace Game.Core
             var labelComp = btn.transform.Find("Label").GetComponent<Text>();
             return (btn, labelComp);
         }
+
+        // ============ 对象池 ============
 
         /// <summary>
         /// 对象池行结构体
@@ -308,7 +539,18 @@ namespace Game.Core
             rt.anchoredPosition = new Vector2(0, y);
 
             var bg = obj.AddComponent<Image>();
-            bg.color = new Color(0.1f, 0.1f, 0.16f, 0.5f);
+            bg.color = RowEven;
+
+            // 左侧装饰条
+            var leftBar = CreateUI(obj.transform, "LeftBar");
+            var lbImg = leftBar.AddComponent<Image>();
+            lbImg.color = new Color(Gold.r, Gold.g, Gold.b, 0.15f);
+            var lbRt = leftBar.GetComponent<RectTransform>();
+            lbRt.anchorMin = new Vector2(0, 0.15f);
+            lbRt.anchorMax = new Vector2(0, 0.85f);
+            lbRt.pivot = new Vector2(0, 0.5f);
+            lbRt.anchoredPosition = new Vector2(2, 0);
+            lbRt.sizeDelta = new Vector2(2, 0);
 
             var nameText = CreateText(obj.transform, "", 16, TextWhite, TextAnchor.MiddleLeft, name: "NameText");
             SetAnchored(nameText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -330,6 +572,8 @@ namespace Game.Core
                 secondBtn = secondBtn, secondBtnLabel = secondBtnLabel
             };
         }
+
+        // ============ 内部工具 ============
 
         private static GameObject CreateUI(Transform parent, string name)
         {

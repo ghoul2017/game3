@@ -27,39 +27,45 @@ namespace Game.UI
             UIBuilder.CreateFullScreenBg(parent);
 
             // ---- 标题 ----
-            var title = UIBuilder.CreateText(parent, "选择职业", 36, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "Title");
+            var title = UIBuilder.CreateText(parent, "选择职业", 32, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "Title");
             UIBuilder.SetAnchored(title.gameObject,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0, -60), new Vector2(300, 50));
+                new Vector2(0, -50), new Vector2(280, 45));
 
             // ---- 职业按钮（5 个）----
             var professions = new[] { "Warrior", "Ranger", "Knight", "Priest", "Mage" };
-            float startX = -480;
+            float totalW = 5 * 160 + 4 * 20; // 5个按钮 + 4个间距
+            float startX = -totalW / 2 + 80;
             for (int i = 0; i < professions.Length; i++)
             {
-                var (btn, _) = UIBuilder.CreateButtonWithRef(parent, "", 160, 45, null, 22, $"Btn_{professions[i]}");
+                var (btn, _) = UIBuilder.CreateButtonWithRef(parent, "", 160, 48, null, 20, $"Btn_{professions[i]}");
                 UIBuilder.SetAnchored(btn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                    new Vector2(startX + i * 200, 260), new Vector2(160, 45));
+                    new Vector2(startX + i * 180, 220), new Vector2(160, 48));
             }
 
             // ---- 职业详情面板（边框）----
-            var detailPanel = UIBuilder.CreateBorderedPanel(parent, 500, 300, "DetailPanel");
-            detailPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 20);
+            var detailPanel = UIBuilder.CreateBorderedPanel(parent, 600, 340, "DetailPanel");
+            var dpRt = detailPanel.GetComponent<RectTransform>();
+            dpRt.anchorMin = new Vector2(0, 1);
+            dpRt.anchorMax = new Vector2(1, 1);
+            dpRt.pivot = new Vector2(0.5f, 1);
+            dpRt.anchoredPosition = new Vector2(0, -110);
+            dpRt.sizeDelta = new Vector2(0, 340);
 
-            var profName = UIBuilder.CreateText(detailPanel.transform, "", 28, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "ProfName");
+            var profName = UIBuilder.CreateText(detailPanel.transform, "", 26, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "ProfName");
             UIBuilder.SetAnchored(profName.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0, -30), new Vector2(300, 40));
+                new Vector2(0, -28), new Vector2(400, 36));
 
-            var profDesc = UIBuilder.CreateText(detailPanel.transform, "", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "ProfDesc");
+            var profDesc = UIBuilder.CreateText(detailPanel.transform, "", 17, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "ProfDesc");
             UIBuilder.SetAnchored(profDesc.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0, -65), new Vector2(450, 30));
+                new Vector2(0, -65), new Vector2(550, 28));
 
             // 基础属性（力量、敏捷、智力、体力）
             for (int i = 0; i < 4; i++)
             {
-                var attr = UIBuilder.CreateText(detailPanel.transform, "", 18, UIBuilder.TextWhite, TextAnchor.MiddleLeft, false, $"Attr_{i}");
+                var attr = UIBuilder.CreateText(detailPanel.transform, "", 17, UIBuilder.TextWhite, TextAnchor.MiddleLeft, false, $"Attr_{i}");
                 UIBuilder.SetAnchored(attr.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(0, -110 - i * 30), new Vector2(360, 28));
+                    new Vector2(0, -105 - i * 28), new Vector2(420, 26));
             }
 
             // 战斗属性（两列）
@@ -67,27 +73,27 @@ namespace Game.UI
             {
                 int col = i / 3;
                 int row = i % 3;
-                var battle = UIBuilder.CreateText(detailPanel.transform, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, $"Battle_{i}");
+                var battle = UIBuilder.CreateText(detailPanel.transform, "", 15, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, $"Battle_{i}");
                 UIBuilder.SetAnchored(battle.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(-100 + col * 250, -250 - row * 26), new Vector2(200, 24));
+                    new Vector2(-80 + col * 260, -230 - row * 24), new Vector2(220, 22));
             }
 
             // ---- 角色名输入区 ----
-            var nameLabel = UIBuilder.CreateText(parent, "角色名:", 20, UIBuilder.TextWhite, TextAnchor.MiddleRight, false, "NameLabel");
+            var nameLabel = UIBuilder.CreateText(parent, "角色名:", 18, UIBuilder.TextWhite, TextAnchor.MiddleRight, false, "NameLabel");
             UIBuilder.SetAnchored(nameLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-80, -145), new Vector2(100, 35));
+                new Vector2(-90, -270), new Vector2(90, 32));
 
             var inputObj = new GameObject("NameInput");
             inputObj.transform.SetParent(parent, false);
             var inputRt = inputObj.AddComponent<RectTransform>();
-            inputRt.sizeDelta = new Vector2(200, 35);
+            inputRt.sizeDelta = new Vector2(200, 32);
             inputRt.anchorMin = new Vector2(0.5f, 0.5f);
             inputRt.anchorMax = new Vector2(0.5f, 0.5f);
             inputRt.pivot = new Vector2(0.5f, 0.5f);
-            inputRt.anchoredPosition = new Vector2(50, -145);
+            inputRt.anchoredPosition = new Vector2(40, -270);
 
             var inputBg = inputObj.AddComponent<Image>();
-            inputBg.color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
+            inputBg.color = UIBuilder.SliderBg;
             inputObj.AddComponent<InputField>();
 
             var inputTextObj = new GameObject("Text");
@@ -99,7 +105,7 @@ namespace Game.UI
             inputTextRt.offsetMax = new Vector2(-8, -2);
             var inputText = inputTextObj.AddComponent<Text>();
             inputText.text = "冒险者";
-            inputText.fontSize = 20;
+            inputText.fontSize = 18;
             inputText.color = UIBuilder.TextWhite;
             inputText.alignment = TextAnchor.MiddleLeft;
             inputText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -113,7 +119,7 @@ namespace Game.UI
             placeholderRt.offsetMax = new Vector2(-8, -2);
             var placeholder = placeholderObj.AddComponent<Text>();
             placeholder.text = "输入角色名";
-            placeholder.fontSize = 20;
+            placeholder.fontSize = 18;
             placeholder.color = UIBuilder.TextDim;
             placeholder.alignment = TextAnchor.MiddleLeft;
             placeholder.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -124,18 +130,18 @@ namespace Game.UI
             inputField.characterLimit = 8;
 
             // ---- 提示文本 ----
-            var hint = UIBuilder.CreateText(parent, "", 16, UIBuilder.Red, TextAnchor.MiddleCenter, false, "HintText");
+            var hint = UIBuilder.CreateText(parent, "", 15, UIBuilder.Red, TextAnchor.MiddleCenter, false, "HintText");
             UIBuilder.SetAnchored(hint.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -180), new Vector2(400, 28));
+                new Vector2(0, -310), new Vector2(400, 26));
 
             // ---- 底部按钮 ----
-            var (btnStart, _) = UIBuilder.CreateButtonWithRef(parent, "开始游戏", 200, 50, null, 24, "BtnStart");
+            var (btnStart, _) = UIBuilder.CreateButtonWithRef(parent, "开始游戏", 220, 50, null, 22, "BtnStart");
             UIBuilder.SetAnchored(btnStart.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -220), new Vector2(200, 50));
+                new Vector2(0, -355), new Vector2(220, 50));
 
-            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回", 200, 50, null, 24, "BtnBack");
+            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回", 220, 50, null, 22, "BtnBack");
             UIBuilder.SetAnchored(btnBack.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -290), new Vector2(200, 50));
+                new Vector2(0, -415), new Vector2(220, 50));
         }
 
         protected override void BindReferences()

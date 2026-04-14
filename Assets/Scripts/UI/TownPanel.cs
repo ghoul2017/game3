@@ -17,7 +17,7 @@ namespace Game.UI
             UIBuilder.CreateFullScreenBg(parent);
 
             // 标题栏
-            UIBuilder.CreateTitleBar(parent, "城  镇");
+            UIBuilder.CreateTitleBar(parent, "城       镇");
 
             // 角色信息栏（顶部）
             var bar = UIBuilder.CreatePanel(parent, 0, 50, "InfoBar");
@@ -25,41 +25,43 @@ namespace Game.UI
             barRt.anchorMin = new Vector2(0, 1);
             barRt.anchorMax = new Vector2(1, 1);
             barRt.pivot = new Vector2(0.5f, 1);
-            barRt.anchoredPosition = new Vector2(0, -65);
+            barRt.anchoredPosition = new Vector2(0, -70);
             barRt.sizeDelta = new Vector2(0, 50);
-            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+            bar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
 
-            var infoTextObj = UIBuilder.CreateText(bar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
+            var infoTextObj = UIBuilder.CreateText(bar.transform, "", 17, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
             UIBuilder.SetStretch(infoTextObj.gameObject);
 
-            // 功能按钮区
+            // 功能按钮区 — 优化间距，6个按钮居中分布
             float centerX = 0;
-            float startY = 100;
-            float gap = 70;
+            float startY = 150;
+            float gap = 65;
+            float btnW = 300;
+            float btnH = 52;
 
-            var (btnDungeon, _) = UIBuilder.CreateButtonWithRef(parent, "进入地牢", 260, 55, null, 26, "BtnDungeon");
+            var (btnDungeon, _) = UIBuilder.CreateButtonWithRef(parent, "进 入 地 牢", btnW, btnH, null, 24, "BtnDungeon");
             UIBuilder.SetAnchored(btnDungeon.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(centerX, startY), new Vector2(260, 55));
+                new Vector2(centerX, startY), new Vector2(btnW, btnH));
 
-            var (btnRest, _) = UIBuilder.CreateButtonWithRef(parent, "休息恢复", 260, 55, null, 24, "BtnRest");
+            var (btnRest, _) = UIBuilder.CreateButtonWithRef(parent, "休 息 恢 复", btnW, btnH, null, 22, "BtnRest");
             UIBuilder.SetAnchored(btnRest.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(centerX, startY - gap), new Vector2(260, 55));
+                new Vector2(centerX, startY - gap), new Vector2(btnW, btnH));
 
-            var (btnShop, _) = UIBuilder.CreateButtonWithRef(parent, "商店", 260, 55, null, 24, "BtnShop");
+            var (btnShop, _) = UIBuilder.CreateButtonWithRef(parent, "商       店", btnW, btnH, null, 22, "BtnShop");
             UIBuilder.SetAnchored(btnShop.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(centerX, startY - gap * 2), new Vector2(260, 55));
+                new Vector2(centerX, startY - gap * 2), new Vector2(btnW, btnH));
 
-            var (btnSkill, _) = UIBuilder.CreateButtonWithRef(parent, "技能学习", 260, 55, null, 24, "BtnSkill");
+            var (btnSkill, _) = UIBuilder.CreateButtonWithRef(parent, "技 能 学 习", btnW, btnH, null, 22, "BtnSkill");
             UIBuilder.SetAnchored(btnSkill.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(centerX, startY - gap * 3), new Vector2(260, 55));
+                new Vector2(centerX, startY - gap * 3), new Vector2(btnW, btnH));
 
-            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色信息", 260, 55, null, 24, "BtnRole");
+            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角 色 信 息", btnW, btnH, null, 22, "BtnRole");
             UIBuilder.SetAnchored(btnRole.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(centerX, startY - gap * 4), new Vector2(260, 55));
+                new Vector2(centerX, startY - gap * 4), new Vector2(btnW, btnH));
 
-            var (btnSave, _) = UIBuilder.CreateButtonWithRef(parent, "存档退出", 260, 55, null, 24, "BtnSave");
+            var (btnSave, _) = UIBuilder.CreateButtonWithRef(parent, "存 档 退 出", btnW, btnH, null, 22, "BtnSave");
             UIBuilder.SetAnchored(btnSave.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(centerX, startY - gap * 5), new Vector2(260, 55));
+                new Vector2(centerX, startY - gap * 5), new Vector2(btnW, btnH));
         }
 
         protected override void BindReferences()

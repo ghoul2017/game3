@@ -39,12 +39,15 @@ namespace Game.Battle
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
 
             // 吸血之牙宝物效果：攻击恢复 effectValue% 伤害值的生命
-            if (p.treasures.Contains(4))
+            if (p.treasures.Contains(GameConstants.TREASURE_ID_LIFESTEAL))
             {
-                var tc = ConfigManager.Instance.GetTreasure(4);
-                int lifesteal = Mathf.Max(1, (int)(dmg * tc.effectValue / 100f));
-                p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
-                msg += $"，吸血恢复 {lifesteal} 生命";
+                var tc = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_LIFESTEAL);
+                if (tc != null)
+                {
+                    int lifesteal = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(dmg * tc.effectValue / 100f));
+                    p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
+                    msg += $"，吸血恢复 {lifesteal} 生命";
+                }
             }
 
             b.log.Add(msg);
@@ -117,12 +120,15 @@ namespace Game.Battle
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
             // 吸血之牙宝物效果
-            if (p.treasures.Contains(4))
+            if (p.treasures.Contains(GameConstants.TREASURE_ID_LIFESTEAL))
             {
-                var tc = ConfigManager.Instance.GetTreasure(4);
-                int lifesteal = Mathf.Max(1, (int)(dmg * tc.effectValue / 100f));
-                p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
-                msg += $"，吸血恢复 {lifesteal} 生命";
+                var tc = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_LIFESTEAL);
+                if (tc != null)
+                {
+                    int lifesteal = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(dmg * tc.effectValue / 100f));
+                    p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
+                    msg += $"，吸血恢复 {lifesteal} 生命";
+                }
             }
 
             b.log.Add(msg);
@@ -171,8 +177,8 @@ namespace Game.Battle
             int monsterAtk = m.attack + m.buffAttack;
             int playerDef = p.defense + b.playerBuffDefense;
 
-            // 怪物有技能时，30%概率使用
-            if (m.skillIds.Count > 0 && Random.value < 0.3f)
+            // 怪物有技能时，根据概率使用
+            if (m.skillIds.Count > 0 && Random.value < GameConstants.MONSTER_SKILL_CHANCE)
             {
                 int sid = m.skillIds[Random.Range(0, m.skillIds.Count)];
                 var skill = ConfigManager.Instance.GetSkill(sid);
@@ -246,7 +252,7 @@ namespace Game.Battle
                 return msg;
             }
 
-            if (Random.value < 0.5f)
+            if (Random.value < GameConstants.ESCAPE_CHANCE)
             {
                 b.isFinished = true;
                 string msg = "逃跑成功！";
@@ -271,10 +277,20 @@ namespace Game.Battle
             // 宝物加成：幸运硬币(id=5)金币+30%，经验宝石(id=6)经验+20%
             int goldReward = m.goldReward;
             int expReward = m.expReward;
-            if (p.treasures.Contains(5))
-                goldReward = (int)(goldReward * (1 + ConfigManager.Instance.GetTreasure(5).effectValue / 100f));
-            if (p.treasures.Contains(6))
-                expReward = (int)(expReward * (1 + ConfigManager.Instance.GetTreasure(6).effectValue / 100f));
+            
+            if (p.treasures.Contains(GameConstants.TREASURE_ID_LUCKY_COIN))
+            {
+                var luckyCoin = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_LUCKY_COIN);
+                if (luckyCoin != null)
+                    goldReward = (int)(goldReward * (1 + luckyCoin.effectValue / 100f));
+            }
+            
+            if (p.treasures.Contains(GameConstants.TREASURE_ID_EXP_GEM))
+            {
+                var expGem = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_EXP_GEM);
+                if (expGem != null)
+                    expReward = (int)(expReward * (1 + expGem.effectValue / 100f));
+            }
 
             p.AddExp(expReward);
             p.gold += goldReward;
@@ -310,8 +326,8 @@ namespace Game.Battle
             b.playerBuffDefense = 0;
             b.playerBuffTurns = 0;
 
-            // 失败惩罚：损失10%金币
-            int lostGold = p.gold / 10;
+            // 失败惩罚：损失金币
+            int lostGold = (int)(p.gold * GameConstants.DEFEAT_GOLD_LOSS_RATE);
             Debug.Log($"[战斗] 失败！损失金币={lostGold}");
             p.gold -= lostGold;
             p.dungeonFloor = Mathf.Max(1, p.dungeonFloor - 1);
@@ -324,9 +340,9 @@ namespace Game.Battle
 
         private int CalcDamage(int atk, int def)
         {
-            int baseDmg = Mathf.Max(1, atk - def / 2);
-            int variance = Mathf.Max(1, baseDmg / 10);
-            return Mathf.Max(1, baseDmg + Random.Range(-variance, variance + 1));
+            int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - def / GameConstants.DEFENSE_DIVISOR);
+            int variance = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(baseDmg * GameConstants.DAMAGE_VARIANCE_RATE));
+            return Mathf.Max(GameConstants.MIN_DAMAGE, baseDmg + Random.Range(-variance, variance + 1));
         }
     }
 }

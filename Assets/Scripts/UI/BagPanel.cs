@@ -19,25 +19,36 @@ namespace Game.UI
         public static void CreateVisuals(Transform parent)
         {
             UIBuilder.CreateFullScreenBg(parent);
-            UIBuilder.CreateTitleBar(parent, "背  包");
+            UIBuilder.CreateTitleBar(parent, "背       包");
 
-            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 450, "ItemList");
-            listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 50);
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 460, "ItemList");
+            var listRt = listPanel.GetComponent<RectTransform>();
+            listRt.anchorMin = new Vector2(0, 1);
+            listRt.anchorMax = new Vector2(1, 1);
+            listRt.pivot = new Vector2(0.5f, 1);
+            listRt.anchoredPosition = new Vector2(0, -80);
+            listRt.sizeDelta = new Vector2(0, 460);
 
             var inner = listPanel.transform.Find("Inner");
-            var empty = UIBuilder.CreateText(inner, "背包是空的", 20, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "EmptyText");
+            var empty = UIBuilder.CreateText(inner, "背包是空的", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "EmptyText");
             UIBuilder.SetStretch(empty.gameObject);
             empty.gameObject.SetActive(false);
 
-            UIBuilder.CreatePoolRows(inner, PoolSize, 45, 190, 800);
+            UIBuilder.CreatePoolRows(inner, PoolSize, 42, 195, 800);
 
-            var infoBar = UIBuilder.CreatePanel(parent, 900, 50, "InfoBar");
-            infoBar.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -210);
-            var info = UIBuilder.CreateText(infoBar.transform, "", 16, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
+            var infoBar = UIBuilder.CreatePanel(parent, 900, 42, "InfoBar");
+            var infoBarRt = infoBar.GetComponent<RectTransform>();
+            infoBarRt.anchorMin = new Vector2(0, 1);
+            infoBarRt.anchorMax = new Vector2(1, 1);
+            infoBarRt.pivot = new Vector2(0.5f, 1);
+            infoBarRt.anchoredPosition = new Vector2(0, -555);
+            infoBarRt.sizeDelta = new Vector2(0, 42);
+
+            var info = UIBuilder.CreateText(infoBar.transform, "", 15, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
             UIBuilder.SetStretch(info.gameObject);
 
-            UIBuilder.CreateButton(parent, "返回", 200, 45, null, 22, "BtnBack")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -280);
+            UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -615);
         }
 
         protected override void BindReferences()
@@ -98,9 +109,7 @@ namespace Game.UI
                 var row = itemRows[idx];
                 row.obj.SetActive(true);
                 row.rt.anchoredPosition = new Vector2(0, 190 - idx * 49);
-                row.bg.color = idx % 2 == 0
-                    ? new Color(0.1f, 0.1f, 0.16f, 0.5f)
-                    : new Color(0.08f, 0.08f, 0.12f, 0.5f);
+                row.bg.color = idx % 2 == 0 ? UIBuilder.RowEven : UIBuilder.RowOdd;
 
                 string statStr = "";
                 if (item.atk > 0) statStr += $"攻+{item.atk} ";

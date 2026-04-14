@@ -54,26 +54,27 @@ namespace Game.UI
         public static void CreateVisuals(Transform parent)
         {
             UIBuilder.CreateFullScreenBg(parent);
-            UIBuilder.CreateTitleBar(parent, "地牢");
+            UIBuilder.CreateTitleBar(parent, "地       牢");
 
-            // 状态栏
+            // 状态栏（顶部信息条）
             var bar = UIBuilder.CreatePanel(parent, 0, 45, "StatusBar");
             var barRt = bar.GetComponent<RectTransform>();
             barRt.anchorMin = new Vector2(0, 1);
             barRt.anchorMax = new Vector2(1, 1);
             barRt.pivot = new Vector2(0.5f, 1);
-            barRt.anchoredPosition = new Vector2(0, -65);
+            barRt.anchoredPosition = new Vector2(0, -70);
             barRt.sizeDelta = new Vector2(0, 45);
-            bar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+            bar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
             var statusTextObj = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
             UIBuilder.SetStretch(statusTextObj.gameObject);
 
-            // 地图面板（缩窄为右侧状态栏让出空间）
-            var mapPanel = UIBuilder.CreateBorderedPanel(parent, 1050, 480, "MapPanel");
-            mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(-160, 80);
-
-            // ===== 右侧状态面板 =====
-            CreateStatusPanelVisuals(parent);
+            // ===== 左侧：地图面板 =====
+            var mapPanel = UIBuilder.CreateBorderedPanel(parent, 880, 500, "MapPanel");
+            mapPanel.GetComponent<RectTransform>().anchorMin = new Vector2(0, 0);
+            mapPanel.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+            mapPanel.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+            mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(-50, 20);
+            mapPanel.GetComponent<RectTransform>().sizeDelta = new Vector2(-280, -170);
 
             // 创建房间对象池（最大 20 个房间）
             var inner = mapPanel.transform.Find("Inner");
@@ -99,110 +100,119 @@ namespace Game.UI
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0, -60), new Vector2(160, 40));
 
-            // 底部技能快捷栏
+            // ===== 右侧：状态面板 =====
+            CreateStatusPanelVisuals(parent);
+
+            // ===== 底部技能快捷栏 =====
             CreateSkillBarVisuals(parent);
 
-            // 底部按钮区
-            float btnY = -310;
+            // ===== 底部按钮区 =====
+            float btnY = -320;
+            float btnW = 150;
+            float btnH = 45;
 
-            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回城镇", 200, 45, null, 22, "BtnBack");
+            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回城镇", btnW, btnH, null, 20, "BtnBack");
             UIBuilder.SetAnchored(btnBack.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, btnY), new Vector2(200, 45));
+                new Vector2(-180, btnY), new Vector2(btnW, btnH));
 
-            var (btnBag, _) = UIBuilder.CreateButtonWithRef(parent, "背包", 140, 40, null, 20, "BtnBag");
+            var (btnBag, _) = UIBuilder.CreateButtonWithRef(parent, "背包", btnW, btnH, null, 18, "BtnBag");
             UIBuilder.SetAnchored(btnBag.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-200, btnY), new Vector2(140, 40));
+                new Vector2(0, btnY), new Vector2(btnW, btnH));
 
-            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色", 140, 40, null, 20, "BtnRole");
+            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色", btnW, btnH, null, 18, "BtnRole");
             UIBuilder.SetAnchored(btnRole.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(200, btnY), new Vector2(140, 40));
+                new Vector2(180, btnY), new Vector2(btnW, btnH));
         }
 
         private static void CreateStatusPanelVisuals(Transform parent)
         {
-            var panel = UIBuilder.CreateBorderedPanel(parent, 300, 480, "StatusPanel");
-            UIBuilder.SetAnchored(panel,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(535, 80), new Vector2(300, 480));
+            var panel = UIBuilder.CreateBorderedPanel(parent, 240, 500, "StatusPanel");
+            var panelRt = panel.GetComponent<RectTransform>();
+            panelRt.anchorMin = new Vector2(1, 0);
+            panelRt.anchorMax = new Vector2(1, 1);
+            panelRt.pivot = new Vector2(1, 0.5f);
+            panelRt.anchoredPosition = new Vector2(-20, 20);
+            panelRt.sizeDelta = new Vector2(240, -170);
+
             var inner = panel.transform.Find("Inner");
 
             float y = 200;
-            float sliderW = 250;
-            float barH = 20;
-            float rowGap = 65;
+            float sliderW = 200;
+            float barH = 18;
+            float rowGap = 60;
 
             // HP 条
-            var hpLabel = UIBuilder.CreateText(inner, "HP", 16, UIBuilder.HpColor, TextAnchor.MiddleLeft, true, "HpLabel");
+            var hpLabel = UIBuilder.CreateText(inner, "HP", 15, UIBuilder.HpColor, TextAnchor.MiddleLeft, true, "HpLabel");
             UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-85, y), new Vector2(40, 24));
+                new Vector2(-70, y), new Vector2(36, 22));
             var hpSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.HpColor, "HpSlider");
             UIBuilder.SetAnchored(hpSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(30, y), new Vector2(sliderW, barH));
-            var hpTextObj = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "HpText");
+                new Vector2(20, y), new Vector2(sliderW, barH));
+            var hpTextObj = UIBuilder.CreateText(inner, "", 13, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "HpText");
             UIBuilder.SetAnchored(hpTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+                new Vector2(0, y - 18), new Vector2(sliderW, 16));
 
             y -= rowGap;
 
             // MP 条
-            var mpLabel = UIBuilder.CreateText(inner, "MP", 16, UIBuilder.MpColor, TextAnchor.MiddleLeft, true, "MpLabel");
+            var mpLabel = UIBuilder.CreateText(inner, "MP", 15, UIBuilder.MpColor, TextAnchor.MiddleLeft, true, "MpLabel");
             UIBuilder.SetAnchored(mpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-85, y), new Vector2(40, 24));
+                new Vector2(-70, y), new Vector2(36, 22));
             var mpSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.MpColor, "MpSlider");
             UIBuilder.SetAnchored(mpSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(30, y), new Vector2(sliderW, barH));
-            var mpTextObj = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "MpText");
+                new Vector2(20, y), new Vector2(sliderW, barH));
+            var mpTextObj = UIBuilder.CreateText(inner, "", 13, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "MpText");
             UIBuilder.SetAnchored(mpTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+                new Vector2(0, y - 18), new Vector2(sliderW, 16));
 
             y -= rowGap;
 
             // EXP 条
-            var expLabel = UIBuilder.CreateText(inner, "EXP", 16, UIBuilder.ExpColor, TextAnchor.MiddleLeft, true, "ExpLabel");
+            var expLabel = UIBuilder.CreateText(inner, "EXP", 15, UIBuilder.ExpColor, TextAnchor.MiddleLeft, true, "ExpLabel");
             UIBuilder.SetAnchored(expLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-85, y), new Vector2(40, 24));
+                new Vector2(-70, y), new Vector2(36, 22));
             var expSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.ExpColor, "ExpSlider");
             UIBuilder.SetAnchored(expSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(30, y), new Vector2(sliderW, barH));
-            var expTextObj = UIBuilder.CreateText(inner, "", 14, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ExpText");
+                new Vector2(20, y), new Vector2(sliderW, barH));
+            var expTextObj = UIBuilder.CreateText(inner, "", 13, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ExpText");
             UIBuilder.SetAnchored(expTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 20), new Vector2(sliderW, 18));
+                new Vector2(0, y - 18), new Vector2(sliderW, 16));
 
-            y -= rowGap + 10;
+            y -= rowGap + 5;
 
             // 分隔线
             var div = UIBuilder.CreateDivider(inner);
             var divRt = div.GetComponent<RectTransform>();
-            divRt.anchoredPosition = new Vector2(0, y + 10);
-            divRt.sizeDelta = new Vector2(260, 2);
+            divRt.anchoredPosition = new Vector2(0, y + 8);
+            divRt.sizeDelta = new Vector2(210, 2);
 
-            y -= 15;
+            y -= 12;
 
             // 层数/金币/攻防信息
-            var floorTextObj = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, true, "FloorText");
+            var floorTextObj = UIBuilder.CreateText(inner, "", 17, UIBuilder.Gold, TextAnchor.MiddleLeft, true, "FloorText");
             UIBuilder.SetAnchored(floorTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(260, 26));
-            y -= 30;
-            var goldTextObj = UIBuilder.CreateText(inner, "", 18, UIBuilder.Gold, TextAnchor.MiddleLeft, false, "GoldText");
+                new Vector2(0, y), new Vector2(210, 24));
+            y -= 28;
+            var goldTextObj = UIBuilder.CreateText(inner, "", 17, UIBuilder.Gold, TextAnchor.MiddleLeft, false, "GoldText");
             UIBuilder.SetAnchored(goldTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(260, 26));
-            y -= 30;
-            var statsTextObj = UIBuilder.CreateText(inner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
+                new Vector2(0, y), new Vector2(210, 24));
+            y -= 28;
+            var statsTextObj = UIBuilder.CreateText(inner, "", 15, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
             UIBuilder.SetAnchored(statsTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(260, 26));
+                new Vector2(0, y), new Vector2(210, 22));
         }
 
         private static void CreateSkillBarVisuals(Transform parent)
         {
-            float slotW = 140;
-            float slotH = 50;
-            float gap = 20;
+            float slotW = 160;
+            float slotH = 55;
+            float gap = 15;
             float totalW = MaxSkillSlots * slotW + (MaxSkillSlots - 1) * gap;
             float startX = -totalW / 2 + slotW / 2;
-            float barY = -240;
+            float barY = -245;
 
             for (int i = 0; i < MaxSkillSlots; i++)
             {
@@ -236,7 +246,7 @@ namespace Game.UI
             rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
 
             var border = obj.AddComponent<Image>();
-            border.color = new Color(0.3f, 0.3f, 0.3f, 0.6f);
+            border.color = UIBuilder.BorderDim;
 
             // 内层：背景
             var innerObj = new GameObject("Inner");
@@ -468,7 +478,7 @@ namespace Game.UI
                         offsetY - row * (RoomBtnSize + RoomGap));
 
                     cell.bg.color = GetRoomColor(room, isCurrent);
-                    cell.border.color = isCurrent ? UIBuilder.Gold : new Color(0.3f, 0.3f, 0.3f, 0.6f);
+                    cell.border.color = isCurrent ? UIBuilder.Gold : UIBuilder.BorderDim;
                     cell.iconText.text = GetRoomIcon(room);
                     cell.typeLabel.text = GetRoomTypeName(room, isCurrent);
 
@@ -601,10 +611,10 @@ namespace Game.UI
             player.gold += goldFound;
             pendingMessage = $"发现宝箱！获得 {goldFound} 金币";
 
-            // 40% 几率获得宝物遗物
+            // 几率获得宝物遗物
             var allTreasures = ConfigManager.Instance.GetAllTreasures();
             var available = allTreasures.FindAll(t => !player.treasures.Contains(t.id));
-            if (available.Count > 0 && Random.value < 0.4f)
+            if (available.Count > 0 && Random.value < GameConstants.TREASURE_CHANCE)
             {
                 var treasure = available[Random.Range(0, available.Count)];
                 player.treasures.Add(treasure.id);
@@ -612,9 +622,9 @@ namespace Game.UI
                 pendingMessage += $"\n获得宝物：{treasure.name} — {treasure.desc}";
             }
 
-            // 30% 几率获得消耗品
+            // 几率获得消耗品
             var consumables = ConfigManager.Instance.GetItemsByType(ItemType.Consumable);
-            if (consumables.Count > 0 && Random.value < 0.3f && player.bagItems.Count < player.maxBagSize)
+            if (consumables.Count > 0 && Random.value < GameConstants.CONSUMABLE_DROP_CHANCE && player.bagItems.Count < player.maxBagSize)
             {
                 var item = consumables[Random.Range(0, consumables.Count)];
                 player.bagItems.Add(item.id);

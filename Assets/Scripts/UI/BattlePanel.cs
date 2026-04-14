@@ -67,77 +67,101 @@ namespace Game.UI
             UIBuilder.CreateFullScreenBg(parent);
 
             // 标题
-            UIBuilder.CreateTitleBar(parent, "战  斗");
+            UIBuilder.CreateTitleBar(parent, "战       斗");
 
             // === 怪物信息区 ===
-            var monsterPanelObj = UIBuilder.CreateBorderedPanel(parent, 800, 180, "MonsterPanel");
-            monsterPanelObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 230);
+            var monsterPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 160, "MonsterPanel");
+            var monsterRt = monsterPanelObj.GetComponent<RectTransform>();
+            monsterRt.anchorMin = new Vector2(0, 1);
+            monsterRt.anchorMax = new Vector2(1, 1);
+            monsterRt.pivot = new Vector2(0.5f, 1);
+            monsterRt.anchoredPosition = new Vector2(0, -80);
+            monsterRt.sizeDelta = new Vector2(0, 160);
+
             var monsterInner = monsterPanelObj.transform.Find("Inner");
 
             // 怪物类型图标（左侧大字）
-            var iconText = UIBuilder.CreateText(monsterInner, "", 52, UIBuilder.Red, TextAnchor.MiddleCenter, true, "MonsterIcon");
+            var iconText = UIBuilder.CreateText(monsterInner, "", 48, UIBuilder.Red, TextAnchor.MiddleCenter, true, "MonsterIcon");
             UIBuilder.SetAnchored(iconText.gameObject, new Vector2(0, 0.5f), new Vector2(0, 0.5f),
-                new Vector2(-310, -10), new Vector2(80, 80));
+                new Vector2(-370, -10), new Vector2(70, 70));
 
             // 怪物类型标签（右侧顶部）
-            var typeText = UIBuilder.CreateText(monsterInner, "", 16, UIBuilder.TextDim, TextAnchor.MiddleRight, false, "MonsterType");
+            var typeText = UIBuilder.CreateText(monsterInner, "", 15, UIBuilder.TextDim, TextAnchor.MiddleRight, false, "MonsterType");
             UIBuilder.SetAnchored(typeText.gameObject, new Vector2(1, 1f), new Vector2(1, 1f),
-                new Vector2(-15, -22), new Vector2(120, 24));
+                new Vector2(-15, -20), new Vector2(100, 22));
 
-            var nameText = UIBuilder.CreateText(monsterInner, "", 28, UIBuilder.Red, TextAnchor.MiddleCenter, true, "MonsterName");
-            UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -25), new Vector2(400, 35));
+            var nameText = UIBuilder.CreateText(monsterInner, "", 26, UIBuilder.Red, TextAnchor.MiddleCenter, true, "MonsterName");
+            UIBuilder.SetAnchored(nameText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -22), new Vector2(380, 32));
 
-            var hpText = UIBuilder.CreateText(monsterInner, "", 18, UIBuilder.HpColor, name: "MonsterHpText");
-            UIBuilder.SetAnchored(hpText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-200, -60), new Vector2(200, 28));
+            var hpText = UIBuilder.CreateText(monsterInner, "", 17, UIBuilder.HpColor, name: "MonsterHpText");
+            UIBuilder.SetAnchored(hpText.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-180, -55), new Vector2(180, 24));
 
-            var hpSlider = UIBuilder.CreateSlider(monsterInner, 300, 20, UIBuilder.HpColor, "MonsterHpSlider");
-            hpSlider.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, -70);
+            var hpSlider = UIBuilder.CreateSlider(monsterInner, 280, 18, UIBuilder.HpColor, "MonsterHpSlider");
+            hpSlider.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, -60);
 
-            var atkDefText = UIBuilder.CreateText(monsterInner, "", 16, UIBuilder.TextDim, name: "MonsterAtkDef");
-            UIBuilder.SetAnchored(atkDefText.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 20), new Vector2(300, 24));
+            var atkDefText = UIBuilder.CreateText(monsterInner, "", 15, UIBuilder.TextDim, name: "MonsterAtkDef");
+            UIBuilder.SetAnchored(atkDefText.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 18), new Vector2(280, 22));
 
             // === 战斗日志区（对象池 6 行） ===
-            var logPanelObj = UIBuilder.CreateBorderedPanel(parent, 800, 200, "LogPanel");
-            logPanelObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
+            var logPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 220, "LogPanel");
+            var logRt = logPanelObj.GetComponent<RectTransform>();
+            logRt.anchorMin = new Vector2(0, 1);
+            logRt.anchorMax = new Vector2(1, 1);
+            logRt.pivot = new Vector2(0.5f, 1);
+            logRt.anchoredPosition = new Vector2(0, -250);
+            logRt.sizeDelta = new Vector2(0, 220);
+
             var logInner = logPanelObj.transform.Find("Inner");
 
             for (int i = 0; i < MaxLogLines; i++)
             {
                 var logObj = UIBuilder.CreateText(logInner, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleLeft, name: $"Log_{i}");
                 UIBuilder.SetAnchored(logObj.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                    new Vector2(0, -15 - i * 28), new Vector2(700, 26));
+                    new Vector2(0, -12 - i * 30), new Vector2(800, 28));
             }
 
             // === 玩家信息条 ===
-            var playerBar = UIBuilder.CreatePanel(parent, 800, 50, "PlayerBar");
-            playerBar.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -120);
-            var playerInfoObj = UIBuilder.CreateText(playerBar.transform, "", 16, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "PlayerInfo");
+            var playerBar = UIBuilder.CreatePanel(parent, 900, 45, "PlayerBar");
+            var playerBarRt = playerBar.GetComponent<RectTransform>();
+            playerBarRt.anchorMin = new Vector2(0, 1);
+            playerBarRt.anchorMax = new Vector2(1, 1);
+            playerBarRt.pivot = new Vector2(0.5f, 1);
+            playerBarRt.anchoredPosition = new Vector2(0, -485);
+            playerBarRt.sizeDelta = new Vector2(0, 45);
+
+            var playerInfoObj = UIBuilder.CreateText(playerBar.transform, "", 15, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "PlayerInfo");
             UIBuilder.SetStretch(playerInfoObj.gameObject);
 
             // === 操作按钮 ===
-            float btnY = -190;
-            float btnW = 160;
-            float gap = 180;
+            float btnY = -540;
+            float btnW = 180;
+            float btnH = 48;
+            float gap = 40;
 
-            var (atkBtn, _) = UIBuilder.CreateButtonWithRef(parent, "攻击", btnW, 45, null, 22, "BtnAttack");
+            var (atkBtn, _) = UIBuilder.CreateButtonWithRef(parent, "攻  击", btnW, btnH, null, 22, "BtnAttack");
             UIBuilder.SetAnchored(atkBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-gap * 1.5f, btnY), new Vector2(btnW, 45));
+                new Vector2(-gap * 3 - btnW * 1.5f, btnY), new Vector2(btnW, btnH));
 
-            var (skBtn, _) = UIBuilder.CreateButtonWithRef(parent, "技能", btnW, 45, null, 22, "BtnSkill");
+            var (skBtn, _) = UIBuilder.CreateButtonWithRef(parent, "技  能", btnW, btnH, null, 22, "BtnSkill");
             UIBuilder.SetAnchored(skBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-gap * 0.5f, btnY), new Vector2(btnW, 45));
+                new Vector2(-gap, btnY), new Vector2(btnW, btnH));
 
-            var (itBtn, _) = UIBuilder.CreateButtonWithRef(parent, "物品", btnW, 45, null, 22, "BtnItem");
+            var (itBtn, _) = UIBuilder.CreateButtonWithRef(parent, "物  品", btnW, btnH, null, 22, "BtnItem");
             UIBuilder.SetAnchored(itBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(gap * 0.5f, btnY), new Vector2(btnW, 45));
+                new Vector2(gap, btnY), new Vector2(btnW, btnH));
 
-            var (esBtn, _) = UIBuilder.CreateButtonWithRef(parent, "逃跑", btnW, 45, null, 22, "BtnEscape");
+            var (esBtn, _) = UIBuilder.CreateButtonWithRef(parent, "逃  跑", btnW, btnH, null, 22, "BtnEscape");
             UIBuilder.SetAnchored(esBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(gap * 1.5f, btnY), new Vector2(btnW, 45));
+                new Vector2(gap * 3 + btnW * 1.5f, btnY), new Vector2(btnW, btnH));
 
             // === 技能子面板（对象池 8 行） ===
-            var sp = UIBuilder.CreateBorderedPanel(parent, 600, 350, "SkillPanel");
-            sp.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -200);
+            var sp = UIBuilder.CreateBorderedPanel(parent, 650, 340, "SkillPanel");
+            var spRt = sp.GetComponent<RectTransform>();
+            spRt.anchorMin = new Vector2(0, 0);
+            spRt.anchorMax = new Vector2(1, 1);
+            spRt.pivot = new Vector2(0.5f, 0.5f);
+            spRt.anchoredPosition = new Vector2(0, -50);
+            spRt.sizeDelta = new Vector2(-100, -200);
             sp.gameObject.SetActive(false);
             var skillInner = sp.transform.Find("Inner");
 
@@ -146,21 +170,26 @@ namespace Game.UI
                 var rowObj = new GameObject($"SkillRow_{i}");
                 rowObj.transform.SetParent(skillInner, false);
                 var rowRt = rowObj.AddComponent<RectTransform>();
-                rowRt.sizeDelta = new Vector2(500, 35);
-                rowRt.anchoredPosition = new Vector2(0, 130 - i * 38);
+                rowRt.sizeDelta = new Vector2(550, 34);
+                rowRt.anchoredPosition = new Vector2(0, 125 - i * 36);
 
-                var (rowBtn, _) = UIBuilder.CreateButtonWithRef(rowObj.transform, "", 500, 35, null, 16, "Btn");
+                var (rowBtn, _) = UIBuilder.CreateButtonWithRef(rowObj.transform, "", 550, 34, null, 16, "Btn");
                 UIBuilder.SetStretch(rowBtn.gameObject);
             }
 
             // 技能面板关闭按钮
-            var (closeSkillBtn, _) = UIBuilder.CreateButtonWithRef(skillInner, "关闭", 240, 35, null, 18, "BtnCloseSkill");
+            var (closeSkillBtn, _) = UIBuilder.CreateButtonWithRef(skillInner, "关闭", 220, 32, null, 16, "BtnCloseSkill");
             UIBuilder.SetAnchored(closeSkillBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 130 - MaxSkillRows * 38), new Vector2(240, 35));
+                new Vector2(0, 125 - MaxSkillRows * 36), new Vector2(220, 32));
 
             // === 物品选择子面板（对象池 8 行） ===
-            var ip = UIBuilder.CreateBorderedPanel(parent, 600, 350, "ItemPanel");
-            ip.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -200);
+            var ip = UIBuilder.CreateBorderedPanel(parent, 650, 340, "ItemPanel");
+            var ipRt = ip.GetComponent<RectTransform>();
+            ipRt.anchorMin = new Vector2(0, 0);
+            ipRt.anchorMax = new Vector2(1, 1);
+            ipRt.pivot = new Vector2(0.5f, 0.5f);
+            ipRt.anchoredPosition = new Vector2(0, -50);
+            ipRt.sizeDelta = new Vector2(-100, -200);
             ip.gameObject.SetActive(false);
             var itemInner = ip.transform.Find("Inner");
 
@@ -169,27 +198,27 @@ namespace Game.UI
                 var rowObj = new GameObject($"ItemRow_{i}");
                 rowObj.transform.SetParent(itemInner, false);
                 var rowRt = rowObj.AddComponent<RectTransform>();
-                rowRt.sizeDelta = new Vector2(500, 35);
-                rowRt.anchoredPosition = new Vector2(0, 130 - i * 38);
+                rowRt.sizeDelta = new Vector2(550, 34);
+                rowRt.anchoredPosition = new Vector2(0, 125 - i * 36);
 
-                var (rowBtn, _) = UIBuilder.CreateButtonWithRef(rowObj.transform, "", 500, 35, null, 16, "Btn");
+                var (rowBtn, _) = UIBuilder.CreateButtonWithRef(rowObj.transform, "", 550, 34, null, 16, "Btn");
                 UIBuilder.SetStretch(rowBtn.gameObject);
             }
 
             // 物品面板空提示
-            var emptyText = UIBuilder.CreateText(itemInner, "没有可用的消耗品", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "ItemEmpty");
-            UIBuilder.SetAnchored(emptyText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(500, 30));
+            var emptyText = UIBuilder.CreateText(itemInner, "没有可用的消耗品", 17, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "ItemEmpty");
+            UIBuilder.SetAnchored(emptyText.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(500, 28));
             emptyText.gameObject.SetActive(false);
 
             // 物品面板关闭按钮
-            var (closeItemBtn, _) = UIBuilder.CreateButtonWithRef(itemInner, "关闭", 240, 35, null, 18, "BtnCloseItem");
+            var (closeItemBtn, _) = UIBuilder.CreateButtonWithRef(itemInner, "关闭", 220, 32, null, 16, "BtnCloseItem");
             UIBuilder.SetAnchored(closeItemBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 130 - MaxItemRows * 38), new Vector2(240, 35));
+                new Vector2(0, 125 - MaxItemRows * 36), new Vector2(220, 32));
 
             // === 战斗结果按钮（默认隐藏） ===
-            var (resultBtn, _) = UIBuilder.CreateButtonWithRef(parent, "", 220, 50, null, 24, "BtnResult");
+            var (resultBtn, _) = UIBuilder.CreateButtonWithRef(parent, "", 240, 55, null, 24, "BtnResult");
             UIBuilder.SetAnchored(resultBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -260), new Vector2(220, 50));
+                new Vector2(0, -290), new Vector2(240, 55));
             resultBtn.gameObject.SetActive(false);
         }
 

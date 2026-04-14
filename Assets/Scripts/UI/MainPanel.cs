@@ -20,37 +20,75 @@ namespace Game.UI
         {
             UIBuilder.CreateFullScreenBg(parent);
 
-            // 标题
-            var title = UIBuilder.CreateText(parent, "方块与地下城", 48, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "Title");
+            // 顶部装饰线
+            var topLine = new GameObject("TopDecor");
+            topLine.transform.SetParent(parent, false);
+            topLine.AddComponent<RectTransform>();
+            var tImg = topLine.AddComponent<Image>();
+            tImg.color = new Color(UIBuilder.Gold.r, UIBuilder.Gold.g, UIBuilder.Gold.b, 0.15f);
+            var tRt = topLine.GetComponent<RectTransform>();
+            tRt.anchorMin = new Vector2(0.15f, 1);
+            tRt.anchorMax = new Vector2(0.85f, 1);
+            tRt.pivot = new Vector2(0.5f, 1);
+            tRt.anchoredPosition = new Vector2(0, -90);
+            tRt.sizeDelta = new Vector2(0, 1);
+
+            // 标题（大号带阴影）
+            var title = UIBuilder.CreateShadowText(parent, "方块与地下城", 50, UIBuilder.Gold,
+                new Color(0, 0, 0, 0.4f), TextAnchor.MiddleCenter, true, "Title");
             UIBuilder.SetAnchored(title.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 180), new Vector2(600, 80));
+                new Vector2(0, 190), new Vector2(650, 70));
 
-            var subtitle = UIBuilder.CreateText(parent, "冒险，从城镇开始...", 22, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "Subtitle");
+            // 副标题
+            var subtitle = UIBuilder.CreateText(parent, "冒 险 ， 从 城 镇 开 始 ...", 19, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "Subtitle");
             UIBuilder.SetAnchored(subtitle.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 120), new Vector2(400, 40));
+                new Vector2(0, 130), new Vector2(480, 32));
 
-            // 按钮组 — 4 个按钮等距排列
-            var (btnNew, _) = UIBuilder.CreateButtonWithRef(parent, "开始冒险", 220, 50, null, 24, "BtnNewGame");
+            // 底部装饰线
+            var botLine = new GameObject("BotDecor");
+            botLine.transform.SetParent(parent, false);
+            botLine.AddComponent<RectTransform>();
+            var bImg = botLine.AddComponent<Image>();
+            bImg.color = new Color(UIBuilder.Gold.r, UIBuilder.Gold.g, UIBuilder.Gold.b, 0.10f);
+            var bRt = botLine.GetComponent<RectTransform>();
+            bRt.anchorMin = new Vector2(0.25f, 0.5f);
+            bRt.anchorMax = new Vector2(0.75f, 0.5f);
+            bRt.pivot = new Vector2(0.5f, 0.5f);
+            bRt.anchoredPosition = new Vector2(0, 100);
+            bRt.sizeDelta = new Vector2(0, 1);
+
+            // 主按钮区 — 4 个按钮居中排列
+            float btnW = 280;
+            float btnH = 50;
+            float gap = 60;
+
+            var (btnNew, _) = UIBuilder.CreateButtonWithRef(parent, "开 始 冒 险", btnW, btnH, null, 22, "BtnNewGame");
             UIBuilder.SetAnchored(btnNew.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 60), new Vector2(220, 50));
+                new Vector2(0, 50), new Vector2(btnW, btnH));
 
-            var (btnCont, _) = UIBuilder.CreateButtonWithRef(parent, "继续冒险", 220, 50, null, 24, "BtnContinue");
+            var (btnCont, _) = UIBuilder.CreateButtonWithRef(parent, "继 续 冒 险", btnW, btnH, null, 22, "BtnContinue");
             UIBuilder.SetAnchored(btnCont.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, 0), new Vector2(220, 50));
+                new Vector2(0, 50 - gap), new Vector2(btnW, btnH));
 
-            var (btnSet, _) = UIBuilder.CreateButtonWithRef(parent, "设    置", 220, 50, null, 24, "BtnSettings");
+            var (btnSet, _) = UIBuilder.CreateButtonWithRef(parent, "设       置", btnW, btnH, null, 20, "BtnSettings");
             UIBuilder.SetAnchored(btnSet.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -60), new Vector2(220, 50));
+                new Vector2(0, 50 - gap * 2), new Vector2(btnW, btnH));
 
-            var (btnQuit, _) = UIBuilder.CreateButtonWithRef(parent, "退出游戏", 220, 50, null, 24, "BtnQuit");
+            var (btnQuit, _) = UIBuilder.CreateButtonWithRef(parent, "退 出 游 戏", btnW, btnH, null, 20, "BtnQuit");
             UIBuilder.SetAnchored(btnQuit.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -120), new Vector2(220, 50));
+                new Vector2(0, 50 - gap * 3), new Vector2(btnW, btnH));
+
+            // 底部版本号
+            var ver = UIBuilder.CreateText(parent, "v1.2.0", 13, new Color(0.4f, 0.4f, 0.45f), TextAnchor.MiddleCenter, false, "Version");
+            UIBuilder.SetAnchored(ver.gameObject,
+                new Vector2(0.5f, 0), new Vector2(0.5f, 0),
+                new Vector2(0, 28), new Vector2(180, 22));
         }
 
         protected override void BindReferences()

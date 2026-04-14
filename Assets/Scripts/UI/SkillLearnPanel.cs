@@ -34,36 +34,48 @@ namespace Game.UI
             goldRt.pivot = new Vector2(0.5f, 1);
             goldRt.anchoredPosition = new Vector2(0, -70);
             goldRt.sizeDelta = new Vector2(0, 40);
-            goldBar.GetComponent<Image>().color = new Color(0.06f, 0.06f, 0.10f, 0.9f);
+            goldBar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
             var gold = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
             UIBuilder.SetStretch(gold.gameObject);
 
             // 技能列表
-            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 500, "SkillList");
-            listPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 10);
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 420, "SkillList");
+            var listRt = listPanel.GetComponent<RectTransform>();
+            listRt.anchorMin = new Vector2(0, 1);
+            listRt.anchorMax = new Vector2(1, 1);
+            listRt.pivot = new Vector2(0.5f, 1);
+            listRt.anchoredPosition = new Vector2(0, -115);
+            listRt.sizeDelta = new Vector2(0, 420);
+
             var inner = listPanel.transform.Find("Inner");
-            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 55, 210, 800);
+            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 48, 185, 800);
 
             // 已装备技能区
-            var eqPanel = UIBuilder.CreateBorderedPanel(parent, 900, 80, "EquippedSkills");
-            eqPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -260);
+            var eqPanel = UIBuilder.CreateBorderedPanel(parent, 900, 70, "EquippedSkills");
+            var eqPanelRt = eqPanel.GetComponent<RectTransform>();
+            eqPanelRt.anchorMin = new Vector2(0, 1);
+            eqPanelRt.anchorMax = new Vector2(1, 1);
+            eqPanelRt.pivot = new Vector2(0.5f, 1);
+            eqPanelRt.anchoredPosition = new Vector2(0, -545);
+            eqPanelRt.sizeDelta = new Vector2(0, 70);
+
             var eqInner = eqPanel.transform.Find("Inner");
 
-            var eqLbl = UIBuilder.CreateText(eqInner, "已装备技能:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft, name: "EqLabel");
-            UIBuilder.SetAnchored(eqLbl.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-380, 0), new Vector2(120, 30));
+            var eqLbl = UIBuilder.CreateText(eqInner, "已装备:", 15, UIBuilder.Gold, TextAnchor.MiddleLeft, name: "EqLabel");
+            UIBuilder.SetAnchored(eqLbl.gameObject, new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+                new Vector2(15, 0), new Vector2(100, 28));
 
             // 装备/卸下按钮池
             for (int i = 0; i < EqBtnPoolSize; i++)
             {
-                var (btn, label) = UIBuilder.CreateButtonWithRef(eqInner, "", 110, 30, null, 14, $"EqBtn_{i}");
-                btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-220 + i * 130, 0);
+                var (btn, label) = UIBuilder.CreateButtonWithRef(eqInner, "", 100, 28, null, 13, $"EqBtn_{i}");
+                btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(-200 + i * 120, 0);
                 btn.gameObject.SetActive(false);
             }
 
             // 返回按钮
-            UIBuilder.CreateButton(parent, "返回", 200, 45, null, 22, "BtnBack")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -340);
+            UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack")
+                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -615);
         }
 
         protected override void BindReferences()
@@ -134,10 +146,10 @@ namespace Game.UI
 
                 var row = skillRows[shown];
                 row.obj.SetActive(true);
-                row.rt.anchoredPosition = new Vector2(0, 210 - shown * 59);
+                row.rt.anchoredPosition = new Vector2(0, 185 - shown * 52); // 与CreatePoolRows一致：startY=185, gap=48+4=52
                 row.bg.color = learned
-                    ? new Color(0.1f, 0.2f, 0.1f, 0.5f)
-                    : new Color(0.1f, 0.1f, 0.16f, 0.5f);
+                    ? new Color(UIBuilder.Green.r * 0.4f, UIBuilder.Green.g * 0.4f, UIBuilder.Green.b * 0.3f, 0.5f)
+                    : UIBuilder.RowEven;
 
                 string typeStr = skill.type switch
                 {
@@ -166,7 +178,7 @@ namespace Game.UI
                     row.actionBtn.interactable = false;
                     row.actionBtnLabel.text = "已学";
                     row.actionBtnLabel.color = UIBuilder.Green;
-                    row.actionBtn.image.color = new Color(0.1f, 0.2f, 0.1f, 0.5f);
+                    row.actionBtn.image.color = new Color(UIBuilder.Green.r * 0.4f, UIBuilder.Green.g * 0.4f, UIBuilder.Green.b * 0.3f, 0.5f);
                 }
                 else
                 {
