@@ -1,3 +1,11 @@
+---
+name: initializer
+description: First-run setup agent - initializes project environment
+model: haiku
+maxTurns: 15
+memory: none
+---
+
 # Initializer Agent（首次运行）
 
 你是一个项目初始化 agent。仅在项目第一次运行时执行，为后续的自动化开发搭建环境。

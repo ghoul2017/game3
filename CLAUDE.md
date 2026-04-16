@@ -109,3 +109,26 @@ devloop.cmd [N]  # 循环开发，默认 8 轮
 - `Library/`、`Temp/`、`obj/` 目录不应纳入版本控制
 - 场景文件（`.unity`）为 YAML 格式，合并时需注意冲突
 - 命名空间: `Game.Core`、`Game.UI`、`Game.Battle`、`Game.Config`、`Game.Data`
+
+## 路径作用域规则
+
+根据编辑的文件路径自动应用对应的编码标准（定义在 `.claude/rules/`）：
+
+| 路径 | 规则文件 | 核心要点 |
+|---|---|---|
+| `Assets/Scripts/Core/**` | `core.code.md` | 单例模式、UIPanel 生命周期、UIManager 栈管理 |
+| `Assets/Scripts/UI/**` | `ui.code.md` | OnInit 缓存、RefreshUI 只改属性、对象池、禁用 DestroyImmediate |
+| `Assets/Scripts/Game/Battle/**` | `battle.code.md` | 回合制流程、Buff 处理、伤害计算 |
+| `Assets/Scripts/Game/**` | `game.code.md` | 配置加载、数据模型、命名空间规范 |
+
+## Hooks 自动化守卫
+
+通过 `.claude/settings.json` 配置的自动化检查：
+
+| Hook | 触发时机 | 作用 |
+|---|---|---|
+| SessionStart | 会话开始 | 检查核心文件、输出进度摘要 |
+| PreToolUse/Bash | 执行 bash 前 | 验证 commit message 格式（feat:/fix:/progress:/plan: 前缀） |
+| PostToolUse/Write,Edit | 写入文件后 | 验证 C# 文件命名空间、类名与文件名匹配 |
+| PreCompact | 上下文压缩前 | 保存工作快照到 `.claude/compact-snapshot.md` |
+| Stop | 会话结束 | 构建检查（dotnet build），失败则提示修复 |

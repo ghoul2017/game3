@@ -60,6 +60,7 @@
      <Compile Include="Assets\Scripts\Core\PrefabLoader.cs" />
      <Compile Include="Assets\Scripts\Core\UIBuilder.cs" />
      <Compile Include="Assets\Scripts\Game\Config\ConfigManager.cs" />
+     <Compile Include="Assets\Scripts\Game\Config\GameConstants.cs" />
      <Compile Include="Assets\Scripts\Core\GameManager.cs" />
      <Compile Include="Assets\Scripts\UI\CreateRolePanel.cs" />
      <Compile Include="Assets\Scripts\UI\TownPanel.cs" />
@@ -67,7 +68,6 @@
      <Compile Include="Assets\Scripts\Core\UIManager.cs" />
      <Compile Include="Assets\Scripts\Game\Battle\BattleManager.cs" />
      <Compile Include="Assets\Scripts\UI\BattlePanel.cs" />
-     <Compile Include="Assets\Scripts\Game\Config\GameConstants.cs" />
      <Folder Include="Assets" />
      <Folder Include="Assets\Scripts\Game" />
      <Folder Include="Assets\Settings" />
