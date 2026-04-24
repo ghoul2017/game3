@@ -9,16 +9,66 @@ namespace Game.UI
 {
     public class DungeonPanel : UIPanel
     {
-        private const int RoomBtnSize = 80;
-        private const int RoomGap = 8;
-        private const int MaxRooms = 20;
+        // ---- 网格地图常量 ----
+        private const int MaxGridSize = 10;
+        private const int MaxTiles = MaxGridSize * MaxGridSize; // 100
+        private const float MinCellSize = 60f;
+        private const float MaxCellSize = 120f;
+        private const float DefaultCellSize = 80f;
+        private const float ZoomStep = 10f;
+
+        // ---- 房间颜色方案（深色主题适配） ----
+        private static readonly Color ColorWall      = HexColor(0x0d0d0d);      // 极黑
+        private static readonly Color ColorMonster   = HexColor(0xc0392b);      // 深红
+        private static readonly Color ColorElite     = HexColor(0xe74c3c);      // 亮红
+        private static readonly Color ColorTreasure  = HexColor(0xf39c12);      // 金
+        private static readonly Color ColorSpring    = HexColor(0x3498db);      // 蓝
+        private static readonly Color ColorMerchant  = HexColor(0x2ecc71);      // 绿
+        private static readonly Color ColorShrine    = HexColor(0x9b59b6);      // 紫
+        private static readonly Color ColorBoss      = HexColor(0x8e44ad);      // 深紫
+        private static readonly Color ColorExit      = HexColor(0xbdc3c7);      // 灰白
+        private static readonly Color ColorEmpty     = HexColor(0x2c3e50);      // 暗蓝灰
+        private static readonly Color ColorCurrentOutline = HexColor(0xc8a24c); // 金色边框
+        private static readonly Color ColorClearedOverlay = new Color(0.5f, 0.5f, 0.5f, 0.35f); // 灰色半透明
+
+        private static Color HexColor(int rgb)
+        {
+            float r = ((rgb >> 16) & 0xFF) / 255f;
+            float g = ((rgb >> 8) & 0xFF) / 255f;
+            float b = (rgb & 0xFF) / 255f;
+            return new Color(r, g, b);
+        }
+
         private string pendingMessage;
+        private float cellSize = DefaultCellSize;
 
         // ---- 缓存引用 ----
         private Text titleText;
         private Text statusText;
         private GameObject msgOverlay;
         private Text msgText;
+
+        // ScrollRect 地图区
+        private ScrollRect mapScrollRect;
+        private RectTransform mapContent;
+        private GameObject mapViewport;
+
+        // 网格瓦片对象池
+        private GridTile[] gridTiles;
+
+        // 当前房间高亮边框
+        private Image currentRoomOutline;
+
+        private struct GridTile
+        {
+            public GameObject obj;
+            public RectTransform rt;
+            public Image bg;
+            public Image overlay;  // 已清房间半透明叠加
+            public Text iconText;
+            public Text typeLabel;
+            public Button btn;
+        }
 
         // 右侧状态栏引用
         private Slider hpSlider;
@@ -35,20 +85,6 @@ namespace Game.UI
         private const int MaxSkillSlots = 4;
         private Text[] skillLabels = new Text[MaxSkillSlots];
         private Text[] skillMpLabels = new Text[MaxSkillSlots];
-
-        // 房间对象池
-        private RoomCell[] roomCells;
-
-        private struct RoomCell
-        {
-            public GameObject obj;
-            public RectTransform rt;
-            public Image border;
-            public Image bg;
-            public Text iconText;
-            public Text typeLabel;
-            public Button btn;
-        }
 
         /// <summary>仅供 PrefabGenerator 调用</summary>
         public static void CreateVisuals(Transform parent)
@@ -68,24 +104,83 @@ namespace Game.UI
             var statusTextObj = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
             UIBuilder.SetStretch(statusTextObj.gameObject);
 
-            // ===== 左侧：地图面板 =====
+            // ===== 左侧：地图面板（ScrollRect 可滚动缩放） =====
             var mapPanel = UIBuilder.CreateBorderedPanel(parent, 880, 500, "MapPanel");
-            mapPanel.GetComponent<RectTransform>().anchorMin = new Vector2(0, 0);
-            mapPanel.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
-            mapPanel.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
-            mapPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(-50, 20);
-            mapPanel.GetComponent<RectTransform>().sizeDelta = new Vector2(-280, -170);
+            var mapPanelRt = mapPanel.GetComponent<RectTransform>();
+            mapPanelRt.anchorMin = new Vector2(0, 0);
+            mapPanelRt.anchorMax = new Vector2(1, 1);
+            mapPanelRt.pivot = new Vector2(0.5f, 0.5f);
+            mapPanelRt.anchoredPosition = new Vector2(-50, 20);
+            mapPanelRt.sizeDelta = new Vector2(-280, -170);
 
-            // 创建房间对象池（最大 20 个房间）
-            var inner = mapPanel.transform.Find("Inner");
-            for (int i = 0; i < MaxRooms; i++)
+            var mapInner = mapPanel.transform.Find("Inner");
+
+            // ScrollRect Viewport
+            var viewport = new GameObject("Viewport");
+            viewport.transform.SetParent(mapInner, false);
+            var vpRt = viewport.AddComponent<RectTransform>();
+            vpRt.anchorMin = Vector2.zero;
+            vpRt.anchorMax = Vector2.one;
+            vpRt.offsetMin = Vector2.zero;
+            vpRt.offsetMax = Vector2.zero;
+            var vpImg = viewport.AddComponent<Image>();
+            vpImg.color = UIBuilder.ViewportBg;
+            var vpMask = viewport.AddComponent<Mask>();
+            vpMask.showMaskGraphic = false;
+
+            // ScrollRect Content 容器
+            var content = new GameObject("Content");
+            content.transform.SetParent(viewport.transform, false);
+            var contentRt = content.AddComponent<RectTransform>();
+            contentRt.anchorMin = new Vector2(0.5f, 1);
+            contentRt.anchorMax = new Vector2(0.5f, 1);
+            contentRt.pivot = new Vector2(0.5f, 1);
+            contentRt.anchoredPosition = Vector2.zero;
+            contentRt.sizeDelta = new Vector2(MaxGridSize * DefaultCellSize, MaxGridSize * DefaultCellSize);
+
+            // ScrollRect 组件（挂在 Viewport 上，确保拖拽和点击事件正确传递）
+            var scrollRect = viewport.AddComponent<ScrollRect>();
+            scrollRect.viewport = vpRt;
+            scrollRect.content = contentRt;
+            scrollRect.horizontal = true;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Elastic;
+            scrollRect.elasticity = 0.1f;
+            scrollRect.scrollSensitivity = 1f;
+            scrollRect.decelerationRate = 0.135f;
+
+            // 当前房间高亮边框（独立于瓦片池，仅一个）
+            var outlineObj = new GameObject("CurrentOutline");
+            outlineObj.transform.SetParent(contentRt, false);
+            var outlineRt = outlineObj.AddComponent<RectTransform>();
+            outlineRt.sizeDelta = new Vector2(DefaultCellSize, DefaultCellSize);
+            outlineRt.anchorMin = new Vector2(0, 1);
+            outlineRt.anchorMax = new Vector2(0, 1);
+            outlineRt.pivot = new Vector2(0, 1);
+            var outlineImg = outlineObj.AddComponent<Image>();
+            outlineImg.color = ColorCurrentOutline;
+            outlineImg.raycastTarget = false;
+
+            var outlineInner = new GameObject("Inner");
+            outlineInner.transform.SetParent(outlineObj.transform, false);
+            var oiRt = outlineInner.AddComponent<RectTransform>();
+            oiRt.anchorMin = Vector2.zero;
+            oiRt.anchorMax = Vector2.one;
+            oiRt.offsetMin = new Vector2(3, 3);
+            oiRt.offsetMax = new Vector2(-3, -3);
+            var oiImg = outlineInner.AddComponent<Image>();
+            oiImg.color = Color.clear;
+            oiImg.raycastTarget = false;
+
+            // 网格瓦片对象池（最大 100 = 10x10）
+            for (int i = 0; i < MaxTiles; i++)
             {
-                CreateRoomCellVisual(inner, i);
+                CreateGridTileVisual(contentRt, i);
             }
 
             // 消息覆盖层（默认隐藏）
             var msgOverlay = new GameObject("MsgOverlay");
-            msgOverlay.transform.SetParent(inner, false);
+            msgOverlay.transform.SetParent(mapInner, false);
             UIBuilder.SetStretch(msgOverlay);
             var oImg = msgOverlay.AddComponent<Image>();
             oImg.color = new Color(UIBuilder.DarkBg.r, UIBuilder.DarkBg.g, UIBuilder.DarkBg.b, 0.88f);
@@ -106,7 +201,7 @@ namespace Game.UI
             // ===== 底部技能快捷栏 =====
             CreateSkillBarVisuals(parent);
 
-            // ===== 底部按钮区（底部锚定，确保始终在屏幕内）=====
+            // ===== 底部按钮区 =====
             float btnW = 150;
             float btnH = 45;
 
@@ -236,38 +331,43 @@ namespace Game.UI
             }
         }
 
-        private static void CreateRoomCellVisual(Transform parent, int index)
+        /// <summary>创建网格瓦片视觉结构（对象池）</summary>
+        private static void CreateGridTileVisual(Transform parent, int index)
         {
-            // 外层：边框
-            var obj = new GameObject($"Room_{index}");
+            // 外层
+            var obj = new GameObject($"Tile_{index}");
             obj.transform.SetParent(parent, false);
             var rt = obj.AddComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(RoomBtnSize, RoomBtnSize);
+            rt.sizeDelta = new Vector2(DefaultCellSize, DefaultCellSize);
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
 
-            var border = obj.AddComponent<Image>();
-            border.color = UIBuilder.BorderDim;
+            var bg = obj.AddComponent<Image>();
+            bg.color = ColorWall;
 
-            // 内层：背景
-            var innerObj = new GameObject("Inner");
-            innerObj.transform.SetParent(obj.transform, false);
-            var innerRt = innerObj.AddComponent<RectTransform>();
-            innerRt.anchorMin = Vector2.zero;
-            innerRt.anchorMax = Vector2.one;
-            innerRt.offsetMin = new Vector2(3, 3);
-            innerRt.offsetMax = new Vector2(-3, -3);
-            var bg = innerObj.AddComponent<Image>();
-            bg.color = Color.gray;
+            // 已清叠加层
+            var overlayObj = new GameObject("Overlay");
+            overlayObj.transform.SetParent(obj.transform, false);
+            var olRt = overlayObj.AddComponent<RectTransform>();
+            olRt.anchorMin = Vector2.zero;
+            olRt.anchorMax = Vector2.one;
+            olRt.offsetMin = Vector2.zero;
+            olRt.offsetMax = Vector2.zero;
+            var overlay = overlayObj.AddComponent<Image>();
+            overlay.color = ColorClearedOverlay;
+            overlay.raycastTarget = false;
 
-            // 图标
+            // 图标文字
             var iconObj = new GameObject("Icon");
-            iconObj.transform.SetParent(innerObj.transform, false);
+            iconObj.transform.SetParent(obj.transform, false);
             var iconRt = iconObj.AddComponent<RectTransform>();
-            iconRt.anchorMin = new Vector2(0, 0.35f);
+            iconRt.anchorMin = new Vector2(0, 0.3f);
             iconRt.anchorMax = new Vector2(1, 1);
             iconRt.offsetMin = Vector2.zero;
             iconRt.offsetMax = Vector2.zero;
             var iconText = iconObj.AddComponent<Text>();
-            iconText.fontSize = 26;
+            iconText.fontSize = 20;
             iconText.color = Color.white;
             iconText.alignment = TextAnchor.MiddleCenter;
             iconText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -275,14 +375,14 @@ namespace Game.UI
 
             // 类型标签
             var labelObj = new GameObject("TypeLabel");
-            labelObj.transform.SetParent(innerObj.transform, false);
+            labelObj.transform.SetParent(obj.transform, false);
             var labelRt = labelObj.AddComponent<RectTransform>();
             labelRt.anchorMin = new Vector2(0, 0);
-            labelRt.anchorMax = new Vector2(1, 0.35f);
+            labelRt.anchorMax = new Vector2(1, 0.3f);
             labelRt.offsetMin = Vector2.zero;
             labelRt.offsetMax = Vector2.zero;
             var typeLabel = labelObj.AddComponent<Text>();
-            typeLabel.fontSize = 11;
+            typeLabel.fontSize = 9;
             typeLabel.color = UIBuilder.TextWhite;
             typeLabel.alignment = TextAnchor.MiddleCenter;
             typeLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -296,23 +396,31 @@ namespace Game.UI
             titleText = FindComponent<Text>("TitleBar/Title");
             statusText = FindComponent<Text>("StatusBar/StatusText");
 
-            // 地图面板房间池
-            roomCells = new RoomCell[MaxRooms];
-            for (int i = 0; i < MaxRooms; i++)
+            // ScrollRect 地图区
+            mapScrollRect = FindComponent<ScrollRect>("MapPanel/Inner/Viewport");
+            mapContent = FindComponent<RectTransform>("MapPanel/Inner/Viewport/Content");
+            mapViewport = transform.Find("MapPanel/Inner/Viewport").gameObject;
+
+            // 当前房间高亮边框
+            currentRoomOutline = FindComponent<Image>("MapPanel/Inner/Viewport/Content/CurrentOutline");
+
+            // 网格瓦片对象池
+            gridTiles = new GridTile[MaxTiles];
+            for (int i = 0; i < MaxTiles; i++)
             {
-                string path = $"MapPanel/Inner/Room_{i}";
-                var cellObj = transform.Find(path).gameObject;
-                roomCells[i] = new RoomCell
+                string path = $"MapPanel/Inner/Viewport/Content/Tile_{i}";
+                var tileObj = transform.Find(path).gameObject;
+                gridTiles[i] = new GridTile
                 {
-                    obj = cellObj,
-                    rt = cellObj.GetComponent<RectTransform>(),
-                    border = cellObj.GetComponent<Image>(),
-                    bg = cellObj.transform.Find("Inner").GetComponent<Image>(),
-                    iconText = cellObj.transform.Find("Inner/Icon").GetComponent<Text>(),
-                    typeLabel = cellObj.transform.Find("Inner/TypeLabel").GetComponent<Text>(),
-                    btn = cellObj.GetComponent<Button>()
+                    obj = tileObj,
+                    rt = tileObj.GetComponent<RectTransform>(),
+                    bg = tileObj.GetComponent<Image>(),
+                    overlay = tileObj.transform.Find("Overlay").GetComponent<Image>(),
+                    iconText = tileObj.transform.Find("Icon").GetComponent<Text>(),
+                    typeLabel = tileObj.transform.Find("TypeLabel").GetComponent<Text>(),
+                    btn = tileObj.GetComponent<Button>()
                 };
-                cellObj.SetActive(false);
+                tileObj.SetActive(false);
             }
 
             // 消息覆盖
@@ -340,13 +448,14 @@ namespace Game.UI
 
         protected override void BindEvents()
         {
-            for (int i = 0; i < MaxRooms; i++)
+            // 网格瓦片点击：通过 index 反算 GridPos
+            for (int i = 0; i < MaxTiles; i++)
             {
                 int capturedIndex = i;
-                roomCells[i].btn.onClick.AddListener(() =>
+                gridTiles[i].btn.onClick.AddListener(() =>
                 {
                     PlayUIClick();
-                    OnClickRoom(capturedIndex);
+                    OnClickGridTile(capturedIndex);
                 });
             }
 
@@ -424,8 +533,11 @@ namespace Game.UI
             // 标题
             titleText.text = $"地牢 第{dungeon.floor} 层";
 
-            // 顶部状态栏（简要）
-            statusText.text = $"房间 {dungeon.currentRoomIndex + 1}/{dungeon.rooms.Count}";
+            // 顶部状态栏
+            var curTile = dungeon.CurrentTile;
+            statusText.text = curTile != null
+                ? $"坐标 ({dungeon.currentPos.x},{dungeon.currentPos.y})  房间数 {dungeon.roomTiles.Count}"
+                : "";
 
             // 右侧状态面板
             hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
@@ -444,8 +556,8 @@ namespace Game.UI
             // 底部技能栏
             UpdateSkillBar(player);
 
-            // 房间地图
-            UpdateRoomMap(dungeon);
+            // 网格地图
+            UpdateGridMap(dungeon);
 
             // 消息覆盖
             if (!string.IsNullOrEmpty(pendingMessage))
@@ -459,66 +571,131 @@ namespace Game.UI
             }
         }
 
-        private void UpdateRoomMap(DungeonData dungeon)
+        /// <summary>
+        /// 根据网格数据刷新地图瓦片（零创建零销毁）
+        /// </summary>
+        private void UpdateGridMap(DungeonData dungeon)
         {
-            int total = dungeon.rooms.Count;
-            int cols = Mathf.Min(total, 10);
-            int rows = Mathf.CeilToInt((float)total / cols);
-            float totalWidth = cols * (RoomBtnSize + RoomGap) - RoomGap;
-            float totalHeight = rows * (RoomBtnSize + RoomGap) - RoomGap;
-            float offsetX = -totalWidth / 2 + RoomBtnSize / 2;
-            float offsetY = totalHeight / 2 - RoomBtnSize / 2;
+            if (dungeon.grid == null) return;
 
-            for (int i = 0; i < MaxRooms; i++)
+            int w = dungeon.gridWidth;
+            int h = dungeon.gridHeight;
+
+            // 更新 content 尺寸
+            mapContent.sizeDelta = new Vector2(w * cellSize, h * cellSize);
+
+            // 隐藏当前房间高亮
+            bool currentFound = false;
+
+            // 遍历所有瓦片
+            for (int y = 0; y < h; y++)
             {
-                var cell = roomCells[i];
-                if (i < total)
+                for (int x = 0; x < w; x++)
                 {
-                    var room = dungeon.rooms[i];
-                    bool isCurrent = i == dungeon.currentRoomIndex;
-                    cell.obj.SetActive(true);
+                    int idx = y * w + x;
+                    if (idx >= MaxTiles) continue;
 
-                    int col = i % cols;
-                    int row = i / cols;
-                    cell.rt.anchoredPosition = new Vector2(
-                        offsetX + col * (RoomBtnSize + RoomGap),
-                        offsetY - row * (RoomBtnSize + RoomGap));
+                    var tile = gridTiles[idx];
+                    var dungeonTile = dungeon.grid[x, y];
+                    bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
 
-                    cell.bg.color = GetRoomColor(room, isCurrent);
-                    cell.border.color = isCurrent ? UIBuilder.Gold : UIBuilder.BorderDim;
-                    cell.iconText.text = GetRoomIcon(room);
-                    cell.typeLabel.text = GetRoomTypeName(room, isCurrent);
+                    // 位置和大小
+                    tile.obj.SetActive(true);
+                    tile.rt.pivot = new Vector2(0, 1); // 左上角锚定
+                    tile.rt.anchorMin = new Vector2(0, 1);
+                    tile.rt.anchorMax = new Vector2(0, 1);
+                    tile.rt.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
+                    tile.rt.sizeDelta = new Vector2(cellSize, cellSize);
 
-                    // 只有当前房间和下一房间可交互
-                    cell.btn.interactable = (isCurrent || i == dungeon.currentRoomIndex + 1);
+                    // 颜色
+                    if (dungeonTile.tileType == TileType.Wall)
+                    {
+                        tile.bg.color = ColorWall;
+                        tile.overlay.color = Color.clear;
+                        tile.iconText.text = "";
+                        tile.typeLabel.text = "";
+                        tile.btn.interactable = false;
+                    }
+                    else
+                    {
+                        // 房间类型着色
+                        tile.bg.color = GetTileColor(dungeonTile.roomType);
+                        tile.iconText.text = GetTileIcon(dungeonTile.roomType);
+                        tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType, isCurrent);
+
+                        // 已清房间覆盖灰色半透明
+                        if (dungeonTile.isCleared && !isCurrent)
+                        {
+                            tile.overlay.color = ColorClearedOverlay;
+                        }
+                        else
+                        {
+                            tile.overlay.color = Color.clear;
+                        }
+
+                        // 只有当前房间和相邻可达房间可交互
+                        tile.btn.interactable = isCurrent || IsAdjacentToCurrent(dungeon, x, y);
+                    }
+
+                    // 当前房间高亮
+                    if (isCurrent && dungeonTile.tileType == TileType.Room)
+                    {
+                        currentFound = true;
+                        currentRoomOutline.rectTransform.pivot = new Vector2(0, 1);
+                        currentRoomOutline.rectTransform.anchorMin = new Vector2(0, 1);
+                        currentRoomOutline.rectTransform.anchorMax = new Vector2(0, 1);
+                        currentRoomOutline.rectTransform.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
+                        currentRoomOutline.rectTransform.sizeDelta = new Vector2(cellSize, cellSize);
+                        currentRoomOutline.gameObject.SetActive(true);
+                    }
                 }
-                else
-                {
-                    cell.obj.SetActive(false);
-                }
+            }
+
+            // 隐藏多余瓦片
+            int totalUsed = w * h;
+            for (int i = totalUsed; i < MaxTiles; i++)
+            {
+                gridTiles[i].obj.SetActive(false);
+            }
+
+            if (!currentFound)
+            {
+                currentRoomOutline.gameObject.SetActive(false);
             }
         }
 
-        private Color GetRoomColor(DungeonRoom room, bool isCurrent)
+        /// <summary>判断指定坐标是否与当前玩家位置相邻且可达</summary>
+        private bool IsAdjacentToCurrent(DungeonData dungeon, int x, int y)
         {
-            if (isCurrent) return UIBuilder.RoomCurrent;
-            if (room.cleared) return UIBuilder.RoomCleared;
-            return room.type switch
+            var cp = dungeon.currentPos;
+            // 上下左右相邻
+            if (Mathf.Abs(cp.x - x) + Mathf.Abs(cp.y - y) != 1) return false;
+            // 目标必须是房间
+            var tile = dungeon.GetTileAt(x, y);
+            return tile != null && tile.tileType == TileType.Room;
+        }
+
+        /// <summary>根据房间类型获取颜色</summary>
+        private Color GetTileColor(DungeonEventType roomType)
+        {
+            return roomType switch
             {
-                DungeonEventType.Monster => UIBuilder.RoomMonster,
-                DungeonEventType.Elite => UIBuilder.RoomElite,
-                DungeonEventType.Boss => UIBuilder.RoomBoss,
-                DungeonEventType.Treasure => UIBuilder.RoomTreasure,
-                DungeonEventType.Spring => UIBuilder.RoomSpring,
-                DungeonEventType.Merchant => UIBuilder.RoomMerchant,
-                DungeonEventType.Exit => UIBuilder.RoomExit,
-                _ => UIBuilder.RoomCleared
+                DungeonEventType.Monster => ColorMonster,
+                DungeonEventType.Elite => ColorElite,
+                DungeonEventType.Boss => ColorBoss,
+                DungeonEventType.Treasure => ColorTreasure,
+                DungeonEventType.Spring => ColorSpring,
+                DungeonEventType.Merchant => ColorMerchant,
+                DungeonEventType.Shrine => ColorShrine,
+                DungeonEventType.Exit => ColorExit,
+                _ => ColorEmpty
             };
         }
 
-        private string GetRoomIcon(DungeonRoom room)
+        /// <summary>根据房间类型获取图标文字</summary>
+        private string GetTileIcon(DungeonEventType roomType)
         {
-            return room.type switch
+            return roomType switch
             {
                 DungeonEventType.Monster => "怪",
                 DungeonEventType.Elite => "精",
@@ -527,15 +704,16 @@ namespace Game.UI
                 DungeonEventType.Spring => "泉",
                 DungeonEventType.Merchant => "商",
                 DungeonEventType.Exit => "梯",
-                _ => "○"
+                DungeonEventType.Shrine => "神",
+                _ => ""
             };
         }
 
-        private string GetRoomTypeName(DungeonRoom room, bool isCurrent)
+        /// <summary>根据房间类型获取类型名</summary>
+        private string GetTileTypeName(DungeonEventType roomType, bool isCurrent)
         {
             if (isCurrent) return "当前";
-            if (room.cleared) return "已清";
-            return room.type switch
+            return roomType switch
             {
                 DungeonEventType.Monster => "怪物",
                 DungeonEventType.Elite => "精英",
@@ -544,80 +722,58 @@ namespace Game.UI
                 DungeonEventType.Spring => "泉水",
                 DungeonEventType.Merchant => "商人",
                 DungeonEventType.Exit => "出口",
+                DungeonEventType.Shrine => "神殿",
                 _ => ""
             };
         }
 
-        private void OnClickRoom(int index)
+        /// <summary>网格瓦片点击处理：通过 index 反算 GridPos</summary>
+        private void OnClickGridTile(int index)
         {
-            Debug.Log($"[操作] 点击房间 index={index} 当前={GameManager.Instance.Dungeon.currentRoomIndex}");
             var dungeon = GameManager.Instance.Dungeon;
-            if (index != dungeon.currentRoomIndex && index != dungeon.currentRoomIndex + 1) return;
-            if (index > dungeon.currentRoomIndex)
+            if (dungeon.grid == null) return;
+
+            int w = dungeon.gridWidth;
+            int x = index % w;
+            int y = index / w;
+
+            // 只能点击当前房间或相邻可达房间
+            if (!IsAdjacentToCurrent(dungeon, x, y) &&
+                !(dungeon.currentPos.x == x && dungeon.currentPos.y == y))
+                return;
+
+            var tile = dungeon.GetTileAt(x, y);
+            if (tile == null || tile.tileType != TileType.Room) return;
+
+            bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
+
+            // 移动到目标房间
+            if (!isCurrent)
             {
-                dungeon.currentRoomIndex = index;
-                // 移动到下一房间音效
+                dungeon.currentPos = new GridPos(x, y);
+                // 更新旧接口兼容
+                dungeon.currentRoomIndex = FindRoomIndex(dungeon, x, y);
                 AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);
             }
 
-            var room = dungeon.CurrentRoom;
-            if (room == null || room.cleared) { RefreshUI(); return; }
+            // 处理房间事件
+            if (tile.isCleared) { RefreshUI(); return; }
 
-            switch (room.type)
+            switch (tile.roomType)
             {
                 case DungeonEventType.Monster:
                 case DungeonEventType.Elite:
                 case DungeonEventType.Boss:
-                    Debug.Log($"[地牢] 遭遇战斗 type={room.type}");
-                    var monsters = ConfigManager.Instance.GetMonstersByFloor(dungeon.floor);
-                    var monsterCfg = room.type == DungeonEventType.Boss
-                        ? ConfigManager.Instance.GetBossByFloor(dungeon.floor)
-                        : monsters.Count > 0 ? monsters[Random.Range(0, monsters.Count)] : null;
-                    if (monsterCfg != null)
-                    {
-                        // 楼层缩放：每层+15%属性
-                        float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
-                        // 精英怪1.5倍属性
-                        float eliteScale = room.type == DungeonEventType.Elite ? 1.5f : 1f;
-                        float totalScale = floorScale * eliteScale;
-
-                        int scaledHp = Mathf.RoundToInt(monsterCfg.hp * totalScale);
-                        int scaledAtk = Mathf.RoundToInt(monsterCfg.attack * totalScale);
-                        int scaledDef = Mathf.RoundToInt(monsterCfg.defense * totalScale);
-                        // 精英怪2倍奖励
-                        int rewardMul = room.type == DungeonEventType.Elite ? 2 : 1;
-
-                        string displayName = room.type == DungeonEventType.Elite
-                            ? $"精英{monsterCfg.name}" : monsterCfg.name;
-
-                        var battleData = new BattleData
-                        {
-                            monster = new BattleMonster
-                            {
-                                id = monsterCfg.id, name = displayName,
-                                hp = scaledHp, maxHp = scaledHp,
-                                attack = scaledAtk, defense = scaledDef,
-                                speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
-                                expReward = monsterCfg.expReward * rewardMul,
-                                goldReward = monsterCfg.goldReward * rewardMul,
-                                drops = monsterCfg.drops,
-                                isBoss = monsterCfg.isBoss,
-                                level = Mathf.RoundToInt(monsterCfg.minFloor * 2 * totalScale) + 1
-                            },
-                            room = room
-                        };
-                        BattleManager.Instance.StartBattle(battleData);
-                        UIManager.Instance.ShowPanel<BattlePanel>();
-                    }
+                    HandleBattle(dungeon, tile);
                     break;
 
                 case DungeonEventType.Treasure:
                     Debug.Log("[地牢] 发现宝箱");
-                    HandleTreasure(room);
+                    HandleTreasure(tile);
                     break;
                 case DungeonEventType.Spring:
                     Debug.Log("[地牢] 发现泉水");
-                    HandleSpring(room);
+                    HandleSpring(tile);
                     break;
                 case DungeonEventType.Merchant:
                     Debug.Log("[地牢] 遇到商人");
@@ -627,11 +783,89 @@ namespace Game.UI
                     Debug.Log("[地牢] 进入下一层");
                     HandleExit();
                     break;
+                case DungeonEventType.Shrine:
+                    Debug.Log("[地牢] 发现神殿");
+                    HandleShrine(tile);
+                    break;
             }
             RefreshUI();
         }
 
-        private void HandleTreasure(DungeonRoom room)
+        /// <summary>在旧 rooms 列表中查找匹配的房间索引（向后兼容）</summary>
+        private int FindRoomIndex(DungeonData dungeon, int x, int y)
+        {
+            for (int i = 0; i < dungeon.rooms.Count; i++)
+            {
+                if (dungeon.rooms[i].position.x == x && dungeon.rooms[i].position.y == y)
+                    return i;
+            }
+            return dungeon.currentRoomIndex;
+        }
+
+        /// <summary>处理战斗事件</summary>
+        private void HandleBattle(DungeonData dungeon, DungeonTile tile)
+        {
+            Debug.Log($"[地牢] 遭遇战斗 type={tile.roomType}");
+            var monsters = ConfigManager.Instance.GetMonstersByFloor(dungeon.floor);
+            var monsterCfg = tile.roomType == DungeonEventType.Boss
+                ? ConfigManager.Instance.GetBossByFloor(dungeon.floor)
+                : monsters.Count > 0 ? monsters[Random.Range(0, monsters.Count)] : null;
+            if (monsterCfg != null)
+            {
+                float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
+                float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
+                float totalScale = floorScale * eliteScale;
+
+                int scaledHp = Mathf.RoundToInt(monsterCfg.hp * totalScale);
+                int scaledAtk = Mathf.RoundToInt(monsterCfg.attack * totalScale);
+                int scaledDef = Mathf.RoundToInt(monsterCfg.defense * totalScale);
+                int rewardMul = tile.roomType == DungeonEventType.Elite ? 2 : 1;
+
+                string displayName = tile.roomType == DungeonEventType.Elite
+                    ? $"精英{monsterCfg.name}" : monsterCfg.name;
+
+                // 向后兼容：找到对应旧 DungeonRoom
+                var room = FindMatchingRoom(dungeon, tile);
+
+                var battleData = new BattleData
+                {
+                    monster = new BattleMonster
+                    {
+                        id = monsterCfg.id, name = displayName,
+                        hp = scaledHp, maxHp = scaledHp,
+                        attack = scaledAtk, defense = scaledDef,
+                        speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
+                        expReward = monsterCfg.expReward * rewardMul,
+                        goldReward = monsterCfg.goldReward * rewardMul,
+                        drops = monsterCfg.drops,
+                        isBoss = monsterCfg.isBoss,
+                        level = Mathf.RoundToInt(monsterCfg.minFloor * 2 * totalScale) + 1
+                    },
+                    room = room
+                };
+                BattleManager.Instance.StartBattle(battleData);
+                UIManager.Instance.ShowPanel<BattlePanel>();
+            }
+        }
+
+        /// <summary>根据 DungeonTile 查找旧 rooms 列表中对应的 DungeonRoom（兼容 BattleManager）</summary>
+        private DungeonRoom FindMatchingRoom(DungeonData dungeon, DungeonTile tile)
+        {
+            foreach (var room in dungeon.rooms)
+            {
+                if (room.position.x == tile.gridPos.x && room.position.y == tile.gridPos.y)
+                    return room;
+            }
+            // 兜底：创建临时
+            return new DungeonRoom
+            {
+                type = tile.roomType,
+                cleared = tile.isCleared,
+                position = new Vector2Int(tile.gridPos.x, tile.gridPos.y)
+            };
+        }
+
+        private void HandleTreasure(DungeonTile tile)
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
@@ -639,7 +873,6 @@ namespace Game.UI
             player.gold += goldFound;
             pendingMessage = $"发现宝箱！获得 {goldFound} 金币";
 
-            // 几率获得宝物遗物
             var allTreasures = ConfigManager.Instance.GetAllTreasures();
             var available = allTreasures.FindAll(t => !player.treasures.Contains(t.id));
             if (available.Count > 0 && Random.value < GameConstants.TREASURE_CHANCE)
@@ -650,7 +883,6 @@ namespace Game.UI
                 pendingMessage += $"\n获得宝物：{treasure.name} — {treasure.desc}";
             }
 
-            // 几率获得消耗品
             var consumables = ConfigManager.Instance.GetItemsByType(ItemType.Consumable);
             if (consumables.Count > 0 && Random.value < GameConstants.CONSUMABLE_DROP_CHANCE && player.bagItems.Count < player.maxBagSize)
             {
@@ -658,10 +890,14 @@ namespace Game.UI
                 player.bagItems.Add(item.id);
                 pendingMessage += $"\n获得物品：{item.name}";
             }
+            tile.isCleared = true;
+
+            // 同步旧 rooms
+            var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
             room.cleared = true;
         }
 
-        private void HandleSpring(DungeonRoom room)
+        private void HandleSpring(DungeonTile tile)
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
@@ -670,6 +906,39 @@ namespace Game.UI
             player.hp = Mathf.Min(player.hp + hpHeal, player.maxHp);
             player.mp = Mathf.Min(player.mp + mpHeal, player.maxMp);
             pendingMessage = $"发现泉水！\n恢复 {hpHeal} 生命，{mpHeal} 法力";
+            tile.isCleared = true;
+
+            var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
+            room.cleared = true;
+        }
+
+        /// <summary>神殿处理：随机增益效果</summary>
+        private void HandleShrine(DungeonTile tile)
+        {
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
+            var player = GameManager.Instance.Player;
+            int roll = Random.Range(0, 3);
+            if (roll == 0)
+            {
+                int atkBonus = Random.Range(2, 5);
+                player.attack += atkBonus;
+                pendingMessage = $"神殿赐福！\n攻击力 +{atkBonus}";
+            }
+            else if (roll == 1)
+            {
+                int defBonus = Random.Range(2, 5);
+                player.defense += defBonus;
+                pendingMessage = $"神殿赐福！\n防御力 +{defBonus}";
+            }
+            else
+            {
+                int hpHeal = player.maxHp / 2;
+                player.hp = Mathf.Min(player.hp + hpHeal, player.maxHp);
+                pendingMessage = $"神殿赐福！\n恢复 {hpHeal} 生命值";
+            }
+            tile.isCleared = true;
+
+            var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
             room.cleared = true;
         }
 
@@ -679,14 +948,14 @@ namespace Game.UI
             var currentDungeon = GameManager.Instance.Dungeon;
             int nextFloor = currentDungeon.floor + 1;
 
-            // 通关检查：击败最终Boss后显示胜利
+            // 通关检查
             if (nextFloor > currentDungeon.maxFloor)
             {
                 pendingMessage = "恭喜通关！\n你征服了地牢所有楼层！\n\n可继续探索无尽模式...";
                 player.dungeonFloor = nextFloor;
                 var endlessDungeon = new DungeonData();
                 endlessDungeon.GenerateFloor(nextFloor);
-                endlessDungeon.maxFloor = int.MaxValue; // 无尽模式
+                endlessDungeon.maxFloor = int.MaxValue;
                 GameManager.Instance.Dungeon = endlessDungeon;
                 GameManager.Instance.SaveGame();
                 RefreshUI();
@@ -699,6 +968,43 @@ namespace Game.UI
             GameManager.Instance.Dungeon = dungeon;
             GameManager.Instance.SetState(GameState.InDungeon);
             RefreshUI();
+        }
+
+        /// <summary>
+        /// 滚轮缩放支持：调整 cellSize 并重算 content 和所有 tile 的位置/大小
+        /// </summary>
+        private void Update()
+        {
+            HandleScrollZoom();
+        }
+
+        private void HandleScrollZoom()
+        {
+            if (mapViewport == null || !mapViewport.activeInHierarchy) return;
+
+            // 检测鼠标是否在地图视口范围内
+            if (!RectTransformUtility.RectangleContainsScreenPoint(
+                mapViewport.transform as RectTransform, Input.mousePosition))
+                return;
+
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) < 0.01f) return;
+
+            float oldSize = cellSize;
+            if (scroll > 0)
+                cellSize = Mathf.Min(cellSize + ZoomStep, MaxCellSize);
+            else
+                cellSize = Mathf.Max(cellSize - ZoomStep, MinCellSize);
+
+            // 没有变化则跳过
+            if (Mathf.Approximately(oldSize, cellSize)) return;
+
+            // 刷新地图布局
+            var dungeon = GameManager.Instance.Dungeon;
+            if (dungeon != null && dungeon.grid != null)
+            {
+                UpdateGridMap(dungeon);
+            }
         }
     }
 }
