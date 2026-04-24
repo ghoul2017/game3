@@ -212,7 +212,7 @@
     "3. AIManager.DecideAction(monster,battleState)返回行动：(a)Aggressive: MP>0且高伤技能可用→70%用技能/30%普攻 (b)Defensive: HP<50%→40%治疗/防御buff/30%普攻/30%其他 (c)Debuffer: 目标无debuff→70%上debuff/30%普攻；已有debuff→60%普攻/40%技能 (d)Balanced: 均匀分布 (e)Boss: HP>60%→Aggressive模式、HP30-60%→Debuffer+Defensive混合、HP<30%→全技能可用+伤害+20%+优先最高伤技能",
     "4. 决策约束：MP不足时排除技能选项，已有同类型debuff时排除重复debuff",
     "5. 战斗日志可显示怪物AI提示(可选)：'{怪物}摆出了防御姿态...'或'{怪物}愤怒地咆哮！'"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F142","category":"battle","priority":15,"desc":"战斗UI增强：状态图标显示+战斗日志颜色标记+HP/MP条平滑变化","steps":[
     "1. BattlePanel新增状态显示区：怪物区/玩家区下方各4个状态图标位(对象池)，显示为小方块(16x16)+缩写文字(如'流血''眩晕''+ATK')，颜色按状态类型(流血红/中毒绿/眩晕黄/沉默灰/易伤橙/Buff蓝)",
