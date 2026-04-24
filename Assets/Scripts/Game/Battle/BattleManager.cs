@@ -855,6 +855,9 @@ namespace Game.Battle
                 var skill = ConfigManager.Instance.GetSkill(decision.skillId);
                 if (skill != null)
                 {
+                    // Boss使用技能标记（UI层触发屏幕震动）
+                    if (b.isBossBattle)
+                        b.bossSkillTriggered = true;
                     int rawDmg = CalcDamage((int)(monsterAtk * skill.power / 100f), playerDef);
                     int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * dmgMultiplier * decision.damageBonus));
 

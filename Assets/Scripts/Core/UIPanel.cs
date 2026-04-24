@@ -14,6 +14,7 @@ namespace Game.Core
     {
         private CanvasGroup canvasGroup;
         private bool isInitialized;
+        private Coroutine transitionCoroutine;
 
         // ---- 生命周期 ----
 
@@ -47,6 +48,34 @@ namespace Game.Core
 
         /// <summary>销毁时调用。</summary>
         public virtual void OnDestroyed() { }
+
+        // ---- 面板过渡动画协程 ----
+
+        /// <summary>淡入协程：alpha 0→1，持续0.2s</summary>
+        private IEnumerator FadeInCoroutine()
+        {
+            float duration = 0.2f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                canvasGroup.alpha = t;
+                yield return null;
+            }
+            canvasGroup.alpha = 1f;
+            transitionCoroutine = null;
+        }
+
+        /// <summary>停止面板过渡动画（供子类调用）</summary>
+        protected void StopTransition()
+        {
+            if (transitionCoroutine != null)
+            {
+                StopCoroutine(transitionCoroutine);
+                transitionCoroutine = null;
+            }
+        }
 
         // ---- 预制体模式虚方法 ----
 
@@ -92,10 +121,18 @@ namespace Game.Core
 
             Debug.Log($"[Panel] Show -> {GetType().Name} 子物体数={transform.childCount}");
 
-            StopAllCoroutines();
-            canvasGroup.alpha = 1f;
+            // 停止旧的过渡动画（不使用StopAllCoroutines，避免中断子类协程）
+            if (transitionCoroutine != null)
+            {
+                StopCoroutine(transitionCoroutine);
+                transitionCoroutine = null;
+            }
+
+            // 面板过渡动画：alpha 0→1 淡入
+            canvasGroup.alpha = 0f;
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
+            transitionCoroutine = StartCoroutine(FadeInCoroutine());
 
             // 播放面板打开音效
             AudioManager.Instance?.PlaySFX(AudioClipType.UI_PanelOpen);
@@ -109,7 +146,14 @@ namespace Game.Core
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
 
-            StopAllCoroutines();
+            // 停止旧的过渡动画
+            if (transitionCoroutine != null)
+            {
+                StopCoroutine(transitionCoroutine);
+                transitionCoroutine = null;
+            }
+
+            // 面板过渡动画：alpha 1→0 淡出
             canvasGroup.alpha = 0f;
 
             // 播放面板关闭音效

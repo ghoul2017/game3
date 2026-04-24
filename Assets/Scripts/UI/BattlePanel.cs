@@ -91,6 +91,21 @@ namespace Game.UI
         // ---- 状态图标动画追踪 ----
         private List<Coroutine> statusAnimCoroutines = new List<Coroutine>();
 
+        // ---- 伤害浮动数字对象池 ----
+        private const int MaxFloatingTexts = 8;
+        private FloatingText[] floatingTextPool;
+        private Coroutine shakeCoroutine;
+        private int lastProcessedLogCount;
+
+        /// <summary>浮动文字结构体</summary>
+        private struct FloatingText
+        {
+            public GameObject obj;
+            public RectTransform rt;
+            public Text text;
+            public CanvasGroup cg;
+        }
+
         /// <summary>状态图标槽位结构体</summary>
         private struct StatusSlot
         {
@@ -358,6 +373,35 @@ namespace Game.UI
             UIBuilder.SetAnchored(resultBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0, -290), new Vector2(240, 55));
             resultBtn.gameObject.SetActive(false);
+
+            // === 伤害浮动数字对象池（默认隐藏） ===
+            for (int i = 0; i < MaxFloatingTexts; i++)
+            {
+                CreateFloatingTextVisual(parent, i);
+            }
+        }
+
+        /// <summary>创建浮动伤害数字对象（对象池预创建）</summary>
+        private static void CreateFloatingTextVisual(Transform parent, int index)
+        {
+            var obj = new GameObject($"FloatingText_{index}");
+            obj.transform.SetParent(parent, false);
+            var rt = obj.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(200, 40);
+            var cg = obj.AddComponent<CanvasGroup>();
+            cg.alpha = 0f;
+            var text = obj.AddComponent<Text>();
+            text.text = "";
+            text.fontSize = 28;
+            text.color = UIBuilder.Red;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.fontStyle = FontStyle.Bold;
+            text.raycastTarget = false;
+            obj.SetActive(false);
         }
 
         /// <summary>创建单个状态图标槽位（16x16方块+缩写文字）</summary>
@@ -517,6 +561,22 @@ namespace Game.UI
             // 奖励面板
             rewardOverlay = transform.Find("RewardOverlay").gameObject;
             rewardText = FindComponent<Text>("RewardOverlay/RewardText");
+
+            // 伤害浮动数字对象池
+            floatingTextPool = new FloatingText[MaxFloatingTexts];
+            for (int i = 0; i < MaxFloatingTexts; i++)
+            {
+                var ftObj = transform.Find($"FloatingText_{i}")?.gameObject;
+                if (ftObj == null) continue;
+                floatingTextPool[i] = new FloatingText
+                {
+                    obj = ftObj,
+                    rt = ftObj.GetComponent<RectTransform>(),
+                    text = ftObj.GetComponent<Text>(),
+                    cg = ftObj.GetComponent<CanvasGroup>()
+                };
+                ftObj.SetActive(false);
+            }
         }
 
         protected override void BindEvents()
@@ -546,6 +606,7 @@ namespace Game.UI
             monsterHpDisplayValue = -1f;
             playerHpDisplayValue = -1f;
             playerMpDisplayValue = -1f;
+            lastProcessedLogCount = 0;
             statusAnimCoroutines.Clear();
             if (skillPanel != null) skillPanel.SetActive(false);
             if (itemPanel != null) itemPanel.SetActive(false);
@@ -561,6 +622,11 @@ namespace Game.UI
             StopTurnTransition();
             StopBarAnimations();
             StopStatusAnimations();
+            if (shakeCoroutine != null)
+            {
+                StopCoroutine(shakeCoroutine);
+                shakeCoroutine = null;
+            }
         }
 
         /// <summary>
@@ -724,6 +790,16 @@ namespace Game.UI
                 }
 
                 if (btnResult != null) btnResult.gameObject.SetActive(false);
+            }
+
+            // 触发浮动伤害数字
+            TriggerFloatingTextsFromLog();
+
+            // Boss技能屏幕震动
+            if (b.bossSkillTriggered)
+            {
+                b.bossSkillTriggered = false;
+                TriggerBossShake();
             }
         }
 
@@ -1056,6 +1132,192 @@ namespace Game.UI
         }
 
         // ==================== 统一回合流程 ====================
+
+        // ==================== 伤害浮动数字 ====================
+
+        /// <summary>
+        /// 浮动文字类型：伤害(红色)、治疗(绿色)、闪避(蓝色Miss)
+        /// </summary>
+        public enum FloatingTextType
+        {
+            Damage,     // 红色
+            Heal,       // 绿色
+            Miss        // 蓝色
+        }
+
+        /// <summary>
+        /// 显示浮动伤害/治疗/闪避文字。
+        /// 从初始位置向上飘移30px并淡出，持续0.8s。
+        /// </summary>
+        public void ShowFloatingText(string content, FloatingTextType type, Vector2 position)
+        {
+            // 从对象池找一个空闲的
+            for (int i = 0; i < MaxFloatingTexts; i++)
+            {
+                if (floatingTextPool[i].obj != null && !floatingTextPool[i].obj.activeSelf)
+                {
+                    var ft = floatingTextPool[i];
+                    ft.text.text = content;
+                    ft.text.color = type switch
+                    {
+                        FloatingTextType.Damage => UIBuilder.Red,
+                        FloatingTextType.Heal => UIBuilder.Green,
+                        FloatingTextType.Miss => UIBuilder.Blue,
+                        _ => UIBuilder.TextWhite
+                    };
+                    ft.rt.anchoredPosition = position;
+                    ft.cg.alpha = 1f;
+                    ft.obj.SetActive(true);
+                    StartCoroutine(FloatingTextCoroutine(ft));
+                    return;
+                }
+            }
+        }
+
+        /// <summary>浮动文字动画：向上飘移30px + 淡出，0.8s后回收</summary>
+        private IEnumerator FloatingTextCoroutine(FloatingText ft)
+        {
+            float duration = 0.8f;
+            float moveDistance = 30f;
+            float elapsed = 0f;
+            Vector2 startPos = ft.rt.anchoredPosition;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                // 向上飘移
+                ft.rt.anchoredPosition = startPos + new Vector2(0, moveDistance * t);
+                // 淡出（后半段加速淡出）
+                ft.cg.alpha = 1f - t * t;
+                yield return null;
+            }
+
+            // 回收到对象池
+            ft.cg.alpha = 0f;
+            ft.obj.SetActive(false);
+        }
+
+        /// <summary>
+        /// 解析战斗日志，触发浮动伤害数字。
+        /// 只处理新增的日志条目（基于 lastProcessedLogCount 去重）。
+        /// </summary>
+        private void TriggerFloatingTextsFromLog()
+        {
+            var b = BattleManager.Instance.CurrentBattle;
+            if (b == null || b.log.Count == 0) return;
+
+            // 只处理新增的日志条目
+            int newStart = lastProcessedLogCount;
+            if (newStart >= b.log.Count) return;
+            lastProcessedLogCount = b.log.Count;
+
+            // 处理所有新增条目（通常1-3条）
+            for (int i = newStart; i < b.log.Count; i++)
+            {
+                string entry = b.log[i];
+                if (string.IsNullOrEmpty(entry)) continue;
+                ProcessLogEntryForFloatingText(entry);
+            }
+        }
+
+        /// <summary>解析单条日志，触发对应的浮动文字</summary>
+        private void ProcessLogEntryForFloatingText(string entry)
+        {
+            // 怪物受到伤害（玩家攻击/技能 -> 怪物）
+            if (entry.Contains("造成") && entry.Contains("伤害") && !entry.Contains("对你"))
+            {
+                int dmg = ExtractNumber(entry, "造成 ", " 点");
+                if (dmg > 0)
+                    ShowFloatingText($"-{dmg}", FloatingTextType.Damage, new Vector2(0, 50));
+            }
+            // DoT伤害（流血/中毒/燃烧）
+            else if (entry.Contains("损失") && entry.Contains("HP"))
+            {
+                int dmg = ExtractNumber(entry, "损失", "HP");
+                if (dmg > 0)
+                {
+                    bool isPlayer = entry.StartsWith("你");
+                    ShowFloatingText($"-{dmg}", FloatingTextType.Damage,
+                        isPlayer ? new Vector2(0, -200) : new Vector2(0, 50));
+                }
+            }
+            // 玩家受到伤害（怪物攻击）
+            else if (entry.Contains("对你造成") || (entry.Contains("攻击了你") && entry.Contains("伤害")))
+            {
+                int dmg = ExtractNumber(entry, "造成 ", " 点");
+                if (dmg > 0)
+                    ShowFloatingText($"-{dmg}", FloatingTextType.Damage, new Vector2(0, -200));
+            }
+            // 治疗类
+            else if (entry.Contains("恢复") && (entry.Contains("生命") || entry.Contains("HP")))
+            {
+                int heal = ExtractNumber(entry, "恢复 ", " 点");
+                if (heal > 0)
+                    ShowFloatingText($"+{heal}", FloatingTextType.Heal, new Vector2(0, -200));
+            }
+            // 闪避
+            else if (entry.Contains("闪避"))
+            {
+                bool isPlayerDodge = entry.Contains("你闪避");
+                ShowFloatingText("Miss", FloatingTextType.Miss,
+                    isPlayerDodge ? new Vector2(0, -200) : new Vector2(0, 50));
+            }
+        }
+
+        /// <summary>从字符串中提取数字（简单正则替代）</summary>
+        private int ExtractNumber(string text, string prefix, string suffix)
+        {
+            int startIdx = text.IndexOf(prefix);
+            if (startIdx < 0) return 0;
+            startIdx += prefix.Length;
+            int endIdx = text.IndexOf(suffix, startIdx);
+            if (endIdx < 0) return 0;
+            string numStr = text.Substring(startIdx, endIdx - startIdx).Trim();
+            int result;
+            if (int.TryParse(numStr, out result)) return result;
+            return 0;
+        }
+
+        // ==================== Boss屏幕震动 ====================
+
+        /// <summary>
+        /// Boss使用技能时触发屏幕震动。
+        /// BattlePanel的RectTransform随机偏移 ±5px，持续0.1s反复3次。
+        /// </summary>
+        public void TriggerBossShake()
+        {
+            if (shakeCoroutine != null)
+                StopCoroutine(shakeCoroutine);
+            shakeCoroutine = StartCoroutine(BossShakeCoroutine());
+        }
+
+        private IEnumerator BossShakeCoroutine()
+        {
+            var rt = GetComponent<RectTransform>();
+            if (rt == null) { shakeCoroutine = null; yield break; }
+
+            Vector2 originalPos = rt.anchoredPosition;
+            float shakeIntensity = 5f;
+            float shakeDuration = 0.1f;
+
+            for (int i = 0; i < 3; i++)
+            {
+                // 随机偏移
+                float offsetX = Random.Range(-shakeIntensity, shakeIntensity);
+                float offsetY = Random.Range(-shakeIntensity, shakeIntensity);
+                rt.anchoredPosition = originalPos + new Vector2(offsetX, offsetY);
+
+                yield return new WaitForSeconds(shakeDuration);
+
+                // 回到原位
+                rt.anchoredPosition = originalPos;
+                yield return new WaitForSeconds(shakeDuration);
+            }
+
+            rt.anchoredPosition = originalPos;
+            shakeCoroutine = null;
+        }
 
         /// <summary>
         /// 执行完整回合：RoundStart -> 先手方Action -> 后手方Action -> RoundEnd

@@ -37,6 +37,7 @@ namespace Game.Data
         public bool isBossBattle;          // 是否Boss战
         public bool bossDefeated;          // Boss是否被击败（用于记录到defeatedBosses）
         public string bossKillTitle;       // Boss击杀标识（如"击败了暗影领主！"）
+        public bool bossSkillTriggered;    // Boss使用技能标记（UI层读取后触发震动并重置）
     }
 
     [System.Serializable]
