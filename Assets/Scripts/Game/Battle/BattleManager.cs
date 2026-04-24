@@ -95,6 +95,8 @@ namespace Game.Battle
             CurrentBattle.playerBuffDefense = 0;
             CurrentBattle.playerBuffSpeed = 0;
             CurrentBattle.playerBuffTurns = 0;
+            CurrentBattle.playerEffects.Clear();
+            CurrentBattle.monsterEffects.Clear();
             CurrentBattle.log.Clear();
             CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
             reviveUsed = false;
@@ -135,6 +137,24 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
+            // 回合开始：Tick状态效果
+            TickEffects(true);
+
+            // 检查玩家是否死亡（DoT致死）
+            if (p.hp <= 0)
+            {
+                if (TryRevive()) { /* 复活成功，继续行动 */ }
+                else { return OnDefeat(); }
+            }
+
+            // 检查眩晕：跳过行动
+            if (HasEffect(true, EffectType.Stun))
+            {
+                b.log.Add("你因眩晕无法行动！");
+                RemoveEffect(true, EffectType.Stun);
+                return "你因眩晕无法行动！";
+            }
+
             // 魔力涌动：每回合回蓝
             ApplyManaSurge();
 
@@ -151,7 +171,9 @@ namespace Game.Battle
 
             // 狂战之怒：HP越低攻击越高
             int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
-            int dmg = CalcDamage(totalAtk, b.monster.defense + b.monster.buffDefense);
+            int rawDmg = CalcDamage(totalAtk, b.monster.defense + b.monster.buffDefense);
+            float monsterVuln = GetVulnerableMultiplier(false); // 怪物易伤加成
+            int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * monsterVuln));
             b.monster.hp -= dmg;
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
 
@@ -183,6 +205,33 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             var skill = ConfigManager.Instance.GetSkill(skillId);
             if (b == null || b.isFinished || skill == null) return "";
+
+            // 回合开始：Tick状态效果
+            TickEffects(true);
+
+            // 检查玩家是否死亡（DoT致死）
+            if (p.hp <= 0)
+            {
+                if (TryRevive()) { /* 复活成功 */ }
+                else { return OnDefeat(); }
+            }
+
+            // 检查眩晕：跳过行动
+            if (HasEffect(true, EffectType.Stun))
+            {
+                b.log.Add("你因眩晕无法行动！");
+                RemoveEffect(true, EffectType.Stun);
+                return "你因眩晕无法行动！";
+            }
+
+            // 检查沉默：无法使用技能
+            if (HasEffect(true, EffectType.Silence))
+            {
+                string silenceMsg = "你处于沉默状态，无法使用技能！";
+                b.log.Add(silenceMsg);
+                return silenceMsg;
+            }
+
             if (p.mp < skill.mpCost)
             {
                 string errMsg = "法力不足！";
@@ -257,7 +306,9 @@ namespace Game.Battle
 
             // 主动攻击技能
             int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
-            int dmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
+            int skillRawDmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
+            float skillVuln = GetVulnerableMultiplier(false); // 怪物易伤加成
+            int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(skillRawDmg * skillVuln));
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
@@ -318,6 +369,24 @@ namespace Game.Battle
             var item = ConfigManager.Instance.GetItem(itemId);
             if (b == null || b.isFinished || item == null) return "";
 
+            // 回合开始：Tick状态效果
+            TickEffects(true);
+
+            // 检查玩家是否死亡（DoT致死）
+            if (p.hp <= 0)
+            {
+                if (TryRevive()) { /* 复活成功 */ }
+                else { return OnDefeat(); }
+            }
+
+            // 检查眩晕：跳过行动（物品也不能使用）
+            if (HasEffect(true, EffectType.Stun))
+            {
+                b.log.Add("你因眩晕无法行动！");
+                RemoveEffect(true, EffectType.Stun);
+                return "你因眩晕无法行动！";
+            }
+
             // 魔力涌动：每回合回蓝
             ApplyManaSurge();
 
@@ -346,10 +415,32 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
+            // 回合开始：Tick怪物状态效果
+            TickEffects(false);
+
+            // 检查怪物是否死亡（DoT致死）
+            if (b.monster.hp <= 0)
+            {
+                b.monster.hp = 0;
+                return OnVictory();
+            }
+
+            // 检查怪物眩晕：跳过行动
+            if (HasEffect(false, EffectType.Stun))
+            {
+                string stunMsg = $"{b.monster.name}因眩晕无法行动！";
+                b.log.Add(stunMsg);
+                RemoveEffect(false, EffectType.Stun);
+                DecayBuffs(b);
+                return stunMsg;
+            }
+
             var m = b.monster;
             int monsterAtk = m.attack + m.buffAttack;
             int playerDef = p.defense + b.playerBuffDefense;
             float dmgMultiplier = GetSteadfastMultiplier(); // 坚守减伤
+            float vulnerableMult = GetVulnerableMultiplier(true); // 玩家易伤加成
+            dmgMultiplier *= vulnerableMult;
 
             // 受击音效
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Hit);
@@ -443,6 +534,24 @@ namespace Game.Battle
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
+
+            // 回合开始：Tick状态效果
+            TickEffects(true);
+
+            // 检查玩家是否死亡（DoT致死）
+            if (p.hp <= 0)
+            {
+                if (TryRevive()) { /* 复活成功 */ }
+                else { return OnDefeat(); }
+            }
+
+            // 检查眩晕：无法逃跑
+            if (HasEffect(true, EffectType.Stun))
+            {
+                b.log.Add("你因眩晕无法行动！");
+                RemoveEffect(true, EffectType.Stun);
+                return "你因眩晕无法行动！";
+            }
 
             // 魔力涌动：每回合回蓝
             ApplyManaSurge();
@@ -560,6 +669,168 @@ namespace Game.Battle
             int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - def / GameConstants.DEFENSE_DIVISOR);
             int variance = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(baseDmg * GameConstants.DAMAGE_VARIANCE_RATE));
             return Mathf.Max(GameConstants.MIN_DAMAGE, baseDmg + Random.Range(-variance, variance + 1));
+        }
+
+        // ==================== 状态效果系统 ====================
+
+        /// <summary>
+        /// 施加状态效果。叠加规则：同类型效果刷新duration取max
+        /// </summary>
+        /// <param name="isPlayer">true=玩家，false=怪物</param>
+        public void ApplyEffect(bool isPlayer, EffectType type, int value, int duration, int sourceId = 0)
+        {
+            var effects = isPlayer ? CurrentBattle.playerEffects : CurrentBattle.monsterEffects;
+            var existing = effects.Find(e => e.type == type);
+            if (existing != null)
+            {
+                // 叠加规则：同类型刷新duration取max，数值取最新
+                existing.duration = Mathf.Max(existing.duration, duration);
+                existing.value = value;
+                existing.sourceId = sourceId;
+            }
+            else
+            {
+                effects.Add(new StatusEffect(type, value, duration, sourceId));
+            }
+
+            string targetName = isPlayer ? "你" : CurrentBattle.monster.name;
+            CurrentBattle.log.Add($"{targetName}受到{new StatusEffect(type, value, duration).GetName()}效果({value}点/持续{duration}回合)");
+        }
+
+        /// <summary>
+        /// 移除指定类型的状态效果
+        /// </summary>
+        public void RemoveEffect(bool isPlayer, EffectType type)
+        {
+            var effects = isPlayer ? CurrentBattle.playerEffects : CurrentBattle.monsterEffects;
+            var effect = effects.Find(e => e.type == type);
+            if (effect != null)
+            {
+                string targetName = isPlayer ? "你" : CurrentBattle.monster.name;
+                CurrentBattle.log.Add($"{targetName}的{effect.GetName()}效果消失了");
+                effects.Remove(effect);
+            }
+        }
+
+        /// <summary>
+        /// 每回合Tick所有状态效果：触发DoT伤害、duration--、过期移除
+        /// </summary>
+        public void TickEffects(bool isPlayer)
+        {
+            var effects = isPlayer ? CurrentBattle.playerEffects : CurrentBattle.monsterEffects;
+            string targetName = isPlayer ? "你" : CurrentBattle.monster.name;
+
+            // 反向遍历，安全删除
+            for (int i = effects.Count - 1; i >= 0; i--)
+            {
+                var effect = effects[i];
+
+                // DoT效果：流血和中毒
+                if (effect.type == EffectType.Bleed || effect.type == EffectType.Poison)
+                {
+                    int dotDmg = Mathf.Max(GameConstants.MIN_DAMAGE, effect.value);
+                    if (isPlayer)
+                    {
+                        var p = GameManager.Instance.Player;
+                        p.hp = Mathf.Max(0, p.hp - dotDmg);
+                    }
+                    else
+                    {
+                        CurrentBattle.monster.hp = Mathf.Max(0, CurrentBattle.monster.hp - dotDmg);
+                    }
+                    string dotName = effect.type == EffectType.Bleed ? "流血" : "中毒";
+                    CurrentBattle.log.Add($"{targetName}因{dotName}损失{dotDmg}HP");
+                }
+
+                // duration递减
+                effect.duration--;
+
+                // 过期移除
+                if (effect.duration <= 0)
+                {
+                    CurrentBattle.log.Add($"{targetName}的{effect.GetName()}效果消失了");
+                    effects.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>检查目标是否有指定状态效果</summary>
+        public bool HasEffect(bool isPlayer, EffectType type)
+        {
+            var effects = isPlayer ? CurrentBattle.playerEffects : CurrentBattle.monsterEffects;
+            return effects.Exists(e => e.type == type);
+        }
+
+        /// <summary>获取玩家有效攻击力 = 基础 + 旧buff + 状态效果修正</summary>
+        public int GetEffectiveATK(bool isPlayer)
+        {
+            if (isPlayer)
+            {
+                var p = GameManager.Instance.Player;
+                int baseVal = p.attack + (CurrentBattle?.playerBuffAttack ?? 0) + GetRageBonus(p.attack);
+                int bonus = GetEffectModifier(isPlayer, EffectType.BuffATK);
+                return baseVal + bonus;
+            }
+            else
+            {
+                var m = CurrentBattle?.monster;
+                if (m == null) return 0;
+                return m.attack + m.buffAttack + GetEffectModifier(isPlayer, EffectType.BuffATK);
+            }
+        }
+
+        /// <summary>获取有效防御力 = 基础 + 旧buff + 状态效果修正</summary>
+        public int GetEffectiveDEF(bool isPlayer)
+        {
+            if (isPlayer)
+            {
+                var p = GameManager.Instance.Player;
+                return p.defense + (CurrentBattle?.playerBuffDefense ?? 0) + GetEffectModifier(isPlayer, EffectType.BuffDEF);
+            }
+            else
+            {
+                var m = CurrentBattle?.monster;
+                if (m == null) return 0;
+                return m.defense + m.buffDefense + GetEffectModifier(isPlayer, EffectType.BuffDEF);
+            }
+        }
+
+        /// <summary>获取有效速度 = 基础 + 旧buff + 状态效果修正</summary>
+        public int GetEffectiveSPD(bool isPlayer)
+        {
+            if (isPlayer)
+            {
+                return GetEffectivePlayerSpeed() + GetEffectModifier(isPlayer, EffectType.BuffSpeed);
+            }
+            else
+            {
+                return GetEffectiveMonsterSpeed() + GetEffectModifier(isPlayer, EffectType.BuffSpeed);
+            }
+        }
+
+        /// <summary>汇总指定类型Buff修正值</summary>
+        private int GetEffectModifier(bool isPlayer, EffectType type)
+        {
+            var effects = isPlayer ? CurrentBattle.playerEffects : CurrentBattle.monsterEffects;
+            int total = 0;
+            foreach (var e in effects)
+            {
+                if (e.type == type) total += e.value;
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// 获取Vulnerable（易伤）加成倍率
+        /// </summary>
+        public float GetVulnerableMultiplier(bool isPlayer)
+        {
+            if (HasEffect(isPlayer, EffectType.Vulnerable))
+            {
+                int vulnValue = GetEffectModifier(isPlayer, EffectType.Vulnerable);
+                return 1f + vulnValue / 100f;
+            }
+            return 1f;
         }
     }
 }

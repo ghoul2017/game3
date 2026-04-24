@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Game.Battle;
 using Game.Config;
 using Game.Data;
 
@@ -19,6 +20,10 @@ namespace Game.Data
         public int playerBuffDefense;  // 防御buff加成
         public int playerBuffSpeed;    // 速度buff加成
         public int playerBuffTurns;    // buff剩余回合
+
+        // 状态效果列表
+        public List<StatusEffect> playerEffects = new List<StatusEffect>();
+        public List<StatusEffect> monsterEffects = new List<StatusEffect>();
 
         // 战斗奖励
         public int rewardExp;
