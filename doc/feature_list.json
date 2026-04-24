@@ -277,7 +277,7 @@
     "3. 消耗品10+种(原4种保留+6种新增)：保留红药(HP+50)/蓝药(MP+30)/大红(HP+100)/大蓝(MP+60)+新增解毒药(移除中毒)/兴奋剂(ATK+20%持续3场战斗)/护盾卷轴(下次受伤减伤50%)/回城卷轴(地牢中直接回城镇)/经验书(下一场战斗经验+50%)/炸弹(战斗中造成固定50伤害，无视防御)",
     "4. 消耗品使用限制：战斗中(battle=true)和战斗外(battle=false)均可使用，回城卷轴仅战斗外可用",
     "5. ConfigManager.InitItems()中补充，宝物price=0(不可购买，仅掉落)，消耗品price按效果定价(50-300金)"
-  ],"passes":false},
+  ]},
 
   {"id":"F150","category":"config","priority":23,"desc":"数值平衡重调：伤害公式微调+全数据曲线重新校准，确保游戏有挑战但不肝","steps":[
     "1. 伤害公式微调：baseDmg = max(1, ATK*1.0 - DEF*0.6)，原为ATK - DEF/2改为稍微提高防御价值，variance=baseDmg*0.15(原0.1增加波动)",
@@ -287,7 +287,7 @@
     "5. MP消耗分档：低级技能5-15MP、中级20-30MP、高级35-50MP，确保MP在战斗中是有意义的约束",
     "6. 属性成长：每级+2基础属性点(自动分配主属性+1副属性+1)，HP/MP成长随体力和智力线性增长",
     "7. 整体难度曲线：第1-4层轻松入门、5-9层需要策略、10-14层挑战提升、15-19层高风险高回报、20-25层极难终局"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F151","category":"bug","priority":24,"desc":"Bug修复+死代码清理：修复已知Bug、删除未使用代码、统一null检查模式","steps":[
     "1. DungeonPanel和RoleInfoPanel中EXP条计算统一使用PlayerData.GetExpToNextLevel()=level*100+50，修复当前DungeonPanel第428行的level*100错误",
