@@ -191,6 +191,26 @@ namespace Game.Battle
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
+            // Debuff效果：降低敌人攻击/防御
+            if (skill.debuffAttack > 0 || skill.debuffDefense > 0)
+            {
+                var m = b.monster;
+                if (skill.debuffAttack > 0)
+                {
+                    int reduce = m.attack * skill.debuffAttack / 100;
+                    m.buffAttack -= reduce;
+                    m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
+                    msg += $"，敌人攻击-{reduce}";
+                }
+                if (skill.debuffDefense > 0)
+                {
+                    int reduce = m.defense * skill.debuffDefense / 100;
+                    m.buffDefense -= reduce;
+                    m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
+                    msg += $"，敌人防御-{reduce}";
+                }
+            }
+
             // 吸血之牙宝物效果
             if (p.treasures.Contains(GameConstants.TREASURE_ID_LIFESTEAL))
             {

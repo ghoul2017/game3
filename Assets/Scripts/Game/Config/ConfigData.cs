@@ -36,6 +36,9 @@ namespace Game.Config
         public bool isHeal;     // 是否为治疗技能（恢复自身HP）
         public int buffId;      // Buff效果ID，0=无
         public int buffTurns;   // Buff持续回合
+        public int debuffAttack;  // 降低敌人攻击力（百分比）
+        public int debuffDefense; // 降低敌人防御力（百分比）
+        public int debuffTurns;   // Debuff持续回合
     }
 
     [System.Serializable]

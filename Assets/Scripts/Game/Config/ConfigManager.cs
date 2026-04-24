@@ -134,9 +134,9 @@ namespace Game.Config
                 [2004] = new SkillConfig { id = 2004, name = "致命一击", desc = "必定暴击的一击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 15, power = 250, level = 5, prereqSkillId = 2003 },
 
                 // 骑士技能
-                [3001] = new SkillConfig { id = 3001, name = "盾击", desc = "用盾牌攻击并降低敌人攻击", type = SkillType.Active, profession = Profession.Knight, mpCost = 5, power = 100, level = 1 },
+                [3001] = new SkillConfig { id = 3001, name = "盾击", desc = "用盾牌攻击并降低敌人攻击", type = SkillType.Active, profession = Profession.Knight, mpCost = 5, power = 100, level = 1, debuffAttack = 30, debuffTurns = 2 },
                 [3002] = new SkillConfig { id = 3002, name = "铁壁", desc = "大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 8, power = 0, level = 1, buffId = 3, buffTurns = 3 },
-                [3003] = new SkillConfig { id = 3003, name = "嘲讽", desc = "吸引敌人攻击并减伤", type = SkillType.Active, profession = Profession.Knight, mpCost = 6, power = 80, level = 3, prereqSkillId = 3001 },
+                [3003] = new SkillConfig { id = 3003, name = "嘲讽", desc = "吸引敌人攻击并减伤", type = SkillType.Active, profession = Profession.Knight, mpCost = 6, power = 80, level = 3, prereqSkillId = 3001, debuffAttack = 20, debuffTurns = 3 },
                 [3004] = new SkillConfig { id = 3004, name = "坚守", desc = "生命低于30%时自动减伤", type = SkillType.Passive, profession = Profession.Knight, mpCost = 0, power = 0, level = 5, prereqSkillId = 3002 },
 
                 // 牧师技能
