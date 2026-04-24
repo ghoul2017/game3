@@ -1,0 +1,260 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Game.Core
+{
+    /// <summary>
+    /// 音效分类枚举
+    /// </summary>
+    public enum AudioClipType
+    {
+        Battle_Attack,
+        Battle_Skill,
+        Battle_Hit,
+        Battle_Victory,
+        Battle_Defeat,
+        UI_Click,
+        UI_PanelOpen,
+        UI_PanelClose,
+        Dungeon_Move,
+        Dungeon_Discover
+    }
+
+    /// <summary>
+    /// 音频管理器单例（MonoBehaviour），管理音效/音乐播放。
+    /// 音效使用程序化生成（正弦波/白噪声等基础波形），无需外部音频资源。
+    /// </summary>
+    public class AudioManager : MonoBehaviour
+    {
+        private static AudioManager instance;
+        public static AudioManager Instance => instance;
+
+        // AudioSource 池：SFX 通道 x5（轮播避免重叠截断）+ Music 通道 x1
+        private AudioSource[] sfxSources;
+        private AudioSource musicSource;
+        private int sfxIndex;
+
+        // 音量属性（0-1）
+        private float soundVolume = 1f;
+        private float musicVolume = 1f;
+
+        public float SoundVolume
+        {
+            get => soundVolume;
+            set
+            {
+                soundVolume = Mathf.Clamp01(value);
+                if (sfxSources != null)
+                {
+                    foreach (var src in sfxSources)
+                        src.volume = soundVolume;
+                }
+            }
+        }
+
+        public float MusicVolume
+        {
+            get => musicVolume;
+            set
+            {
+                musicVolume = Mathf.Clamp01(value);
+                if (musicSource != null)
+                    musicSource.volume = musicVolume;
+            }
+        }
+
+        // AudioClip 缓存字典
+        private Dictionary<AudioClipType, AudioClip> clipCache = new Dictionary<AudioClipType, AudioClip>();
+
+        private void Awake()
+        {
+            if (instance != null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+
+            // 创建 AudioSource 池
+            sfxSources = new AudioSource[5];
+            for (int i = 0; i < 5; i++)
+            {
+                sfxSources[i] = gameObject.AddComponent<AudioSource>();
+                sfxSources[i].playOnAwake = false;
+                sfxSources[i].loop = false;
+                sfxSources[i].volume = soundVolume;
+            }
+
+            musicSource = gameObject.AddComponent<AudioSource>();
+            musicSource.playOnAwake = false;
+            musicSource.loop = true;
+            musicSource.volume = musicVolume;
+
+            // 程序化生成所有音效并缓存
+            GenerateAllClips();
+
+            // 从 SettingsManager 加载音量
+            var sm = SettingsManager.Instance;
+            sm.Load();
+            SoundVolume = sm.SfxVolume;
+            MusicVolume = sm.MusicVolume;
+
+            Debug.Log("[AudioManager] 初始化完成 — SFX通道=5 Music通道=1 音效数=" + clipCache.Count);
+        }
+
+        /// <summary>
+        /// 确保 AudioManager 已创建（外部调用入口）
+        /// </summary>
+        public static void EnsureCreated()
+        {
+            if (instance != null) return;
+            var go = new GameObject("AudioManager");
+            go.AddComponent<AudioManager>();
+        }
+
+        /// <summary>
+        /// 播放指定类型的音效（轮播 AudioSource 池避免截断）
+        /// </summary>
+        public void PlaySFX(AudioClipType type)
+        {
+            if (sfxSources == null || !clipCache.TryGetValue(type, out var clip))
+                return;
+            var src = sfxSources[sfxIndex];
+            src.clip = clip;
+            src.Play();
+            sfxIndex = (sfxIndex + 1) % sfxSources.Length;
+        }
+
+        /// <summary>
+        /// 播放音乐（循环）
+        /// </summary>
+        public void PlayMusic(AudioClipType type)
+        {
+            if (musicSource == null || !clipCache.TryGetValue(type, out var clip))
+                return;
+            if (musicSource.clip == clip && musicSource.isPlaying)
+                return;
+            musicSource.clip = clip;
+            musicSource.Play();
+        }
+
+        /// <summary>
+        /// 停止音乐
+        /// </summary>
+        public void StopMusic()
+        {
+            if (musicSource != null)
+                musicSource.Stop();
+        }
+
+        #region 程序化音效生成
+
+        /// <summary>
+        /// 程序化生成全部音效 AudioClip 并缓存到字典
+        /// </summary>
+        private void GenerateAllClips()
+        {
+            clipCache[AudioClipType.UI_Click] = GenerateTone(440f, 0.08f, 0.3f);
+            clipCache[AudioClipType.UI_PanelOpen] = GenerateSweep(300f, 600f, 0.15f, 0.3f);
+            clipCache[AudioClipType.UI_PanelClose] = GenerateSweep(600f, 300f, 0.12f, 0.25f);
+            clipCache[AudioClipType.Battle_Attack] = GenerateNoiseBurst(0.15f, 0.5f);
+            clipCache[AudioClipType.Battle_Skill] = GenerateSweep(400f, 800f, 0.3f, 0.4f);
+            clipCache[AudioClipType.Battle_Hit] = GenerateNoiseBurst(0.08f, 0.6f);
+            clipCache[AudioClipType.Battle_Victory] = GenerateArpeggio(new float[] { 523f, 659f, 784f, 1047f }, 0.15f, 0.5f);
+            clipCache[AudioClipType.Battle_Defeat] = GenerateArpeggio(new float[] { 400f, 350f, 300f, 200f }, 0.2f, 0.4f);
+            clipCache[AudioClipType.Dungeon_Move] = GenerateNoiseBurst(0.06f, 0.2f);
+            clipCache[AudioClipType.Dungeon_Discover] = GenerateArpeggio(new float[] { 600f, 800f }, 0.12f, 0.35f);
+        }
+
+        /// <summary>
+        /// 生成纯音（正弦波），带简单 ADSR 包络
+        /// </summary>
+        private AudioClip GenerateTone(float frequency, float duration, float volume)
+        {
+            int sampleRate = 44100;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float envelope = 1f;
+                float attack = 0.01f;
+                float release = 0.02f;
+                if (t < attack) envelope = t / attack;
+                else if (t > duration - release) envelope = (duration - t) / release;
+                data[i] = Mathf.Sin(2 * Mathf.PI * frequency * t) * volume * envelope;
+            }
+            var clip = AudioClip.Create($"Tone_{frequency}", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成频率扫描音效（上升/下降滑音）
+        /// </summary>
+        private AudioClip GenerateSweep(float startFreq, float endFreq, float duration, float volume)
+        {
+            int sampleRate = 44100;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float freq = Mathf.Lerp(startFreq, endFreq, t / duration);
+                float envelope = Mathf.Sin(Mathf.PI * t / duration);
+                data[i] = Mathf.Sin(2 * Mathf.PI * freq * t) * volume * envelope;
+            }
+            var clip = AudioClip.Create($"Sweep_{startFreq}_{endFreq}", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成白噪声爆炸音效
+        /// </summary>
+        private AudioClip GenerateNoiseBurst(float duration, float volume)
+        {
+            int sampleRate = 44100;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float envelope = 1f;
+                float release = duration * 0.3f;
+                if (t > duration - release) envelope = (duration - t) / release;
+                data[i] = (Random.value * 2f - 1f) * volume * envelope * 0.5f;
+            }
+            var clip = AudioClip.Create($"Noise_{duration}", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成琶音（连续多个音符的和弦效果）
+        /// </summary>
+        private AudioClip GenerateArpeggio(float[] frequencies, float noteDuration, float volume)
+        {
+            int sampleRate = 44100;
+            int noteSamples = Mathf.CeilToInt(sampleRate * noteDuration);
+            int totalSamples = noteSamples * frequencies.Length;
+            var data = new float[totalSamples];
+            for (int n = 0; n < frequencies.Length; n++)
+            {
+                for (int i = 0; i < noteSamples; i++)
+                {
+                    int idx = n * noteSamples + i;
+                    float t = (float)i / sampleRate;
+                    float envelope = Mathf.Sin(Mathf.PI * (float)i / noteSamples);
+                    data[idx] = Mathf.Sin(2 * Mathf.PI * frequencies[n] * t) * volume * envelope * 0.6f;
+                }
+            }
+            var clip = AudioClip.Create("Arpeggio", totalSamples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        #endregion
+    }
+}

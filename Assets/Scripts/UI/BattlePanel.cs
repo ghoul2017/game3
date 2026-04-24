@@ -331,21 +331,21 @@ namespace Game.UI
 
         protected override void BindEvents()
         {
-            if (btnAttack != null) btnAttack.onClick.AddListener(OnAttack);
-            if (btnSkill != null) btnSkill.onClick.AddListener(OnSkillMenu);
-            if (btnItem != null) btnItem.onClick.AddListener(OnItemMenu);
-            if (btnEscape != null) btnEscape.onClick.AddListener(OnEscape);
-            if (btnResult != null) btnResult.onClick.AddListener(OnBattleEnd);
-            if (btnAuto != null) btnAuto.onClick.AddListener(OnToggleAutoBattle);
+            if (btnAttack != null) btnAttack.onClick.AddListener(() => { PlayUIClick(); OnAttack(); });
+            if (btnSkill != null) btnSkill.onClick.AddListener(() => { PlayUIClick(); OnSkillMenu(); });
+            if (btnItem != null) btnItem.onClick.AddListener(() => { PlayUIClick(); OnItemMenu(); });
+            if (btnEscape != null) btnEscape.onClick.AddListener(() => { PlayUIClick(); OnEscape(); });
+            if (btnResult != null) btnResult.onClick.AddListener(() => { PlayUIClick(); OnBattleEnd(); });
+            if (btnAuto != null) btnAuto.onClick.AddListener(() => { PlayUIClick(); OnToggleAutoBattle(); });
 
             var rewardContinue = FindComponent<Button>("RewardOverlay/BtnRewardContinue");
-            if (rewardContinue != null) rewardContinue.onClick.AddListener(OnRewardContinue);
+            if (rewardContinue != null) rewardContinue.onClick.AddListener(() => { PlayUIClick(); OnRewardContinue(); });
 
             var closeSkillBtn = FindComponent<Button>("SkillPanel/Inner/BtnCloseSkill");
-            if (closeSkillBtn != null) closeSkillBtn.onClick.AddListener(() => { if (skillPanel != null) skillPanel.SetActive(false); });
+            if (closeSkillBtn != null) closeSkillBtn.onClick.AddListener(() => { PlayUIClick(); if (skillPanel != null) skillPanel.SetActive(false); });
 
             var closeItemBtn = FindComponent<Button>("ItemPanel/Inner/BtnCloseItem");
-            if (closeItemBtn != null) closeItemBtn.onClick.AddListener(() => { if (itemPanel != null) itemPanel.SetActive(false); });
+            if (closeItemBtn != null) closeItemBtn.onClick.AddListener(() => { PlayUIClick(); if (itemPanel != null) itemPanel.SetActive(false); });
         }
 
         public override void OnShow()

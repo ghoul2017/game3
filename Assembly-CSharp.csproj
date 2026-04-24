@@ -68,6 +68,7 @@
      <Compile Include="Assets\Scripts\Core\UIManager.cs" />
      <Compile Include="Assets\Scripts\Game\Battle\BattleManager.cs" />
      <Compile Include="Assets\Scripts\UI\BattlePanel.cs" />
+     <Compile Include="Assets\Scripts\Core\AudioManager.cs" />
      <Folder Include="Assets" />
      <Folder Include="Assets\Scripts\Game" />
      <Folder Include="Assets\Settings" />

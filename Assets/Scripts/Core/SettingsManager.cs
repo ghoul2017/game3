@@ -69,8 +69,24 @@ namespace Game.Core
         public void LoadAndApply()
         {
             Load();
+            ApplySettings();
+        }
+
+        /// <summary>
+        /// 应用当前设置（全屏、分辨率、音量同步到 AudioManager）
+        /// </summary>
+        public void ApplySettings()
+        {
             ApplyFullscreen();
             ApplyResolution();
+
+            // 同步音量到音频管理器
+            var am = AudioManager.Instance;
+            if (am != null)
+            {
+                am.SoundVolume = SfxVolume;
+                am.MusicVolume = MusicVolume;
+            }
         }
     }
 }

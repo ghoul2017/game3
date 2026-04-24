@@ -8,6 +8,12 @@ namespace Game.Core
     /// </summary>
     public class GameEntry : MonoBehaviour
     {
+        private void Awake()
+        {
+            Debug.Log("[GameEntry] 初始化音频系统");
+            AudioManager.EnsureCreated();
+        }
+
         private void Start()
         {
             Debug.Log("[GameEntry] 方块与地下城 启动");

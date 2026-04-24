@@ -69,6 +69,7 @@ namespace Game.Battle
         {
             CurrentBattle = battleData;
             Debug.Log($"[战斗] 开始战斗 怪物={battleData.monster.name} HP={battleData.monster.hp}");
+            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
             CurrentBattle.isPlayerTurn = true;
             CurrentBattle.isFinished = false;
             CurrentBattle.isVictory = false;
@@ -88,6 +89,9 @@ namespace Game.Battle
 
             // 魔力涌动：每回合回蓝
             ApplyManaSurge();
+
+            // 攻击音效
+            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
 
             // 狂战之怒：HP越低攻击越高
             int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
@@ -142,6 +146,9 @@ namespace Game.Battle
                 b.log.Add(msg);
                 return msg;
             }
+
+            // 技能音效（仅在可使用的主动技能时播放）
+            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Skill);
 
             if (skill.type == SkillType.Buff)
             {
@@ -273,6 +280,9 @@ namespace Game.Battle
             int playerDef = p.defense + b.playerBuffDefense;
             float dmgMultiplier = GetSteadfastMultiplier(); // 坚守减伤
 
+            // 受击音效
+            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Hit);
+
             // 怪物有技能时，根据概率使用
             if (m.skillIds.Count > 0 && Random.value < GameConstants.MONSTER_SKILL_CHANCE)
             {
@@ -381,6 +391,8 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             var m = b.monster;
 
+            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Victory);
+
             b.isFinished = true;
             b.isVictory = true;
             if (b.room != null) b.room.cleared = true;
@@ -437,6 +449,9 @@ namespace Game.Battle
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
+
+            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Defeat);
+
             b.isFinished = true;
             b.isVictory = false;
             b.playerBuffAttack = 0;

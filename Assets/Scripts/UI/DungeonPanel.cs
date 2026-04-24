@@ -343,17 +343,23 @@ namespace Game.UI
             for (int i = 0; i < MaxRooms; i++)
             {
                 int capturedIndex = i;
-                roomCells[i].btn.onClick.AddListener(() => OnClickRoom(capturedIndex));
+                roomCells[i].btn.onClick.AddListener(() =>
+                {
+                    PlayUIClick();
+                    OnClickRoom(capturedIndex);
+                });
             }
 
             FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnContinue").onClick.AddListener(() =>
             {
+                PlayUIClick();
                 pendingMessage = null;
                 RefreshUI();
             });
 
             FindComponent<Button>("BtnBack").onClick.AddListener(() =>
             {
+                PlayUIClick();
                 Debug.Log("[操作] 返回城镇");
                 GameManager.Instance.Dungeon.OnReturnTown();
                 GameManager.Instance.Player.dungeonFloor = GameManager.Instance.Dungeon.floor;
@@ -364,11 +370,13 @@ namespace Game.UI
 
             FindComponent<Button>("BtnBag").onClick.AddListener(() =>
             {
+                PlayUIClick();
                 UIManager.Instance.ShowPanel<BagPanel>();
             });
 
             FindComponent<Button>("BtnRole").onClick.AddListener(() =>
             {
+                PlayUIClick();
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             });
         }
@@ -546,7 +554,11 @@ namespace Game.UI
             var dungeon = GameManager.Instance.Dungeon;
             if (index != dungeon.currentRoomIndex && index != dungeon.currentRoomIndex + 1) return;
             if (index > dungeon.currentRoomIndex)
+            {
                 dungeon.currentRoomIndex = index;
+                // 移动到下一房间音效
+                AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);
+            }
 
             var room = dungeon.CurrentRoom;
             if (room == null || room.cleared) { RefreshUI(); return; }
@@ -621,6 +633,7 @@ namespace Game.UI
 
         private void HandleTreasure(DungeonRoom room)
         {
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
             int goldFound = Random.Range(10, 30) * GameManager.Instance.Dungeon.floor;
             player.gold += goldFound;
@@ -650,6 +663,7 @@ namespace Game.UI
 
         private void HandleSpring(DungeonRoom room)
         {
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
             int hpHeal = player.maxHp / 3;
             int mpHeal = player.maxMp / 3;

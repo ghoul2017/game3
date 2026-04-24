@@ -127,13 +127,14 @@ namespace Game.UI
         {
             musicSlider.onValueChanged.AddListener(OnMusicChanged);
             sfxSlider.onValueChanged.AddListener(OnSfxChanged);
-            FindComponent<Button>("BtnFullscreen").onClick.AddListener(OnFullscreenToggle);
-            FindComponent<Button>("BtnResPrev").onClick.AddListener(() => CycleResolution(-1));
-            FindComponent<Button>("BtnResNext").onClick.AddListener(() => CycleResolution(1));
-            FindComponent<Button>("BtnLangPrev").onClick.AddListener(() => CycleLanguage(-1));
-            FindComponent<Button>("BtnLangNext").onClick.AddListener(() => CycleLanguage(1));
+            FindComponent<Button>("BtnFullscreen").onClick.AddListener(() => { PlayUIClick(); OnFullscreenToggle(); });
+            FindComponent<Button>("BtnResPrev").onClick.AddListener(() => { PlayUIClick(); CycleResolution(-1); });
+            FindComponent<Button>("BtnResNext").onClick.AddListener(() => { PlayUIClick(); CycleResolution(1); });
+            FindComponent<Button>("BtnLangPrev").onClick.AddListener(() => { PlayUIClick(); CycleLanguage(-1); });
+            FindComponent<Button>("BtnLangNext").onClick.AddListener(() => { PlayUIClick(); CycleLanguage(1); });
             FindComponent<Button>("BtnBack").onClick.AddListener(() =>
             {
+                PlayUIClick();
                 SettingsManager.Instance.Save();
                 UIManager.Instance.Back();
             });
@@ -174,12 +175,18 @@ namespace Game.UI
         {
             musicValueText.text = Mathf.RoundToInt(v * 100).ToString();
             SettingsManager.Instance.MusicVolume = v;
+            // 实时更新音频音量
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.MusicVolume = v;
         }
 
         private void OnSfxChanged(float v)
         {
             sfxValueText.text = Mathf.RoundToInt(v * 100).ToString();
             SettingsManager.Instance.SfxVolume = v;
+            // 实时更新音频音量
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.SoundVolume = v;
         }
 
         private void OnFullscreenToggle()

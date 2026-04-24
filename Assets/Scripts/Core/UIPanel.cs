@@ -142,6 +142,14 @@ namespace Game.Core
         }
 
         /// <summary>
+        /// 播放 UI 点击音效（按钮点击时统一调用）
+        /// </summary>
+        protected void PlayUIClick()
+        {
+            AudioManager.Instance?.PlaySFX(AudioClipType.UI_Click);
+        }
+
+        /// <summary>
         /// 辅助方法：安全查找子物体上的组件。
         /// path 用 "/" 分隔层级，如 "MapPanel/Inner/StatusPanel"
         /// </summary>
