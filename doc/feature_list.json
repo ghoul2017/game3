@@ -145,7 +145,7 @@
     "4. 当前房间：3px金色边框Outline(#c8a24c)高亮，已清房间覆盖灰色半透明叠加层",
     "5. 缩放支持：鼠标滚轮调整cellSize(60-120px范围)，重算content大小和所有tile位置/大小",
     "6. 右侧保留状态面板(HP/MP/EXP条+层数+金币)，底部保留技能快捷栏"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F134","category":"dungeon","priority":7,"desc":"战争迷雾系统：未探索全黑、已探索半透明、当前及相邻完全可见","steps":[
     "1. TileVisibility枚举：Hidden(未探索全黑)、Explored(去过但不在视野)、Visible(当前房间+四方向相邻，完全可见)",
