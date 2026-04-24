@@ -53,3 +53,11 @@
 2026-04-24 F125 COMPLETED - 所有面板BindReferences添加null安全检查
 2026-04-24 F126 COMPLETED - 删除过时预制体，运行时回退CreateVisuals生成正确UI
 2026-04-24 F127 COMPLETED - BattlePanel OnHide停止自动战斗协程
+
+2026-04-25 PLAN ADDED - 大版本需求拆解：F128-F153共26条功能
+  Phase 1 基础设施 (F128-F130): 深色主题+音频系统+速度属性
+  Phase 2 地牢网格化 (F131-F137): 2D网格+生成算法+渲染+迷雾+移动+房间内容+随机事件
+  Phase 3 战斗深度 (F138-F143): 状态框架+状态技能+速度回合+AI模式+UI增强+Boss重设计
+  Phase 4 技能自由化 (F144-F146): 全职业通用+技能扩充+自由装备+神龛房间
+  Phase 5 内容扩充 (F147-F150): 怪物+装备+宝物消耗品+数值平衡
+  Phase 6 打磨收尾 (F151-F153): Bug修复+音效集成+视听打磨
