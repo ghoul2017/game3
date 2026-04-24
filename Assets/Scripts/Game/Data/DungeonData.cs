@@ -109,9 +109,15 @@ namespace Game.Data
                     if (grid[px, py].tileType == TileType.Wall)
                     {
                         grid[px, py].tileType = TileType.Room;
-                        grid[px, py].width = (dx == 0 && dy == 0) ? w : 1;
-                        grid[px, py].height = (dx == 0 && dy == 0) ? h : 1;
-                        roomTiles.Add(grid[px, py]);
+
+                        // 只有原点格子加入 roomTiles 并记录房间尺寸
+                        // 非原点格子仅标记为 Room，不参与内容分配
+                        if (dx == 0 && dy == 0)
+                        {
+                            grid[px, py].width = w;
+                            grid[px, py].height = h;
+                            roomTiles.Add(grid[px, py]);
+                        }
                     }
                 }
             }
