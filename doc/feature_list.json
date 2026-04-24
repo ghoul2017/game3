@@ -188,7 +188,7 @@
     "3. BattleManager新增方法：ApplyEffect(target,type,value,duration)(叠加规则：同type刷新duration取max)、RemoveEffect(target,type)、TickEffects(target)(遍历所有effect：触发DoT伤害、duration--、duration=0时RemoveEffect)、GetEffectiveATK/DEF/SPD(target)(汇总所有Buff修正)",
     "4. 回合流程修改：每回合开始→TickEffects(双方)→检查Stun跳过→执行行动→回合结束",
     "5. 战斗日志状态消息：'{目标}受到{状态名}效果({value}点/持续{duration}回合)'、'{目标}的{状态名}效果消失了'、'{目标}因{流血/中毒}损失{damage}HP'"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F139","category":"battle","priority":12,"desc":"状态效果技能：5种新状态(流血/中毒/眩晕/沉默/易伤)+怪物也可使用，丰富战斗策略","steps":[
     "1. 新增5个状态技能配置(加入ConfigManager.InitSkills)：(a)割裂-流血(MP20 power80% 附加流血3回合每回合扣ATK*0.25) (b)毒刃-中毒(MP25 power70% 附加中毒3回合每回合扣HP+降ATK10%) (c)重击-眩晕(MP30 power60% 附加眩晕2回合跳过行动) (d)封印-沉默(MP25 power50% 附加沉默2回合禁用技能) (e)破甲-易伤(MP20 power90% 附加易伤2回合受伤+30%)",

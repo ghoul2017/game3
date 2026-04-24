@@ -72,3 +72,4 @@
 2026-04-25 F135 COMPLETED - 玩家网格移动：点击连通房间移动+WASD/方向键+平滑过渡动画
 2026-04-25 F136 COMPLETED - 网格房间内容触发：Monster/Elite/Boss战斗+宝箱+泉水+商人+技能神殿+出口确认+Empty直接清理+isMoving防连击
 2026-04-25 F137 COMPLETED - 随机房间事件：5种事件(金币袋/消耗品/陷阱/流浪商人/神秘力量)+双选项弹窗+50%触发概率+IsCleared标记
+2026-04-25 F138 COMPLETED - 状态效果框架：StatusEffect数据类+8种EffectType+BattleData列表管理+Tick/衰减/过期+回合流程集成+新旧buff共存
