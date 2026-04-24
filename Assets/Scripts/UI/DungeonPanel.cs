@@ -46,6 +46,11 @@ namespace Game.UI
         private string pendingMessage;
         private float cellSize = DefaultCellSize;
 
+        // ---- 移动状态 ----
+        private bool isMoving;           // 移动动画进行中，阻止连续输入
+        private const float MoveDuration = 0.2f; // 平滑移动过渡时长（秒）
+        private CanvasGroup cachedCanvasGroup;   // 缓存，避免每帧 GetComponent
+
         // ---- 缓存引用 ----
         private Text titleText;
         private Text statusText;
@@ -410,6 +415,7 @@ namespace Game.UI
 
         protected override void BindReferences()
         {
+            cachedCanvasGroup = GetComponent<CanvasGroup>();
             titleText = FindComponent<Text>("TitleBar/Title");
             statusText = FindComponent<Text>("StatusBar/StatusText");
 
@@ -712,7 +718,9 @@ namespace Game.UI
                         currentRoomOutline.rectTransform.pivot = new Vector2(0, 1);
                         currentRoomOutline.rectTransform.anchorMin = new Vector2(0, 1);
                         currentRoomOutline.rectTransform.anchorMax = new Vector2(0, 1);
-                        currentRoomOutline.rectTransform.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
+                        // 动画进行中不覆盖位置，由协程控制
+                        if (!isMoving)
+                            currentRoomOutline.rectTransform.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
                         currentRoomOutline.rectTransform.sizeDelta = new Vector2(cellSize, cellSize);
                         currentRoomOutline.gameObject.SetActive(true);
                     }
@@ -732,12 +740,22 @@ namespace Game.UI
             }
         }
 
-        /// <summary>判断指定坐标是否与当前玩家位置相邻且可达</summary>
+        /// <summary>判断指定坐标是否与当前玩家位置相邻且连通</summary>
         private bool IsAdjacentToCurrent(DungeonData dungeon, int x, int y)
         {
             var cp = dungeon.currentPos;
-            // 上下左右相邻
-            if (Mathf.Abs(cp.x - x) + Mathf.Abs(cp.y - y) != 1) return false;
+            int dx = x - cp.x;
+            int dy = y - cp.y;
+            // 必须上下左右相邻（距离=1）
+            if (Mathf.Abs(dx) + Mathf.Abs(dy) != 1) return false;
+            // 检查当前瓦片对应方向的连通性
+            var currentTile = dungeon.CurrentTile;
+            if (currentTile == null) return false;
+            // 上(y-1) 下(y+1) 左(x-1) 右(x+1)
+            if (dy == -1 && !currentTile.connectUp) return false;
+            if (dy == 1 && !currentTile.connectDown) return false;
+            if (dx == -1 && !currentTile.connectLeft) return false;
+            if (dx == 1 && !currentTile.connectRight) return false;
             // 目标必须是房间
             var tile = dungeon.GetTileAt(x, y);
             return tile != null && tile.tileType == TileType.Room;
@@ -800,33 +818,62 @@ namespace Game.UI
         {
             var dungeon = GameManager.Instance.Dungeon;
             if (dungeon.grid == null) return;
+            if (isMoving) return;
 
             int w = dungeon.gridWidth;
             int x = index % w;
             int y = index / w;
 
-            // 只能点击当前房间或相邻可达房间
-            if (!IsAdjacentToCurrent(dungeon, x, y) &&
-                !(dungeon.currentPos.x == x && dungeon.currentPos.y == y))
+            // 当前位置点击：不移动，但可触发房间事件
+            bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
+            if (isCurrent)
+            {
+                var curTile = dungeon.CurrentTile;
+                if (curTile != null && !curTile.isCleared)
+                    TriggerRoomEvent(dungeon, curTile);
+                RefreshUI();
                 return;
+            }
+
+            // 检查相邻且连通
+            if (!IsAdjacentToCurrent(dungeon, x, y)) return;
 
             var tile = dungeon.GetTileAt(x, y);
             if (tile == null || tile.tileType != TileType.Room) return;
 
-            bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
+            // 执行移动
+            TryMoveTo(dungeon, x, y);
+        }
 
-            // 移动到目标房间（更新战争迷雾）
-            if (!isCurrent)
+        /// <summary>尝试移动到指定相邻坐标（点击/键盘共用入口）</summary>
+        private void TryMoveTo(DungeonData dungeon, int targetX, int targetY)
+        {
+            if (isMoving) return;
+
+            var tile = dungeon.GetTileAt(targetX, targetY);
+            if (tile == null || tile.tileType != TileType.Room) return;
+
+            // 更新战争迷雾 + 移动数据
+            dungeon.OnMoveTo(new GridPos(targetX, targetY));
+            dungeon.currentRoomIndex = FindRoomIndex(dungeon, targetX, targetY);
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);
+
+            // 平滑移动指示器动画
+            StartCoroutine(SmoothMoveIndicator(targetX, targetY, () =>
             {
-                dungeon.OnMoveTo(new GridPos(x, y));
-                // 更新旧接口兼容
-                dungeon.currentRoomIndex = FindRoomIndex(dungeon, x, y);
-                AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);
-            }
+                // 动画完成后处理房间事件
+                if (!tile.isCleared)
+                    TriggerRoomEvent(dungeon, tile);
+                RefreshUI();
+            }));
 
-            // 处理房间事件
-            if (tile.isCleared) { RefreshUI(); return; }
+            // 立即刷新地图（迷雾/瓦片状态）
+            RefreshUI();
+        }
 
+        /// <summary>处理房间事件逻辑</summary>
+        private void TriggerRoomEvent(DungeonData dungeon, DungeonTile tile)
+        {
             switch (tile.roomType)
             {
                 case DungeonEventType.Monster:
@@ -834,7 +881,6 @@ namespace Game.UI
                 case DungeonEventType.Boss:
                     HandleBattle(dungeon, tile);
                     break;
-
                 case DungeonEventType.Treasure:
                     Debug.Log("[地牢] 发现宝箱");
                     HandleTreasure(tile);
@@ -856,7 +902,29 @@ namespace Game.UI
                     HandleShrine(tile);
                     break;
             }
-            RefreshUI();
+        }
+
+        /// <summary>平滑移动玩家位置指示器（Lerp过渡）</summary>
+        private System.Collections.IEnumerator SmoothMoveIndicator(int targetX, int targetY, System.Action onComplete)
+        {
+            isMoving = true;
+            float elapsed = 0f;
+            Vector2 startPos = currentRoomOutline.rectTransform.anchoredPosition;
+            Vector2 endPos = new Vector2(targetX * cellSize, -targetY * cellSize);
+
+            while (elapsed < MoveDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / MoveDuration);
+                // 缓动：SmoothStep
+                t = t * t * (3f - 2f * t);
+                currentRoomOutline.rectTransform.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
+                yield return null;
+            }
+
+            currentRoomOutline.rectTransform.anchoredPosition = endPos;
+            isMoving = false;
+            onComplete?.Invoke();
         }
 
         /// <summary>在旧 rooms 列表中查找匹配的房间索引（向后兼容）</summary>
@@ -1039,11 +1107,12 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 滚轮缩放支持：调整 cellSize 并重算 content 和所有 tile 的位置/大小
+        /// 滚轮缩放 + 键盘移动（WASD/方向键）
         /// </summary>
         private void Update()
         {
             HandleScrollZoom();
+            HandleKeyboardMove();
         }
 
         private void HandleScrollZoom()
@@ -1073,6 +1142,49 @@ namespace Game.UI
             {
                 UpdateGridMap(dungeon);
             }
+        }
+
+        /// <summary>键盘移动：WASD/方向键，检查连通方向后移动</summary>
+        private void HandleKeyboardMove()
+        {
+            if (isMoving) return;
+
+            // 面板隐藏时（CanvasGroup alpha=0）不响应
+            if (cachedCanvasGroup != null && cachedCanvasGroup.alpha < 0.5f) return;
+
+            var dungeon = GameManager.Instance.Dungeon;
+            if (dungeon == null || dungeon.grid == null) return;
+
+            // 消息覆盖层打开时不响应键盘移动
+            if (!string.IsNullOrEmpty(pendingMessage)) return;
+
+            var currentTile = dungeon.CurrentTile;
+            if (currentTile == null) return;
+
+            // 读取方向输入（WASD + 方向键）
+            int dx = 0, dy = 0;
+            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;    // 上（y-1）
+            else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) dy = 1;  // 下（y+1）
+            else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1; // 左（x-1）
+            else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) dx = 1; // 右（x+1）
+            else return; // 无方向键按下
+
+            // 检查当前瓦片对应方向的连通性
+            bool connected = false;
+            if (dy == -1) connected = currentTile.connectUp;
+            else if (dy == 1) connected = currentTile.connectDown;
+            else if (dx == -1) connected = currentTile.connectLeft;
+            else if (dx == 1) connected = currentTile.connectRight;
+
+            if (!connected) return;
+
+            int targetX = dungeon.currentPos.x + dx;
+            int targetY = dungeon.currentPos.y + dy;
+
+            // 边界检查
+            if (!dungeon.IsInBounds(targetX, targetY)) return;
+
+            TryMoveTo(dungeon, targetX, targetY);
         }
     }
 }
