@@ -96,14 +96,14 @@
   {"id":"F126","category":"bug","desc":"删除过时预制体文件，运行时回退到CreateVisuals生成正确UI结构","passes":true},
   {"id":"F127","category":"bug","desc":"BattlePanel OnHide时停止自动战斗协程，防止面板隐藏后协程继续运行","passes":true},
 
-  {"id":"F128","category":"framework","priority":1,"desc":"深色主题UI配色改造：全局配色改为黑底(#1a1a2e)+暗金强调(#c8a24c)，所有面板适配深色背景","passes":true,"steps":[
+  {"id":"F128","category":"framework","priority":1,"desc":"深色主题UI配色改造：全局配色改为黑底(#1a1a2e)+暗金强调(#c8a24c)，所有面板适配深色背景","steps":[
     "1. UIColors类全局配色重定义：背景色BgDark=#0d0d1a(极深黑蓝)、面板底色PanelBg=#1a1a2e、卡片底色CardBg=#222244、标题金色GoldTitle=#c8a24c、正文色TextMain=#e0d8c0、次要文字TextSub=#8b7d6b、按钮正常BtnNormal=#2d2d55、按钮悬停BtnHover=#3d3d6a、按钮禁用BtnDisable=#1a1a33",
     "2. 遍历所有10个面板CreateVisuals()方法，将硬编码颜色替换为UIColors常量引用",
     "3. 怪物/房间/状态图标色板适配深色背景：提高饱和度20%以确保在暗底上可辨识，红色#e74c3c、金色#f0c040、蓝色#5dade2、绿色#58d68d、紫色#af7ac5",
     "4. 所有面板背景Image的color设为PanelBg，主Canvas背景设为BgDark",
     "5. 文字可读性检查：正文与背景对比度≥4.5:1，使用TextMeshPro默认字体或Unity内置字体",
     "6. ScrollRect视口背景统一为PanelBg，滚动条颜色改为暗金半透明"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F129","category":"framework","priority":2,"desc":"音频系统：AudioManager单例管理音效/音乐播放，从Unity Asset Store下载免费音效包集成","steps":[
     "1. 创建AudioManager单例(Assets/Scripts/Core/AudioManager.cs)：AudioSource池(SFX通道x5+Music通道x1)、音量属性SoundVolume/MusicVolume(0-1)、PlaySFX(clip)/PlayMusic(clip)/StopMusic() API",
