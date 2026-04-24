@@ -130,6 +130,7 @@ namespace Game.UI
                 if (item.equipEffectType != EquipEffectType.None) statStr += $"[{GetEquipEffectName(item.equipEffectType, item.equipEffectValue)}] ";
                 if (item.restoreHp > 0) statStr += $"恢复HP{item.restoreHp} ";
                 if (item.restoreMp > 0) statStr += $"恢复MP{item.restoreMp} ";
+                if (item.consumableEffect != ConsumableEffectType.None) statStr += $"[{GetConsumableEffectName(item.consumableEffect, item.consumableEffectValue)}] ";
 
                 string typeName = item.type switch
                 {
@@ -257,8 +258,59 @@ namespace Game.UI
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
+
+            // 回城卷轴：仅地牢中可用
+            if (item.consumableEffect == ConsumableEffectType.Teleport)
+            {
+                if (GameManager.Instance.State != GameState.InDungeon)
+                {
+                    Debug.Log("[背包] 回城卷轴仅在地牢中可用");
+                    if (infoText != null) infoText.text = "回城卷轴仅在地牢中可用";
+                    return;
+                }
+                player.bagItems.Remove(itemId);
+                // 执行回城逻辑
+                GameManager.Instance.Dungeon.OnReturnTown();
+                GameManager.Instance.SetState(GameState.InTown);
+                GameManager.Instance.SaveGame();
+                UIManager.Instance.ReplacePanel<TownPanel>();
+                return;
+            }
+
+            // 炸弹：仅战斗中可用
+            if (item.consumableEffect == ConsumableEffectType.Bomb)
+            {
+                if (infoText != null) infoText.text = "炸弹仅战斗中可用";
+                return;
+            }
+
+            // 解毒药：仅战斗中可用（中毒状态在战斗中）
+            if (item.consumableEffect == ConsumableEffectType.CurePoison)
+            {
+                if (infoText != null) infoText.text = "解毒药仅战斗中可用";
+                return;
+            }
+
             if (item.restoreHp > 0) player.hp = Mathf.Min(player.hp + item.restoreHp, player.maxHp);
             if (item.restoreMp > 0) player.mp = Mathf.Min(player.mp + item.restoreMp, player.maxMp);
+
+            // 消耗品特殊效果（战斗外）
+            switch (item.consumableEffect)
+            {
+                case ConsumableEffectType.AtkBuff:
+                    player.atkBuffBattles += item.consumableEffectValue;
+                    Debug.Log($"[背包] 兴奋剂：ATK+20%，持续 {player.atkBuffBattles} 场战斗");
+                    break;
+                case ConsumableEffectType.Shield:
+                    player.hasShieldScroll = true;
+                    Debug.Log("[背包] 护盾卷轴：下次受伤减伤50%");
+                    break;
+                case ConsumableEffectType.ExpBoost:
+                    player.hasExpBoost = true;
+                    Debug.Log("[背包] 经验书：下一场战斗经验+50%");
+                    break;
+            }
+
             player.bagItems.Remove(itemId);
             RefreshUI();
         }
@@ -285,6 +337,21 @@ namespace Game.UI
                 EquipEffectType.BossDamageBonus => $"Boss伤+{value}%",
                 EquipEffectType.DamageVariance => $"波动{value}%",
                 EquipEffectType.AutoRevive => $"复活({value}%HP)",
+                _ => ""
+            };
+        }
+
+        /// <summary>获取消耗品特殊效果的显示名称</summary>
+        private static string GetConsumableEffectName(ConsumableEffectType type, int value)
+        {
+            return type switch
+            {
+                ConsumableEffectType.CurePoison => "解毒",
+                ConsumableEffectType.AtkBuff => $"ATK+20%持续{value}战",
+                ConsumableEffectType.Shield => "减伤50%一次",
+                ConsumableEffectType.Teleport => "回城",
+                ConsumableEffectType.ExpBoost => "经验+50%一场",
+                ConsumableEffectType.Bomb => $"炸弹{value}伤",
                 _ => ""
             };
         }

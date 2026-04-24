@@ -86,6 +86,20 @@ namespace Game.Config
     }
 
     /// <summary>
+    /// 消耗品特殊效果类型
+    /// </summary>
+    public enum ConsumableEffectType
+    {
+        None,               // 无特殊效果（普通恢复药水）
+        CurePoison,         // 解毒：移除中毒状态
+        AtkBuff,            // 兴奋剂：ATK+20%持续N场战斗
+        Shield,             // 护盾卷轴：下次受伤减伤50%
+        Teleport,           // 回城卷轴：地牢中直接回城镇
+        ExpBoost,           // 经验书：下一场战斗经验+50%
+        Bomb                // 炸弹：战斗中造成固定50伤害，无视防御
+    }
+
+    /// <summary>
     /// 地牢网格瓦片类型
     /// </summary>
     public enum TileType

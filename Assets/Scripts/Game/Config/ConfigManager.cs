@@ -285,7 +285,14 @@ namespace Game.Config
                 [4002] = new ItemConfig { id = 4002, name = "大生命药水", desc = "恢复120点生命", type = ItemType.Consumable, price = 40, restoreHp = 120 },
                 [4003] = new ItemConfig { id = 4003, name = "法力药水", desc = "恢复30点法力", type = ItemType.Consumable, price = 15, restoreMp = 30 },
                 [4004] = new ItemConfig { id = 4004, name = "大法力药水", desc = "恢复80点法力", type = ItemType.Consumable, price = 40, restoreMp = 80 },
-                [4005] = new ItemConfig { id = 4005, name = "全恢复药水", desc = "恢复全部生命和法力", type = ItemType.Consumable, price = 100, restoreHp = 9999, restoreMp = 9999 }
+                [4005] = new ItemConfig { id = 4005, name = "全恢复药水", desc = "恢复全部生命和法力", type = ItemType.Consumable, price = 100, restoreHp = 9999, restoreMp = 9999 },
+                // 新增消耗品
+                [4006] = new ItemConfig { id = 4006, name = "解毒药", desc = "移除中毒状态", type = ItemType.Consumable, price = 50, consumableEffect = ConsumableEffectType.CurePoison },
+                [4007] = new ItemConfig { id = 4007, name = "兴奋剂", desc = "攻击力+20%，持续3场战斗", type = ItemType.Consumable, price = 150, consumableEffect = ConsumableEffectType.AtkBuff, consumableEffectValue = 3 },
+                [4008] = new ItemConfig { id = 4008, name = "护盾卷轴", desc = "下次受伤减伤50%", type = ItemType.Consumable, price = 100, consumableEffect = ConsumableEffectType.Shield },
+                [4009] = new ItemConfig { id = 4009, name = "回城卷轴", desc = "地牢中直接回城镇", type = ItemType.Consumable, price = 80, consumableEffect = ConsumableEffectType.Teleport },
+                [4010] = new ItemConfig { id = 4010, name = "经验书", desc = "下一场战斗经验+50%", type = ItemType.Consumable, price = 200, consumableEffect = ConsumableEffectType.ExpBoost },
+                [4011] = new ItemConfig { id = 4011, name = "炸弹", desc = "战斗中造成50点伤害，无视防御", type = ItemType.Consumable, price = 300, consumableEffect = ConsumableEffectType.Bomb, consumableEffectValue = 50 }
             };
         }
 
@@ -367,12 +374,20 @@ namespace Game.Config
         {
             treasures = new Dictionary<int, TreasureConfig>
             {
+                // 原有6个宝物
                 [1] = new TreasureConfig { id = 1, name = "勇者之证", desc = "攻击力+10%", effectType = 0, effectValue = 10 },
                 [2] = new TreasureConfig { id = 2, name = "守护之盾", desc = "防御力+15%", effectType = 1, effectValue = 15 },
                 [3] = new TreasureConfig { id = 3, name = "生命之泉", desc = "生命值+20%", effectType = 2, effectValue = 20 },
                 [4] = new TreasureConfig { id = 4, name = "吸血之牙", desc = "攻击时恢复10%伤害值的生命", effectType = 3, effectValue = 10 },
                 [5] = new TreasureConfig { id = 5, name = "幸运硬币", desc = "金币获取+30%", effectType = 3, effectValue = 30 },
-                [6] = new TreasureConfig { id = 6, name = "经验宝石", desc = "经验获取+20%", effectType = 3, effectValue = 20 }
+                [6] = new TreasureConfig { id = 6, name = "经验宝石", desc = "经验获取+20%", effectType = 3, effectValue = 20 },
+                // 新增6个宝物
+                [7] = new TreasureConfig { id = 7, name = "暴击之眼", desc = "暴击率+10%", effectType = 4, effectValue = 10 },
+                [8] = new TreasureConfig { id = 8, name = "风行之靴", desc = "闪避率+10%", effectType = 5, effectValue = 10 },
+                [9] = new TreasureConfig { id = 9, name = "贤者之心", desc = "技能消耗-20%", effectType = 6, effectValue = 20 },
+                [10] = new TreasureConfig { id = 10, name = "守护结界", desc = "战斗开始获得20%最大HP的护盾", effectType = 7, effectValue = 20 },
+                [11] = new TreasureConfig { id = 11, name = "荆棘之甲", desc = "受击10%概率反伤50%", effectType = 8, effectValue = 50 },
+                [12] = new TreasureConfig { id = 12, name = "贪婪之戒", desc = "掉落翻倍但受伤+15%", effectType = 9, effectValue = 15 }
             };
         }
 

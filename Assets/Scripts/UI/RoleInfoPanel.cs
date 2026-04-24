@@ -16,7 +16,7 @@ namespace Game.UI
         private Slider expSlider;
         private Text expText;
         private Text emptyTreasureText;
-        private Text[] treasureTexts = new Text[6];
+        private Text[] treasureTexts = new Text[GameConstants.MAX_TREASURE_SLOTS];
 
         /// <summary>仅供 PrefabGenerator 调用</summary>
         public static void CreateVisuals(Transform parent)
@@ -76,21 +76,23 @@ namespace Game.UI
             var expTxt = UIBuilder.CreateText(expInner, "", 14, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "ExpText");
             UIBuilder.SetAnchored(expTxt.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(300, 20));
 
-            var treasurePanel = UIBuilder.CreateBorderedPanel(parent, 900, 80, "TreasurePanel");
-            treasurePanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -230);
+            var treasurePanel = UIBuilder.CreateBorderedPanel(parent, 900, 110, "TreasurePanel");
+            treasurePanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -245);
             var treasureInner = treasurePanel.transform.Find("Inner");
 
             var trTitle = UIBuilder.CreateText(treasureInner, "宝物:", 16, UIBuilder.Gold, TextAnchor.MiddleLeft, name: "TreasureTitle");
-            UIBuilder.SetAnchored(trTitle.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-400, 0), new Vector2(60, 28));
+            UIBuilder.SetAnchored(trTitle.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-400, -8), new Vector2(60, 28));
 
             var empty = UIBuilder.CreateText(treasureInner, "暂无宝物", 15, UIBuilder.TextDim, TextAnchor.MiddleLeft, name: "EmptyTreasure");
-            UIBuilder.SetAnchored(empty.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-330, 0), new Vector2(200, 28));
+            UIBuilder.SetAnchored(empty.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-330, -8), new Vector2(200, 28));
             empty.gameObject.SetActive(false);
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < GameConstants.MAX_TREASURE_SLOTS; i++)
             {
-                var t = UIBuilder.CreateText(treasureInner, "", 15, UIBuilder.Gold, TextAnchor.MiddleLeft, name: $"Treasure_{i}");
-                UIBuilder.SetAnchored(t.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-330 + i * 300, 0), new Vector2(290, 28));
+                int row = i / 6;
+                int col = i % 6;
+                var t = UIBuilder.CreateText(treasureInner, "", 14, UIBuilder.Gold, TextAnchor.MiddleLeft, name: $"Treasure_{i}");
+                UIBuilder.SetAnchored(t.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-430 + col * 150, -8 - row * 28), new Vector2(145, 26));
                 t.gameObject.SetActive(false);
             }
 
@@ -120,7 +122,7 @@ namespace Game.UI
             expText = FindComponent<Text>("ExpPanel/Inner/ExpText");
 
             emptyTreasureText = FindComponent<Text>("TreasurePanel/Inner/EmptyTreasure");
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < GameConstants.MAX_TREASURE_SLOTS; i++)
                 treasureTexts[i] = FindComponent<Text>($"TreasurePanel/Inner/Treasure_{i}");
         }
 
@@ -182,7 +184,7 @@ namespace Game.UI
             if (player.treasures.Count == 0)
             {
                 emptyTreasureText.gameObject.SetActive(true);
-                for (int i = 0; i < 6; i++) treasureTexts[i].gameObject.SetActive(false);
+                for (int i = 0; i < GameConstants.MAX_TREASURE_SLOTS; i++) treasureTexts[i].gameObject.SetActive(false);
             }
             else
             {
@@ -190,14 +192,14 @@ namespace Game.UI
                 int tIdx = 0;
                 foreach (var tId in player.treasures)
                 {
-                    if (tIdx >= 6) break;
+                    if (tIdx >= GameConstants.MAX_TREASURE_SLOTS) break;
                     var treasure = ConfigManager.Instance.GetTreasure(tId);
                     if (treasure == null) continue;
-                    treasureTexts[tIdx].text = $"{treasure.name}: {treasure.desc}";
+                    treasureTexts[tIdx].text = $"{treasure.name}:{treasure.desc}";
                     treasureTexts[tIdx].gameObject.SetActive(true);
                     tIdx++;
                 }
-                for (int i = tIdx; i < 6; i++) treasureTexts[i].gameObject.SetActive(false);
+                for (int i = tIdx; i < GameConstants.MAX_TREASURE_SLOTS; i++) treasureTexts[i].gameObject.SetActive(false);
             }
         }
     }

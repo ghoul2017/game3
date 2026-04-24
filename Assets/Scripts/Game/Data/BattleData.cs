@@ -30,6 +30,9 @@ namespace Game.Data
         public int rewardGold;
         public List<string> rewardItems = new List<string>();
 
+        // 护盾系统
+        public int shieldAmount;    // 当前护盾值，优先吸收伤害
+
         // Boss战特殊标记
         public bool isBossBattle;          // 是否Boss战
         public bool bossDefeated;          // Boss是否被击败（用于记录到defeatedBosses）

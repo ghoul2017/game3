@@ -49,6 +49,11 @@ namespace Game.Data
         // 宝物
         public List<int> treasures = new List<int>();
 
+        // 消耗品持续效果
+        public int atkBuffBattles;      // 兴奋剂：攻击力加成剩余战斗场数
+        public bool hasShieldScroll;    // 护盾卷轴：下次受伤减伤50%
+        public bool hasExpBoost;        // 经验书：下一场战斗经验+50%
+
         // 地牢进度
         public int dungeonFloor;
         public int dungeonRoomIndex;
@@ -121,16 +126,22 @@ namespace Game.Data
                     dodgeRate += accessory.equipEffectValue;
             }
 
-            // 宝物加成（百分比）
+            // 宝物加成
             foreach (var tid in treasures)
             {
                 var tc = ConfigManager.Instance.GetTreasure(tid);
                 if (tc == null) continue;
                 switch (tc.effectType)
                 {
-                    case 0: attack += (int)(attack * tc.effectValue / 100f); break;   // ATK%
-                    case 1: defense += (int)(defense * tc.effectValue / 100f); break;  // DEF%
-                    case 2: maxHp += (int)(maxHp * tc.effectValue / 100f); break;     // HP%
+                    case 0: attack += (int)(attack * tc.effectValue / 100f); break;       // ATK%
+                    case 1: defense += (int)(defense * tc.effectValue / 100f); break;      // DEF%
+                    case 2: maxHp += (int)(maxHp * tc.effectValue / 100f); break;         // HP%
+                    case 4: critRate += tc.effectValue; break;                             // 暴击率+固定值
+                    case 5: dodgeRate += tc.effectValue; break;                            // 闪避率+固定值
+                    // case 6 技能消耗-20%：在 BattleManager.GetActualSkillCost 中处理
+                    // case 7 开局护盾：在 BattleManager.StartBattle 中处理
+                    // case 8 反击：在 BattleManager.MonsterAction 中处理
+                    // case 9 贪婪：在 BattleManager.OnVictory 中处理
                 }
             }
 

@@ -631,7 +631,11 @@ namespace Game.UI
             // 玩家信息（精简：HP/MP数字在条旁显示）
             if (playerInfoText != null)
             {
-                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  Lv.{p.level}";
+                string shieldStr = "";
+                var battle = BattleManager.Instance.CurrentBattle;
+                if (battle != null && battle.shieldAmount > 0)
+                    shieldStr = $"  护盾:{battle.shieldAmount}";
+                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}{shieldStr}  Lv.{p.level}";
             }
 
             // 玩家HP/MP条平滑动画
@@ -1212,6 +1216,11 @@ namespace Game.UI
                 string desc = "";
                 if (item.restoreHp > 0) desc += $" HP+{item.restoreHp}";
                 if (item.restoreMp > 0) desc += $" MP+{item.restoreMp}";
+                if (item.consumableEffect == ConsumableEffectType.Bomb) desc += $" 炸弹{item.consumableEffectValue}伤";
+                else if (item.consumableEffect == ConsumableEffectType.CurePoison) desc += " 解毒";
+                else if (item.consumableEffect == ConsumableEffectType.Shield) desc += " 减伤50%";
+                else if (item.consumableEffect == ConsumableEffectType.ExpBoost) desc += " 经验+50%";
+                else if (item.consumableEffect == ConsumableEffectType.AtkBuff) desc += $" ATK+20%{item.consumableEffectValue}战";
                 string countStr = kv.Value > 1 ? $" x{kv.Value}" : "";
 
                 var row = itemRows[idx];

@@ -57,15 +57,33 @@ namespace Game.Config
         public const float ITEM_DROP_BASE_CHANCE = 0.3f;
 
         // ==================== 宝物效果 ====================
-        
+
         /// <summary>宝物ID: 吸血之牙</summary>
         public const int TREASURE_ID_LIFESTEAL = 4;
-        
+
         /// <summary>宝物ID: 幸运硬币</summary>
         public const int TREASURE_ID_LUCKY_COIN = 5;
-        
+
         /// <summary>宝物ID: 经验宝石</summary>
         public const int TREASURE_ID_EXP_GEM = 6;
+
+        /// <summary>宝物ID: 暴击之眼</summary>
+        public const int TREASURE_ID_CRIT_EYE = 7;
+
+        /// <summary>宝物ID: 风行之靴</summary>
+        public const int TREASURE_ID_WIND_BOOTS = 8;
+
+        /// <summary>宝物ID: 贤者之心</summary>
+        public const int TREASURE_ID_SAGE_HEART = 9;
+
+        /// <summary>宝物ID: 开局护盾</summary>
+        public const int TREASURE_ID_BATTLE_SHIELD = 10;
+
+        /// <summary>宝物ID: 荆棘之甲</summary>
+        public const int TREASURE_ID_THORNS_ARMOR = 11;
+
+        /// <summary>宝物ID: 贪婪之戒</summary>
+        public const int TREASURE_ID_GREED_RING = 12;
 
         // ==================== UI系统 ====================
 
@@ -76,7 +94,7 @@ namespace Game.Config
         public const int MAX_SKILL_SLOTS = 4;
 
         /// <summary>宝物栏最大数量</summary>
-        public const int MAX_TREASURE_SLOTS = 6;
+        public const int MAX_TREASURE_SLOTS = 12;
 
         /// <summary>装备栏最大数量</summary>
         public const int MAX_EQUIP_SLOTS = 3;

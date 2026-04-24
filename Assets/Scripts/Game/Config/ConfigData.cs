@@ -90,6 +90,10 @@ namespace Game.Config
         public int sellPrice;          // 售价（=购买价*50%，0时按 price/2 计算）
         public EquipEffectType equipEffectType = EquipEffectType.None;   // 装备特殊效果类型
         public int equipEffectValue;   // 装备特殊效果数值
+
+        // 消耗品特殊效果
+        public ConsumableEffectType consumableEffect = ConsumableEffectType.None;   // 消耗品特殊效果类型
+        public int consumableEffectValue;   // 消耗品特殊效果数值（如兴奋剂持续战斗数、炸弹伤害值）
     }
 
     [System.Serializable]

@@ -108,8 +108,76 @@ namespace Game.Battle
         public int GetActualSkillCost(int baseCost)
         {
             int reduce = GetEquipSkillCostReduce();
+            // 宝物：贤者之心（技能消耗-20%，effectType=6）
+            reduce += GetTreasureEffectTotal(6);
             if (reduce <= 0) return baseCost;
             return Mathf.Max(1, baseCost * (100 - reduce) / 100);
+        }
+
+        // ---- 宝物效果辅助方法 ----
+
+        /// <summary>获取指定effectType的宝物效果总值</summary>
+        private int GetTreasureEffectTotal(int effectType)
+        {
+            var p = GameManager.Instance.Player;
+            int total = 0;
+            foreach (var tid in p.treasures)
+            {
+                var tc = ConfigManager.Instance.GetTreasure(tid);
+                if (tc != null && tc.effectType == effectType)
+                    total += tc.effectValue;
+            }
+            return total;
+        }
+
+        /// <summary>检查玩家是否拥有指定effectType的宝物</summary>
+        private bool HasTreasureEffect(int effectType)
+        {
+            return GetTreasureEffectTotal(effectType) > 0;
+        }
+
+        /// <summary>战斗开始时应用宝物效果（守护结界护盾）</summary>
+        private void ApplyTreasureBattleStartEffects()
+        {
+            var p = GameManager.Instance.Player;
+            var b = CurrentBattle;
+            if (b == null) return;
+
+            // 守护结界（effectType=7）：战斗开始获得 effectValue% 最大HP的护盾
+            int shieldPercent = GetTreasureEffectTotal(7);
+            if (shieldPercent > 0)
+            {
+                int shield = Mathf.Max(1, p.maxHp * shieldPercent / 100);
+                b.shieldAmount += shield;
+                b.log.Add($"【守护结界】宝物效果！获得 {shield} 点护盾");
+            }
+        }
+
+        /// <summary>护盾吸收伤害，返回实际扣除的HP量</summary>
+        private int ApplyShieldAbsorb(int dmg)
+        {
+            var b = CurrentBattle;
+            if (b == null || b.shieldAmount <= 0 || dmg <= 0) return dmg;
+
+            int absorbed = Mathf.Min(b.shieldAmount, dmg);
+            b.shieldAmount -= absorbed;
+            int remaining = dmg - absorbed;
+            if (absorbed > 0)
+                b.log.Add($"【护盾】吸收了 {absorbed} 点伤害（剩余护盾 {b.shieldAmount}）");
+            return remaining;
+        }
+
+        /// <summary>贪婪之戒检查：掉落翻倍但受伤+15%</summary>
+        private bool HasGreedRing()
+        {
+            return HasTreasureEffect(9);
+        }
+
+        /// <summary>贪婪之戒受伤加成倍率</summary>
+        private float GetGreedDamageMultiplier()
+        {
+            int value = GetTreasureEffectTotal(9);
+            return value > 0 ? 1f + value / 100f : 1f;
         }
 
         // ---- 被动技能辅助方法 ----
@@ -166,6 +234,23 @@ namespace Game.Battle
             return TryEquipRevive();
         }
 
+        /// <summary>宝物：荆棘之甲（受击10%概率反伤50%，effectType=8）</summary>
+        private void ApplyTreasureThorns(int dmgReceived)
+        {
+            int thornsPercent = GetTreasureEffectTotal(8);
+            if (thornsPercent <= 0 || dmgReceived <= 0) return;
+
+            // 10%概率触发
+            if (Random.value >= 0.10f) return;
+
+            var m = CurrentBattle?.monster;
+            if (m == null || m.hp <= 0) return;
+
+            int thornsDmg = Mathf.Max(GameConstants.MIN_DAMAGE, dmgReceived * thornsPercent / 100);
+            m.hp = Mathf.Max(0, m.hp - thornsDmg);
+            CurrentBattle.log.Add($"【荆棘之甲】宝物效果触发！反弹 {thornsDmg} 伤害");
+        }
+
         /// <summary>
         /// 速度差闪避判定：速度差>=5时，高速度方获得(speedDiff*2)%闪避率
         /// 返回 true 表示闪避成功
@@ -198,6 +283,7 @@ namespace Game.Battle
             CurrentBattle.playerEffects.Clear();
             CurrentBattle.monsterEffects.Clear();
             CurrentBattle.log.Clear();
+            CurrentBattle.shieldAmount = 0;
             reviveUsed = false;
             equipReviveUsed = false;
 
@@ -224,6 +310,9 @@ namespace Game.Battle
 
             // 根据速度判定先手
             DetermineTurnOrder();
+
+            // 宝物：守护结界（开局护盾，effectType=7）
+            ApplyTreasureBattleStartEffects();
         }
 
         /// <summary>根据双方有效速度判定回合归属</summary>
@@ -652,6 +741,53 @@ namespace Game.Battle
                 b.log.Add(msg);
             }
 
+            // 消耗品特殊效果
+            switch (item.consumableEffect)
+            {
+                case ConsumableEffectType.CurePoison:
+                    if (HasEffect(true, EffectType.Poison))
+                    {
+                        RemoveEffect(true, EffectType.Poison);
+                        b.log.Add("【解毒药】中毒状态已移除！");
+                    }
+                    else
+                    {
+                        b.log.Add("使用了解毒药，但你并未中毒");
+                    }
+                    break;
+
+                case ConsumableEffectType.AtkBuff:
+                    p.atkBuffBattles += item.consumableEffectValue;
+                    b.log.Add($"【兴奋剂】攻击力+20%，持续 {p.atkBuffBattles} 场战斗");
+                    break;
+
+                case ConsumableEffectType.Shield:
+                    p.hasShieldScroll = true;
+                    b.log.Add("【护盾卷轴】下次受伤减伤50%已就绪");
+                    break;
+
+                case ConsumableEffectType.ExpBoost:
+                    p.hasExpBoost = true;
+                    b.log.Add("【经验书】下一场战斗经验+50%已就绪");
+                    break;
+
+                case ConsumableEffectType.Bomb:
+                    {
+                        int bombDmg = item.consumableEffectValue > 0 ? item.consumableEffectValue : 50;
+                        b.monster.hp = Mathf.Max(0, b.monster.hp - bombDmg);
+                        b.log.Add($"【炸弹】对 {b.monster.name} 造成 {bombDmg} 点无视防御伤害！");
+                        if (b.monster.hp <= 0)
+                        {
+                            b.monster.hp = 0;
+                            p.bagItems.Remove(itemId);
+                            return $"使用了炸弹！\n" + OnVictory();
+                        }
+                    }
+                    break;
+
+                // Teleport 回城卷轴：战斗中无法使用，由UI层处理
+            }
+
             p.bagItems.Remove(itemId);
             return $"使用了 {item.name}";
         }
@@ -690,6 +826,9 @@ namespace Game.Battle
             float vulnerableMult = GetVulnerableMultiplier(true);
             dmgMultiplier *= vulnerableMult;
 
+            // 贪婪之戒：受伤+15%
+            dmgMultiplier *= GetGreedDamageMultiplier();
+
             // 受击音效
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Hit);
 
@@ -715,6 +854,17 @@ namespace Game.Battle
                 {
                     int rawDmg = CalcDamage((int)(monsterAtk * skill.power / 100f), playerDef);
                     int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * dmgMultiplier * decision.damageBonus));
+
+                    // 护盾卷轴减伤50%
+                    if (p.hasShieldScroll)
+                    {
+                        dmg = Mathf.Max(GameConstants.MIN_DAMAGE, dmg / 2);
+                        p.hasShieldScroll = false;
+                    }
+
+                    // 护盾吸收
+                    dmg = ApplyShieldAbsorb(dmg);
+
                     p.hp -= dmg;
                     if (p.hp < 0) p.hp = 0;
                     string msg = $"{m.name} 使用 {skill.name}，对你造成 {dmg} 点伤害";
@@ -734,6 +884,9 @@ namespace Game.Battle
                     // 装备反伤效果
                     ApplyEquipThorns(dmg);
 
+                    // 宝物：荆棘之甲（受击10%概率反伤50%，effectType=8）
+                    ApplyTreasureThorns(dmg);
+
                     if (p.hp <= 0)
                     {
                         if (TryRevive()) return msg;
@@ -752,6 +905,17 @@ namespace Game.Battle
             // 普通攻击
             int rawNormalDmg = CalcDamage(monsterAtk, playerDef);
             int normalDmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawNormalDmg * dmgMultiplier * decision.damageBonus));
+
+            // 护盾卷轴减伤50%
+            if (p.hasShieldScroll)
+            {
+                normalDmg = Mathf.Max(GameConstants.MIN_DAMAGE, normalDmg / 2);
+                p.hasShieldScroll = false;
+            }
+
+            // 护盾吸收
+            normalDmg = ApplyShieldAbsorb(normalDmg);
+
             p.hp -= normalDmg;
             if (p.hp < 0) p.hp = 0;
             string normalMsg = $"{m.name} 攻击了你，造成 {normalDmg} 点伤害";
@@ -761,6 +925,9 @@ namespace Game.Battle
 
             // 装备反伤效果
             ApplyEquipThorns(normalDmg);
+
+            // 宝物：荆棘之甲（受击10%概率反伤50%，effectType=8）
+            ApplyTreasureThorns(normalDmg);
 
             if (p.hp <= 0)
             {
@@ -918,6 +1085,21 @@ namespace Game.Battle
                     expReward = (int)(expReward * (1 + expGem.effectValue / 100f));
             }
 
+            // 消耗品：经验书效果（下一场战斗经验+50%）
+            if (p.hasExpBoost)
+            {
+                expReward = (int)(expReward * 1.5f);
+                p.hasExpBoost = false;
+                b.log.Add("【经验书】经验加成50%已生效！");
+            }
+
+            // 宝物：贪婪之戒（掉落翻倍，effectType=9）
+            if (HasGreedRing())
+            {
+                goldReward *= 2;
+                b.log.Add("【贪婪之戒】金币掉落翻倍！");
+            }
+
             // Boss掉落加成：额外 floor*100 金币 + floor*50 经验
             if (b.isBossBattle)
             {
@@ -928,6 +1110,14 @@ namespace Game.Battle
 
             p.AddExp(expReward);
             p.gold += goldReward;
+
+            // 消耗品：兴奋剂战斗计数递减
+            if (p.atkBuffBattles > 0)
+            {
+                p.atkBuffBattles--;
+                if (p.atkBuffBattles <= 0)
+                    b.log.Add("兴奋剂效果消失了");
+            }
 
             // 存储奖励数据
             b.rewardExp = expReward;
@@ -1130,7 +1320,11 @@ namespace Game.Battle
                 var p = GameManager.Instance.Player;
                 int baseVal = p.attack + (CurrentBattle?.playerBuffAttack ?? 0) + GetRageBonus(p.attack);
                 int bonus = GetEffectModifier(isPlayer, EffectType.BuffATK);
-                return baseVal + bonus;
+                // 兴奋剂：ATK+20%
+                int atkBuff = 0;
+                if (p.atkBuffBattles > 0)
+                    atkBuff = (int)(baseVal * 0.20f);
+                return baseVal + bonus + atkBuff;
             }
             else
             {
