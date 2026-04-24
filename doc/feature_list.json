@@ -271,7 +271,7 @@
     "5. ConfigManager.InitItems()写入，每件装备标注reqLevel/price/sellPrice(售价=购买价*50%)/effectType/effectValue"
   ],"passes":true},
 
-  {"id":"F149","category":"config","priority":22,"desc":"宝物+消耗品扩充：12+宝物效果丰富+10+消耗品多样战术选择","steps":[
+  {"id":"F149","category":"config","priority":22,"desc":"宝物+消耗品扩充：12+宝物效果丰富+10+消耗品多样战术选择","passes":true,"steps":[
     "1. 宝物12+个(原6个保留+6个新增)：保留原6个(攻击10%/防御15%/HP20%/吸血10%/金币30%/经验20%)+新增暴击率+10%/闪避+10%/技能消耗-20%/开局护盾(战斗开始HP+20%护盾吸收伤害)/反击(受击10%概率反伤50%)/贪婪(掉落翻倍但受伤+15%)",
     "2. 宝物效果在RecalcStats中实现(Switch case按effectType处理)，护盾在BattleData中新增shieldAmount字段",
     "3. 消耗品10+种(原4种保留+6种新增)：保留红药(HP+50)/蓝药(MP+30)/大红(HP+100)/大蓝(MP+60)+新增解毒药(移除中毒)/兴奋剂(ATK+20%持续3场战斗)/护盾卷轴(下次受伤减伤50%)/回城卷轴(地牢中直接回城镇)/经验书(下一场战斗经验+50%)/炸弹(战斗中造成固定50伤害，无视防御)",
