@@ -117,45 +117,107 @@ namespace Game.Battle
             b.log.Add($"[速度] 你:{playerSpeed} 敌方:{monsterSpeed} — {turnMsg}");
         }
 
-        /// <summary>获取玩家有效速度 = 基础速度 + 速度buff</summary>
+        /// <summary>获取玩家有效速度 = 基础速度 + 速度buff + 状态效果修正</summary>
         public int GetEffectivePlayerSpeed()
         {
             var p = GameManager.Instance.Player;
-            return p.speed + (CurrentBattle?.playerBuffSpeed ?? 0);
+            int baseSpeed = p.speed + (CurrentBattle?.playerBuffSpeed ?? 0);
+            return baseSpeed + GetEffectModifier(true, EffectType.BuffSpeed);
         }
 
-        /// <summary>获取怪物有效速度 = 基础速度 + 速度buff</summary>
+        /// <summary>获取怪物有效速度 = 基础速度 + 速度buff + 状态效果修正</summary>
         public int GetEffectiveMonsterSpeed()
         {
             var m = CurrentBattle?.monster;
-            return m != null ? m.speed + m.buffSpeed : 0;
+            if (m == null) return 0;
+            return m.speed + m.buffSpeed + GetEffectModifier(false, EffectType.BuffSpeed);
         }
 
-        public string PlayerAttack()
+        // ==================== 统一回合流程 ====================
+
+        /// <summary>
+        /// 回合开始阶段：Tick双方状态效果 -> DetermineTurnOrder
+        /// 由UI层在每个回合开始时调用一次
+        /// </summary>
+        public void RoundStart()
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return;
+
+            // Tick双方状态效果（DoT伤害、duration递减、过期移除）
+            TickEffects(true);
+            TickEffects(false);
+
+            // 检查双方是否因DoT致死
+            var p = GameManager.Instance.Player;
+            if (p.hp <= 0)
+            {
+                if (!TryRevive()) { OnDefeat(); return; }
+            }
+            if (b.monster.hp <= 0)
+            {
+                b.monster.hp = 0;
+                OnVictory();
+                return;
+            }
+
+            // 魔力涌动：每回合回蓝
+            ApplyManaSurge();
+
+            // 根据双方有效速度判定先手
+            DetermineTurnOrder();
+        }
+
+        /// <summary>
+        /// 回合结束阶段：衰减双方buff，重新判定回合顺序
+        /// </summary>
+        public void RoundEnd()
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return;
+            DecayBuffs(b);
+        }
+
+        /// <summary>检查玩家是否被眩晕</summary>
+        public bool IsPlayerStunned()
+        {
+            return CurrentBattle != null && HasEffect(true, EffectType.Stun);
+        }
+
+        /// <summary>检查玩家是否被沉默</summary>
+        public bool IsPlayerSilenced()
+        {
+            return CurrentBattle != null && HasEffect(true, EffectType.Silence);
+        }
+
+        /// <summary>检查怪物是否被眩晕</summary>
+        public bool IsMonsterStunned()
+        {
+            return CurrentBattle != null && HasEffect(false, EffectType.Stun);
+        }
+
+        /// <summary>
+        /// 执行玩家攻击行动（不含TickEffects和DetermineTurnOrder）
+        /// </summary>
+        public string PlayerActionAttack()
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
-            // 回合开始：Tick状态效果
-            TickEffects(true);
-
-            // 检查玩家是否死亡（DoT致死）
+            // 检查玩家是否死亡
             if (p.hp <= 0)
             {
                 if (TryRevive()) { /* 复活成功，继续行动 */ }
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：跳过行动（TickEffects自然管理duration，不手动移除）
+            // 眩晕：跳过行动
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
                 return "你因眩晕无法行动！";
             }
-
-            // 魔力涌动：每回合回蓝
-            ApplyManaSurge();
 
             // 攻击音效
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
@@ -169,9 +231,9 @@ namespace Game.Battle
             }
 
             // 狂战之怒：HP越低攻击越高
-            int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
-            int rawDmg = CalcDamage(totalAtk, b.monster.defense + b.monster.buffDefense);
-            float monsterVuln = GetVulnerableMultiplier(false); // 怪物易伤加成
+            int totalAtk = GetEffectiveATK(true);
+            int rawDmg = CalcDamage(totalAtk, GetEffectiveDEF(false));
+            float monsterVuln = GetVulnerableMultiplier(false);
             int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * monsterVuln));
             b.monster.hp -= dmg;
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
@@ -198,31 +260,41 @@ namespace Game.Battle
             return msg;
         }
 
-        public string PlayerSkill(int skillId)
+        // 兼容旧调用
+        public string PlayerAttack()
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return "";
+            RoundStart();
+            if (b.isFinished) return "";
+            return PlayerActionAttack();
+        }
+
+        /// <summary>
+        /// 执行玩家技能行动（不含TickEffects和DetermineTurnOrder）
+        /// </summary>
+        public string PlayerActionSkill(int skillId)
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             var skill = ConfigManager.Instance.GetSkill(skillId);
             if (b == null || b.isFinished || skill == null) return "";
 
-            // 回合开始：Tick状态效果
-            TickEffects(true);
-
-            // 检查玩家是否死亡（DoT致死）
+            // 检查玩家是否死亡
             if (p.hp <= 0)
             {
                 if (TryRevive()) { /* 复活成功 */ }
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：跳过行动（TickEffects自然管理duration，不手动移除）
+            // 眩晕：跳过行动
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
                 return "你因眩晕无法行动！";
             }
 
-            // 检查沉默：无法使用技能
+            // 沉默：无法使用技能
             if (HasEffect(true, EffectType.Silence))
             {
                 string silenceMsg = "你处于沉默状态，无法使用技能！";
@@ -237,9 +309,6 @@ namespace Game.Battle
                 return errMsg;
             }
 
-            // 魔力涌动：每回合回蓝
-            ApplyManaSurge();
-
             p.mp -= skill.mpCost;
             string msg;
 
@@ -250,12 +319,11 @@ namespace Game.Battle
                 return msg;
             }
 
-            // 技能音效（仅在可使用的主动技能时播放）
+            // 技能音效
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Skill);
 
             if (skill.type == SkillType.Buff)
             {
-                // 对自己施加buff
                 if (skill.buffId > 0)
                 {
                     var buffCfg = ConfigManager.Instance.GetBuff(skill.buffId);
@@ -273,9 +341,6 @@ namespace Game.Battle
                         b.playerBuffTurns = skill.buffTurns;
                         string speedInfo = b.playerBuffSpeed > 0 ? $" 速度+{b.playerBuffSpeed}" : "";
                         msg = $"你使用了 {skill.name}！攻击+{b.playerBuffAttack} 防御+{b.playerBuffDefense}{speedInfo}，持续{skill.buffTurns}回合";
-                        // 速度buff改变后立即重新判定回合顺序
-                        if (b.playerBuffSpeed != 0)
-                            DetermineTurnOrder();
                     }
                     else
                     {
@@ -290,7 +355,7 @@ namespace Game.Battle
                 return msg;
             }
 
-            // 治疗技能：恢复自身HP
+            // 治疗技能
             if (skill.isHeal)
             {
                 int healAmount = (int)(p.attack * skill.power / 100f) + p.level * 5;
@@ -298,19 +363,18 @@ namespace Game.Battle
                 p.hp += actualHeal;
                 msg = $"你使用 {skill.name}，恢复 {actualHeal} 点生命";
                 b.log.Add(msg);
-                // 治疗也触发怪物回合
                 return msg;
             }
 
             // 主动攻击技能 / 状态攻击技能
-            int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
-            int skillRawDmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
-            float skillVuln = GetVulnerableMultiplier(false); // 怪物易伤加成
+            int totalAtk = GetEffectiveATK(true);
+            int skillRawDmg = CalcDamage((int)(totalAtk * skill.power / 100f), GetEffectiveDEF(false));
+            float skillVuln = GetVulnerableMultiplier(false);
             int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(skillRawDmg * skillVuln));
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
-            // Debuff效果：降低敌人攻击/防御/速度
+            // Debuff效果
             if (skill.debuffAttack > 0 || skill.debuffDefense > 0 || skill.debuffSpeed > 0)
             {
                 var m = b.monster;
@@ -333,8 +397,6 @@ namespace Game.Battle
                     m.buffSpeed -= skill.debuffSpeed;
                     m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
                     msg += $"，敌人速度-{skill.debuffSpeed}";
-                    // 速度debuff后立即重新判定回合顺序
-                    DetermineTurnOrder();
                 }
             }
 
@@ -368,32 +430,39 @@ namespace Game.Battle
             return msg;
         }
 
-        public string PlayerUseItem(int itemId)
+        // 兼容旧调用
+        public string PlayerSkill(int skillId)
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return "";
+            RoundStart();
+            if (b.isFinished) return "";
+            return PlayerActionSkill(skillId);
+        }
+
+        /// <summary>
+        /// 执行玩家使用物品行动（不含TickEffects和DetermineTurnOrder）
+        /// </summary>
+        public string PlayerActionUseItem(int itemId)
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (b == null || b.isFinished || item == null) return "";
 
-            // 回合开始：Tick状态效果
-            TickEffects(true);
-
-            // 检查玩家是否死亡（DoT致死）
+            // 检查玩家是否死亡
             if (p.hp <= 0)
             {
                 if (TryRevive()) { /* 复活成功 */ }
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：跳过行动（TickEffects自然管理duration，不手动移除）
+            // 眩晕：跳过行动
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
                 return "你因眩晕无法行动！";
             }
-
-            // 魔力涌动：每回合回蓝
-            ApplyManaSurge();
 
             if (item.restoreHp > 0)
             {
@@ -414,37 +483,38 @@ namespace Game.Battle
             return $"使用了 {item.name}";
         }
 
-        public string MonsterTurn()
+        // 兼容旧调用
+        public string PlayerUseItem(int itemId)
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return "";
+            RoundStart();
+            if (b.isFinished) return "";
+            return PlayerActionUseItem(itemId);
+        }
+
+        /// <summary>
+        /// 执行怪物行动（不含TickEffects）
+        /// </summary>
+        public string MonsterAction()
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
-            // 回合开始：Tick怪物状态效果
-            TickEffects(false);
-
-            // 检查怪物是否死亡（DoT致死）
-            if (b.monster.hp <= 0)
-            {
-                b.monster.hp = 0;
-                return OnVictory();
-            }
-
-            // 检查怪物眩晕：跳过行动
+            // 眩晕：跳过行动
             if (HasEffect(false, EffectType.Stun))
             {
                 string stunMsg = $"{b.monster.name}因眩晕无法行动！";
                 b.log.Add(stunMsg);
-                // TickEffects自然管理duration，不手动RemoveEffect
-                DecayBuffs(b);
                 return stunMsg;
             }
 
             var m = b.monster;
-            int monsterAtk = m.attack + m.buffAttack;
-            int playerDef = p.defense + b.playerBuffDefense;
-            float dmgMultiplier = GetSteadfastMultiplier(); // 坚守减伤
-            float vulnerableMult = GetVulnerableMultiplier(true); // 玩家易伤加成
+            int monsterAtk = GetEffectiveATK(false);
+            int playerDef = GetEffectiveDEF(true);
+            float dmgMultiplier = GetSteadfastMultiplier();
+            float vulnerableMult = GetVulnerableMultiplier(true);
             dmgMultiplier *= vulnerableMult;
 
             // 受击音效
@@ -455,7 +525,6 @@ namespace Game.Battle
             {
                 string dodgeMsg = "你闪避了攻击！";
                 b.log.Add(dodgeMsg);
-                DecayBuffs(b);
                 return dodgeMsg;
             }
 
@@ -483,11 +552,9 @@ namespace Game.Battle
 
                     b.log.Add(msg);
 
-                    DecayBuffs(b);
-
                     if (p.hp <= 0)
                     {
-                        if (TryRevive()) return msg; // 复活
+                        if (TryRevive()) return msg;
                         return msg + "\n" + OnDefeat();
                     }
                     return msg;
@@ -503,14 +570,20 @@ namespace Game.Battle
             if (dmgMultiplier < 1f) normalMsg += "（坚守减伤）";
             b.log.Add(normalMsg);
 
-            DecayBuffs(b);
-
             if (p.hp <= 0)
             {
-                if (TryRevive()) return normalMsg; // 复活
+                if (TryRevive()) return normalMsg;
                 return normalMsg + "\n" + OnDefeat();
             }
             return normalMsg;
+        }
+
+        // 兼容旧调用：MonsterTurn 仍可单独使用，内部调用 MonsterAction
+        public string MonsterTurn()
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return "";
+            return MonsterAction();
         }
 
         private void DecayBuffs(BattleData b)
@@ -537,37 +610,32 @@ namespace Game.Battle
                     b.playerBuffDefense = 0;
                     b.playerBuffSpeed = 0;
                     b.log.Add("你的增益效果消失了");
-                    // buff消失后重新判定回合顺序
-                    DetermineTurnOrder();
                 }
             }
         }
 
-        public string TryEscape()
+        /// <summary>
+        /// 执行逃跑行动（不含TickEffects）
+        /// </summary>
+        public string ActionEscape()
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
-            // 回合开始：Tick状态效果
-            TickEffects(true);
-
-            // 检查玩家是否死亡（DoT致死）
+            // 检查玩家是否死亡
             if (p.hp <= 0)
             {
                 if (TryRevive()) { /* 复活成功 */ }
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：无法逃跑（TickEffects自然管理duration，不手动移除）
+            // 眩晕：无法逃跑
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
                 return "你因眩晕无法行动！";
             }
-
-            // 魔力涌动：每回合回蓝
-            ApplyManaSurge();
 
             // 50%逃跑概率，Boss不可逃跑
             var m = b.monster;
@@ -588,7 +656,23 @@ namespace Game.Battle
             }
             string failMsg = "逃跑失败！";
             b.log.Add(failMsg);
-            return failMsg + "\n" + MonsterTurn();
+            return failMsg;
+        }
+
+        public string TryEscape()
+        {
+            var b = CurrentBattle;
+            if (b == null || b.isFinished) return "";
+            RoundStart();
+            if (b.isFinished) return "";
+
+            string result = ActionEscape();
+            if (!b.isFinished)
+            {
+                // 逃跑失败，怪物行动
+                MonsterAction();
+            }
+            return result;
         }
 
         private string OnVictory()
@@ -808,17 +892,10 @@ namespace Game.Battle
             }
         }
 
-        /// <summary>获取有效速度 = 基础 + 旧buff + 状态效果修正</summary>
+        /// <summary>获取有效速度（委托给GetEffectivePlayerSpeed/GetEffectiveMonsterSpeed，已包含状态效果修正）</summary>
         public int GetEffectiveSPD(bool isPlayer)
         {
-            if (isPlayer)
-            {
-                return GetEffectivePlayerSpeed() + GetEffectModifier(isPlayer, EffectType.BuffSpeed);
-            }
-            else
-            {
-                return GetEffectiveMonsterSpeed() + GetEffectModifier(isPlayer, EffectType.BuffSpeed);
-            }
+            return isPlayer ? GetEffectivePlayerSpeed() : GetEffectiveMonsterSpeed();
         }
 
         /// <summary>汇总指定类型Buff修正值</summary>

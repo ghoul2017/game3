@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Game.Battle;
 using Game.Core;
@@ -34,6 +35,7 @@ namespace Game.UI
         // ---- 缓存引用：操作按钮 ----
         private Button btnAttack;
         private Button btnSkill;
+        private Text btnSkillLabel;
         private Button btnItem;
         private Button btnEscape;
 
@@ -59,6 +61,9 @@ namespace Game.UI
         // ---- 奖励面板 ----
         private GameObject rewardOverlay;
         private Text rewardText;
+
+        // ---- 回合切换动画 ----
+        private Coroutine turnTransitionCoroutine;
 
         private struct SkillRow
         {
@@ -287,6 +292,7 @@ namespace Game.UI
             // 操作按钮
             btnAttack = FindComponent<Button>("BtnAttack");
             btnSkill = FindComponent<Button>("BtnSkill");
+            btnSkillLabel = FindComponent<Text>("BtnSkill/Label");
             btnItem = FindComponent<Button>("BtnItem");
             btnEscape = FindComponent<Button>("BtnEscape");
 
@@ -361,6 +367,7 @@ namespace Game.UI
         {
             isAutoBattle = false;
             autoBattleCoroutine = null;
+            turnTransitionCoroutine = null;
             if (skillPanel != null) skillPanel.SetActive(false);
             if (itemPanel != null) itemPanel.SetActive(false);
             if (rewardOverlay != null) rewardOverlay.SetActive(false);
@@ -372,6 +379,7 @@ namespace Game.UI
         public override void OnHide()
         {
             StopAutoBattle();
+            StopTurnTransition();
         }
 
         /// <summary>
@@ -394,7 +402,11 @@ namespace Game.UI
             if (monsterTypeText != null) monsterTypeText.text = m.isBoss ? "BOSS" : (m.level > 0 ? $"Lv.{m.level}" : "");
             if (monsterHpText != null) monsterHpText.text = $"HP: {m.hp}/{m.maxHp}";
             if (monsterHpSlider != null) monsterHpSlider.value = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0;
-            if (monsterAtkDefText != null) monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}  速度:{m.speed + m.buffSpeed}";
+            if (monsterAtkDefText != null)
+            {
+                int monsterSpeed = BattleManager.Instance.GetEffectiveMonsterSpeed();
+                monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}  速度:{monsterSpeed}";
+            }
 
             // 回合归属和双方速度
             if (turnInfoText != null && !b.isFinished)
@@ -430,16 +442,16 @@ namespace Game.UI
                 }
             }
 
-            // 玩家信息（含buff加成）
+            // 玩家信息（含buff加成+状态效果）
             if (playerInfoText != null)
             {
                 int buffAtk = b.playerBuffAttack;
                 int buffDef = b.playerBuffDefense;
-                int buffSpd = b.playerBuffSpeed;
                 int buffTurns = b.playerBuffTurns;
                 string atkStr = buffAtk > 0 ? $"{p.attack}+{buffAtk}" : $"{p.attack}";
                 string defStr = buffDef > 0 ? $"{p.defense}+{buffDef}" : $"{p.defense}";
-                string spdStr = buffSpd > 0 ? $"{p.speed}+{buffSpd}" : $"{p.speed}";
+                int effectiveSpeed = BattleManager.Instance.GetEffectivePlayerSpeed();
+                string spdStr = effectiveSpeed > p.speed ? $"{p.speed}+{effectiveSpeed - p.speed}" : $"{p.speed}";
                 string buffInfo = buffTurns > 0 ? $"  [增益{buffTurns}回合]" : "";
                 playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}  速度:{spdStr}{buffInfo}";
             }
@@ -475,39 +487,92 @@ namespace Game.UI
             }
             else
             {
+                // 沉默检测：禁用技能按钮（灰色+solid文字）
+                bool silenced = BattleManager.Instance.IsPlayerSilenced();
                 if (btnAttack != null) btnAttack.interactable = true;
-                if (btnSkill != null) btnSkill.interactable = true;
+                if (btnSkill != null)
+                {
+                    btnSkill.interactable = !silenced;
+                    if (btnSkillLabel != null)
+                    {
+                        btnSkillLabel.color = silenced ? UIBuilder.TextDim : UIBuilder.Gold;
+                    }
+                }
                 if (btnItem != null) btnItem.interactable = true;
                 if (btnEscape != null) btnEscape.interactable = true;
                 if (btnResult != null) btnResult.gameObject.SetActive(false);
             }
         }
 
-        private void OnAttack()
+        // ==================== 统一回合流程 ====================
+
+        /// <summary>
+        /// 执行完整回合：RoundStart -> 先手方Action -> 后手方Action -> RoundEnd
+        /// 使用协程实现回合切换0.2s过渡动画
+        /// </summary>
+        private void ExecuteRound(System.Action playerAction)
         {
-            StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
 
-            if (!b.isPlayerTurn)
+            // 停止之前的过渡动画
+            StopTurnTransition();
+
+            // 1. 回合开始：Tick双方状态效果 + 判定先手
+            BattleManager.Instance.RoundStart();
+            if (b.isFinished) { RefreshUI(); return; }
+
+            // 先更新回合归属显示，0.2s后再执行行动
+            SetActionButtons(false);
+            RefreshUI();
+            turnTransitionCoroutine = StartCoroutine(ExecuteRoundAfterTransition(playerAction));
+        }
+
+        private IEnumerator ExecuteRoundAfterTransition(System.Action playerAction)
+        {
+            yield return new WaitForSeconds(0.2f);
+
+            var b = BattleManager.Instance.CurrentBattle;
+            if (b == null || b.isFinished) { turnTransitionCoroutine = null; yield break; }
+
+            // 2. 根据先手顺序执行行动
+            if (b.isPlayerTurn)
             {
-                // 敌人先手：敌人行动 -> 玩家行动
-                BattleManager.Instance.MonsterTurn();
-                if (b.isFinished) { RefreshUI(); return; }
-                BattleManager.Instance.PlayerAttack();
+                // 玩家先手：玩家行动 -> 怪物行动
+                playerAction();
+                if (!b.isFinished) BattleManager.Instance.MonsterAction();
             }
             else
             {
-                // 玩家先手：玩家行动 -> 敌人行动
-                BattleManager.Instance.PlayerAttack();
-                if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+                // 怪物先手：怪物行动 -> 玩家行动
+                BattleManager.Instance.MonsterAction();
+                if (!b.isFinished) playerAction();
             }
+
+            // 3. 回合结束：衰减buff
+            if (!b.isFinished) BattleManager.Instance.RoundEnd();
+
             RefreshUI();
+
+            // 恢复按钮
+            if (b != null && !b.isFinished) SetActionButtons(true);
+
+            turnTransitionCoroutine = null;
+        }
+
+        // ==================== 玩家操作 ====================
+
+        private void OnAttack()
+        {
+            StopAutoBattle();
+            ExecuteRound(() => BattleManager.Instance.PlayerActionAttack());
         }
 
         private void OnSkillMenu()
         {
             StopAutoBattle();
+            // 沉默时点击技能按钮，不打开面板
+            if (BattleManager.Instance.IsPlayerSilenced()) return;
             bool showSkill = !skillPanel.gameObject.activeSelf;
             itemPanel.gameObject.SetActive(false);
             skillPanel.gameObject.SetActive(showSkill);
@@ -553,23 +618,7 @@ namespace Game.UI
         private void OnUseSkill(int skillId)
         {
             StopAutoBattle();
-            var b = BattleManager.Instance.CurrentBattle;
-            if (b == null || b.isFinished) return;
-
-            if (!b.isPlayerTurn)
-            {
-                // 敌人先手：敌人行动 -> 玩家行动
-                BattleManager.Instance.MonsterTurn();
-                if (b.isFinished) { RefreshUI(); return; }
-                BattleManager.Instance.PlayerSkill(skillId);
-            }
-            else
-            {
-                // 玩家先手：玩家行动 -> 敌人行动
-                BattleManager.Instance.PlayerSkill(skillId);
-                if (!b.isFinished) BattleManager.Instance.MonsterTurn();
-            }
-            RefreshUI();
+            ExecuteRound(() => BattleManager.Instance.PlayerActionSkill(skillId));
         }
 
         private void OnItemMenu()
@@ -632,30 +681,15 @@ namespace Game.UI
             }
             for (int i = idx; i < MaxItemRows; i++)
             {
-                if (itemRows[i].obj != null) itemRows[i].obj.SetActive(false);
+                if (itemRows[i].obj != null)
+                    itemRows[i].obj.SetActive(false);
             }
         }
 
         private void OnUseItemById(int itemId)
         {
             StopAutoBattle();
-            var b = BattleManager.Instance.CurrentBattle;
-            if (b == null || b.isFinished) return;
-
-            if (!b.isPlayerTurn)
-            {
-                // 敌人先手：敌人行动 -> 玩家行动
-                BattleManager.Instance.MonsterTurn();
-                if (b.isFinished) { RefreshUI(); return; }
-                BattleManager.Instance.PlayerUseItem(itemId);
-            }
-            else
-            {
-                // 玩家先手：玩家行动 -> 敌人行动
-                BattleManager.Instance.PlayerUseItem(itemId);
-                if (!b.isFinished) BattleManager.Instance.MonsterTurn();
-            }
-            RefreshUI();
+            ExecuteRound(() => BattleManager.Instance.PlayerActionUseItem(itemId));
         }
 
         private void OnEscape()
@@ -663,6 +697,8 @@ namespace Game.UI
             StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
+
+            // 逃跑使用独立流程（RoundStart -> 逃跑判定 -> 失败时怪物行动）
             BattleManager.Instance.TryEscape();
             RefreshUI();
         }
@@ -685,7 +721,39 @@ namespace Game.UI
             }
         }
 
-        // ---- 自动战斗 ----
+        // ==================== 回合切换动画 ====================
+
+        private void StopTurnTransition()
+        {
+            if (turnTransitionCoroutine != null)
+            {
+                StopCoroutine(turnTransitionCoroutine);
+                turnTransitionCoroutine = null;
+            }
+        }
+
+        private void SetActionButtons(bool interactable)
+        {
+            if (btnAttack != null) btnAttack.interactable = interactable;
+            if (btnItem != null) btnItem.interactable = interactable;
+            if (btnEscape != null) btnEscape.interactable = interactable;
+
+            // 技能按钮单独处理沉默状态
+            if (btnSkill != null)
+            {
+                if (interactable)
+                {
+                    bool silenced = BattleManager.Instance.IsPlayerSilenced();
+                    btnSkill.interactable = !silenced;
+                }
+                else
+                {
+                    btnSkill.interactable = false;
+                }
+            }
+        }
+
+        // ==================== 自动战斗 ====================
 
         private void OnRewardContinue()
         {
@@ -721,27 +789,34 @@ namespace Game.UI
             btnAutoLabel.text = "Auto";
         }
 
-        private System.Collections.IEnumerator AutoBattleCoroutine()
+        /// <summary>
+        /// 自动战斗：每回合使用普攻（不受沉默影响），遵循统一回合流程
+        /// </summary>
+        private IEnumerator AutoBattleCoroutine()
         {
             while (isAutoBattle)
             {
                 var b = BattleManager.Instance.CurrentBattle;
                 if (b == null || b.isFinished) break;
 
-                if (!b.isPlayerTurn)
+                // 1. 回合开始：Tick双方状态效果 + 判定先手
+                BattleManager.Instance.RoundStart();
+                if (b.isFinished) { RefreshUI(); break; }
+
+                // 2. 根据先手顺序执行行动（自动战斗使用普攻，不受沉默影响）
+                if (b.isPlayerTurn)
                 {
-                    // 敌人先手：敌人行动 -> 玩家行动
-                    BattleManager.Instance.MonsterTurn();
-                    if (b.isFinished) break;
-                    BattleManager.Instance.PlayerAttack();
+                    BattleManager.Instance.PlayerActionAttack();
+                    if (!b.isFinished) BattleManager.Instance.MonsterAction();
                 }
                 else
                 {
-                    // 玩家先手：玩家行动 -> 敌人行动
-                    BattleManager.Instance.PlayerAttack();
-                    if (!b.isFinished)
-                        BattleManager.Instance.MonsterTurn();
+                    BattleManager.Instance.MonsterAction();
+                    if (!b.isFinished) BattleManager.Instance.PlayerActionAttack();
                 }
+
+                // 3. 回合结束：衰减buff
+                if (!b.isFinished) BattleManager.Instance.RoundEnd();
 
                 RefreshUI();
 
