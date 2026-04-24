@@ -88,7 +88,6 @@ namespace Game.Battle
         {
             CurrentBattle = battleData;
             Debug.Log($"[战斗] 开始战斗 怪物={battleData.monster.name} HP={battleData.monster.hp}");
-            Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
             CurrentBattle.isFinished = false;
             CurrentBattle.isVictory = false;
             CurrentBattle.playerBuffAttack = 0;
@@ -98,8 +97,28 @@ namespace Game.Battle
             CurrentBattle.playerEffects.Clear();
             CurrentBattle.monsterEffects.Clear();
             CurrentBattle.log.Clear();
-            CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
             reviveUsed = false;
+
+            // Boss战特殊处理
+            bool isBoss = battleData.monster.isBoss;
+            CurrentBattle.isBossBattle = isBoss;
+            CurrentBattle.bossDefeated = false;
+            CurrentBattle.bossKillTitle = "";
+
+            if (isBoss)
+            {
+                // Boss战前警告
+                CurrentBattle.log.Add("遭遇了 " + battleData.monster.name + "！");
+                CurrentBattle.log.Add("强大的敌人出现了！");
+                // 播放Boss警告音效和BGM
+                Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_BossWarning);
+                Core.AudioManager.Instance?.PlayMusic(Core.AudioClipType.Battle_BossBGM);
+            }
+            else
+            {
+                CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
+                Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
+            }
 
             // 根据速度判定先手
             DetermineTurnOrder();
@@ -688,6 +707,10 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             var m = b.monster;
 
+            // Boss战停止专属BGM
+            if (b.isBossBattle)
+                Core.AudioManager.Instance?.StopMusic();
+
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Victory);
 
             b.isFinished = true;
@@ -710,6 +733,14 @@ namespace Game.Battle
                 var expGem = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_EXP_GEM);
                 if (expGem != null)
                     expReward = (int)(expReward * (1 + expGem.effectValue / 100f));
+            }
+
+            // Boss掉落加成：额外 floor*100 金币 + floor*50 经验
+            if (b.isBossBattle)
+            {
+                int floor = GameManager.Instance.Dungeon?.floor ?? 1;
+                goldReward += floor * GameConstants.BOSS_GOLD_FLOOR_MULTIPLIER;
+                expReward += floor * GameConstants.BOSS_EXP_FLOOR_MULTIPLIER;
             }
 
             p.AddExp(expReward);
@@ -738,6 +769,31 @@ namespace Game.Battle
                 }
             }
 
+            // Boss额外掉落：1个随机宝物
+            if (b.isBossBattle)
+            {
+                var allTreasures = ConfigManager.Instance.GetAllTreasures();
+                var available = allTreasures.FindAll(t => !p.treasures.Contains(t.id));
+                if (available.Count > 0)
+                {
+                    var treasure = available[Random.Range(0, available.Count)];
+                    p.treasures.Add(treasure.id);
+                    p.RecalcStats();
+                    b.rewardItems.Add($"宝物：{treasure.name}");
+                    msg += $"\n获得宝物：{treasure.name} — {treasure.desc}";
+                }
+
+                // 记录Boss击杀到PlayerData
+                if (!p.defeatedBosses.Contains(m.id))
+                {
+                    p.defeatedBosses.Add(m.id);
+                    Debug.Log($"[战斗] 记录Boss击杀：{m.name}(id={m.id})");
+                }
+
+                b.bossDefeated = true;
+                b.bossKillTitle = $"击败了 {m.name}！";
+            }
+
             b.log.Add(msg);
             return msg;
         }
@@ -746,6 +802,10 @@ namespace Game.Battle
         {
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
+
+            // Boss战停止专属BGM
+            if (b.isBossBattle)
+                Core.AudioManager.Instance?.StopMusic();
 
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Defeat);
 

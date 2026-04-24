@@ -57,7 +57,20 @@ namespace Game.Config
             => monsters.Values.Where(m => m.minFloor <= floor && !m.isBoss).ToList();
 
         public MonsterConfig GetBossByFloor(int floor)
-            => monsters.Values.FirstOrDefault(m => m.isBoss && m.minFloor <= floor);
+        {
+            // 精确匹配：找到 minFloor == floor 的Boss
+            var exact = monsters.Values.FirstOrDefault(m => m.isBoss && m.minFloor == floor);
+            if (exact != null) return exact;
+            // 兜底：找到 minFloor <= floor 的最近Boss
+            MonsterConfig best = null;
+            foreach (var m in monsters.Values)
+            {
+                if (!m.isBoss || m.minFloor > floor) continue;
+                if (best == null || m.minFloor > best.minFloor)
+                    best = m;
+            }
+            return best;
+        }
 
         public TreasureConfig GetTreasure(int id)
             => treasures.TryGetValue(id, out var c) ? c : null;
@@ -172,7 +185,25 @@ namespace Game.Config
                 // 法师-封印：沉默
                 [5006] = new SkillConfig { id = 5006, name = "封印", desc = "封印敌人技能，附加沉默2回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 25, power = 50, level = 2, statusEffect = EffectType.Silence, statusDuration = 3 },
                 // 战士-破甲：易伤
-                [1006] = new SkillConfig { id = 1006, name = "破甲", desc = "破坏敌人护甲，附加易伤2回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 90, level = 3, prereqSkillId = 1005, statusEffect = EffectType.Vulnerable, statusDuration = 2, statusPowerRate = 0.3f }
+                [1006] = new SkillConfig { id = 1006, name = "破甲", desc = "破坏敌人护甲，附加易伤2回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 90, level = 3, prereqSkillId = 1005, statusEffect = EffectType.Vulnerable, statusDuration = 2, statusPowerRate = 0.3f },
+
+                // ==================== Boss专属技能 ====================
+                // 暗影领主(L5)：暗影斩+暗影撕裂
+                [9001] = new SkillConfig { id = 9001, name = "暗影斩", desc = "暗影领主的强力攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 5, power = 180 },
+                [9002] = new SkillConfig { id = 9002, name = "暗影撕裂", desc = "撕裂目标，附加流血4回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 8, power = 100, statusEffect = EffectType.Bleed, statusDuration = 4, statusPowerRate = 0.3f },
+                // 堕落骑士(L10)：堕落冲击+铁壁
+                [9003] = new SkillConfig { id = 9003, name = "堕落冲击", desc = "堕落骑士的沉重打击，附加眩晕", type = SkillType.StatusAttack, profession = Profession.Knight, mpCost = 8, power = 140, statusEffect = EffectType.Stun, statusDuration = 2 },
+                [9004] = new SkillConfig { id = 9004, name = "铁壁", desc = "大幅提升自身防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 10, power = 0, buffId = 3, buffTurns = 3 },
+                // 深渊法师(L15)：暗影诅咒+深渊禁锢
+                [9005] = new SkillConfig { id = 9005, name = "暗影诅咒", desc = "施加暗影诅咒，附加易伤3回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 8, power = 80, statusEffect = EffectType.Vulnerable, statusDuration = 3, statusPowerRate = 0.35f },
+                [9006] = new SkillConfig { id = 9006, name = "深渊禁锢", desc = "深渊之力封印目标，附加沉默3回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 10, power = 90, statusEffect = EffectType.Silence, statusDuration = 3 },
+                // 混沌巨兽(L20)：混沌猛击+混沌毒雾
+                [9007] = new SkillConfig { id = 9007, name = "混沌猛击", desc = "混沌巨兽的毁灭性攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 8, power = 220 },
+                [9008] = new SkillConfig { id = 9008, name = "混沌毒雾", desc = "释放毒雾，附加中毒4回合", type = SkillType.StatusAttack, profession = Profession.Ranger, mpCost = 10, power = 100, statusEffect = EffectType.Poison, statusDuration = 4, statusPowerRate = 0.2f },
+                // 暗黑龙王(L25)：龙息+暗黑领域+龙鳞护甲
+                [9009] = new SkillConfig { id = 9009, name = "龙息", desc = "暗黑龙王的灼热龙息", type = SkillType.Active, profession = Profession.Mage, mpCost = 10, power = 250 },
+                [9010] = new SkillConfig { id = 9010, name = "暗黑领域", desc = "暗黑领域笼罩，附加易伤+沉默", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 15, power = 120, statusEffect = EffectType.Vulnerable, statusDuration = 3, statusPowerRate = 0.4f },
+                [9011] = new SkillConfig { id = 9011, name = "龙鳞护甲", desc = "龙鳞硬化，大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 12, power = 0, buffId = 3, buffTurns = 4 }
             };
         }
 
@@ -205,7 +236,14 @@ namespace Game.Config
                 [4002] = new ItemConfig { id = 4002, name = "大生命药水", desc = "恢复120点生命", type = ItemType.Consumable, price = 40, restoreHp = 120 },
                 [4003] = new ItemConfig { id = 4003, name = "法力药水", desc = "恢复30点法力", type = ItemType.Consumable, price = 15, restoreMp = 30 },
                 [4004] = new ItemConfig { id = 4004, name = "大法力药水", desc = "恢复80点法力", type = ItemType.Consumable, price = 40, restoreMp = 80 },
-                [4005] = new ItemConfig { id = 4005, name = "全恢复药水", desc = "恢复全部生命和法力", type = ItemType.Consumable, price = 100, restoreHp = 9999, restoreMp = 9999 }
+                [4005] = new ItemConfig { id = 4005, name = "全恢复药水", desc = "恢复全部生命和法力", type = ItemType.Consumable, price = 100, restoreHp = 9999, restoreMp = 9999 },
+
+                // Boss专属稀有装备（必掉）
+                [1008] = new ItemConfig { id = 1008, name = "暗影之刃", desc = "暗影领主的佩刀，攻击+22", type = ItemType.Weapon, price = 500, atk = 22, reqLevel = 3 },
+                [1009] = new ItemConfig { id = 1009, name = "堕落圣剑", desc = "堕落骑士的圣剑，攻击+30", type = ItemType.Weapon, price = 800, atk = 30, reqLevel = 5 },
+                [2005] = new ItemConfig { id = 2005, name = "深渊法袍", desc = "深渊法师的法袍，防御+20 生命+80", type = ItemType.Armor, price = 900, def = 20, hp = 80, reqLevel = 7 },
+                [2006] = new ItemConfig { id = 2006, name = "混沌铠甲", desc = "混沌巨兽的甲壳制成，防御+28 生命+120", type = ItemType.Armor, price = 1200, def = 28, hp = 120, reqLevel = 9 },
+                [3004] = new ItemConfig { id = 3004, name = "龙牙项链", desc = "暗黑龙王的牙齿制成的项链，暴击+15 闪避+10", type = ItemType.Accessory, price = 1500, crit = 15, dodge = 10, reqLevel = 10 }
             };
         }
 
@@ -226,9 +264,17 @@ namespace Game.Config
                 [1009] = new MonsterConfig { id = 1009, name = "暗影法师", hp = 65, attack = 16, defense = 3, speed = 9, expReward = 50, goldReward = 35, minFloor = 5, skillIds = { 5006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
                 [1010] = new MonsterConfig { id = 1010, name = "重甲兵", hp = 100, attack = 13, defense = 12, speed = 4, expReward = 38, goldReward = 28, minFloor = 3, skillIds = { 3005 }, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
 
-                // Boss
-                [2001] = new MonsterConfig { id = 2001, name = "地牢守卫", hp = 200, attack = 15, defense = 10, speed = 6, expReward = 100, goldReward = 80, minFloor = 5, isBoss = true, aiPattern = MonsterAIPattern.Boss, drops = { new ItemDropConfig { itemId = 1003, chance = 0.3f }, new ItemDropConfig { itemId = 3001, chance = 0.2f } } },
-                [2002] = new MonsterConfig { id = 2002, name = "堕落领主", hp = 500, attack = 25, defense = 18, speed = 8, expReward = 300, goldReward = 200, minFloor = 10, isBoss = true, aiPattern = MonsterAIPattern.Boss, drops = { new ItemDropConfig { itemId = 1003, chance = 0.5f }, new ItemDropConfig { itemId = 3003, chance = 0.3f } } }
+                // ==================== Boss（每5层一个，属性约为同层普通怪2.5倍）====================
+                // L5 暗影领主：高攻+流血技
+                [2001] = new MonsterConfig { id = 2001, name = "暗影领主", hp = 300, attack = 22, defense = 10, speed = 8, mp = 50, expReward = 250, goldReward = 500, minFloor = 5, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9001, 9002 }, drops = { new ItemDropConfig { itemId = 1008, chance = 1f } } },
+                // L10 堕落骑士：高防+眩晕+防御AI
+                [2002] = new MonsterConfig { id = 2002, name = "堕落骑士", hp = 550, attack = 28, defense = 28, speed = 6, mp = 60, expReward = 500, goldReward = 1000, minFloor = 10, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9003, 9004 }, drops = { new ItemDropConfig { itemId = 1009, chance = 1f } } },
+                // L15 深渊法师：debuff为主+沉默+易伤
+                [2003] = new MonsterConfig { id = 2003, name = "深渊法师", hp = 700, attack = 35, defense = 15, speed = 10, mp = 100, expReward = 750, goldReward = 1500, minFloor = 15, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9005, 9006 }, drops = { new ItemDropConfig { itemId = 2005, chance = 1f } } },
+                // L20 混沌巨兽：高血量+高伤害+多阶段
+                [2004] = new MonsterConfig { id = 2004, name = "混沌巨兽", hp = 1000, attack = 42, defense = 25, speed = 7, mp = 80, expReward = 1000, goldReward = 2000, minFloor = 20, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9007, 9008 }, drops = { new ItemDropConfig { itemId = 2006, chance = 1f } } },
+                // L25 最终Boss暗黑龙王：三阶段+全技能类型
+                [2005] = new MonsterConfig { id = 2005, name = "暗黑龙王", hp = 1500, attack = 50, defense = 30, speed = 12, mp = 120, expReward = 1500, goldReward = 2500, minFloor = 25, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9009, 9010, 9011 }, drops = { new ItemDropConfig { itemId = 3004, chance = 1f } } }
             };
         }
 

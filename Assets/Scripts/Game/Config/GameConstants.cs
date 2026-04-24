@@ -68,17 +68,25 @@ namespace Game.Config
         public const int TREASURE_ID_EXP_GEM = 6;
 
         // ==================== UI系统 ====================
-        
+
         /// <summary>战斗日志最大行数</summary>
         public const int MAX_BATTLE_LOG_LINES = 6;
-        
+
         /// <summary>技能栏最大数量</summary>
         public const int MAX_SKILL_SLOTS = 4;
-        
+
         /// <summary>宝物栏最大数量</summary>
         public const int MAX_TREASURE_SLOTS = 6;
-        
+
         /// <summary>装备栏最大数量</summary>
         public const int MAX_EQUIP_SLOTS = 3;
+
+        // ==================== Boss系统 ====================
+
+        /// <summary>Boss战额外金币倍率：floor * 此值</summary>
+        public const int BOSS_GOLD_FLOOR_MULTIPLIER = 100;
+
+        /// <summary>Boss战额外经验倍率：floor * 此值</summary>
+        public const int BOSS_EXP_FLOOR_MULTIPLIER = 50;
     }
 }

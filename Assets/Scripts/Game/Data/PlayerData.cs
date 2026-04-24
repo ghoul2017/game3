@@ -53,6 +53,9 @@ namespace Game.Data
         public int dungeonFloor;
         public int dungeonRoomIndex;
 
+        // Boss击杀记录（用于成就/统计）
+        public List<int> defeatedBosses = new List<int>();
+
         public void RecalcStats()
         {
             var profCfg = ConfigManager.Instance.GetProfession(profession);

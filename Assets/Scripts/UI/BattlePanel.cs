@@ -52,6 +52,7 @@ namespace Game.UI
         private Text btnSkillLabel;
         private Button btnItem;
         private Button btnEscape;
+        private Text btnEscapeLabel;
 
         // ---- 缓存引用：技能子面板 ----
         private GameObject skillPanel;
@@ -468,6 +469,7 @@ namespace Game.UI
             btnSkillLabel = FindComponent<Text>("BtnSkill/Label");
             btnItem = FindComponent<Button>("BtnItem");
             btnEscape = FindComponent<Button>("BtnEscape");
+            btnEscapeLabel = FindComponent<Text>("BtnEscape/Label");
 
             // 技能子面板
             var skillPanelTr = transform.Find("SkillPanel");
@@ -662,7 +664,16 @@ namespace Game.UI
 
                 if (b.isVictory)
                 {
-                    string rewardMsg = $"战斗胜利！\n\n获得 {b.rewardExp} 经验\n获得 {b.rewardGold} 金币";
+                    string rewardMsg;
+                    // Boss击杀显示特殊标识
+                    if (b.isBossBattle && !string.IsNullOrEmpty(b.bossKillTitle))
+                    {
+                        rewardMsg = $"{b.bossKillTitle}\n\n获得 {b.rewardExp} 经验\n获得 {b.rewardGold} 金币";
+                    }
+                    else
+                    {
+                        rewardMsg = $"战斗胜利！\n\n获得 {b.rewardExp} 经验\n获得 {b.rewardGold} 金币";
+                    }
                     foreach (var itemName in b.rewardItems)
                         rewardMsg += $"\n获得物品：{itemName}";
                     if (rewardText != null) rewardText.text = rewardMsg;
@@ -690,7 +701,24 @@ namespace Game.UI
                     }
                 }
                 if (btnItem != null) btnItem.interactable = true;
-                if (btnEscape != null) btnEscape.interactable = true;
+
+                // Boss战：逃跑按钮不可用
+                if (btnEscape != null)
+                {
+                    if (b.isBossBattle)
+                    {
+                        btnEscape.interactable = false;
+                        if (btnEscapeLabel != null)
+                            btnEscapeLabel.text = "Boss战无法逃跑";
+                    }
+                    else
+                    {
+                        btnEscape.interactable = true;
+                        if (btnEscapeLabel != null)
+                            btnEscapeLabel.text = "逃  跑";
+                    }
+                }
+
                 if (btnResult != null) btnResult.gameObject.SetActive(false);
             }
         }
@@ -1253,7 +1281,18 @@ namespace Game.UI
         {
             if (btnAttack != null) btnAttack.interactable = interactable;
             if (btnItem != null) btnItem.interactable = interactable;
-            if (btnEscape != null) btnEscape.interactable = interactable;
+
+            // Boss战：逃跑按钮始终不可用
+            var b = BattleManager.Instance.CurrentBattle;
+            bool isBoss = b != null && b.isBossBattle;
+            if (btnEscape != null)
+            {
+                btnEscape.interactable = isBoss ? false : interactable;
+                if (isBoss && btnEscapeLabel != null)
+                    btnEscapeLabel.text = "Boss战无法逃跑";
+                else if (btnEscapeLabel != null)
+                    btnEscapeLabel.text = "逃  跑";
+            }
 
             // 技能按钮单独处理沉默状态
             if (btnSkill != null)

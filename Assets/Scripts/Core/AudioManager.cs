@@ -17,7 +17,9 @@ namespace Game.Core
         UI_PanelOpen,
         UI_PanelClose,
         Dungeon_Move,
-        Dungeon_Discover
+        Dungeon_Discover,
+        Battle_BossWarning,    // Boss战前警告
+        Battle_BossBGM         // Boss战专属BGM
     }
 
     /// <summary>
@@ -165,6 +167,8 @@ namespace Game.Core
             clipCache[AudioClipType.Battle_Defeat] = GenerateArpeggio(new float[] { 400f, 350f, 300f, 200f }, 0.2f, 0.4f);
             clipCache[AudioClipType.Dungeon_Move] = GenerateNoiseBurst(0.06f, 0.2f);
             clipCache[AudioClipType.Dungeon_Discover] = GenerateArpeggio(new float[] { 600f, 800f }, 0.12f, 0.35f);
+            clipCache[AudioClipType.Battle_BossWarning] = GenerateArpeggio(new float[] { 200f, 250f, 300f, 400f }, 0.25f, 0.6f);
+            clipCache[AudioClipType.Battle_BossBGM] = GenerateBossBGM();
         }
 
         /// <summary>
@@ -251,6 +255,39 @@ namespace Game.Core
                 }
             }
             var clip = AudioClip.Create("Arpeggio", totalSamples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成Boss战BGM：低沉紧张的循环旋律
+        /// </summary>
+        private AudioClip GenerateBossBGM()
+        {
+            int sampleRate = 44100;
+            float duration = 2.0f; // 2秒循环
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            // 低频基础音 + 中频旋律
+            float[] bassNotes = { 110f, 110f, 130.81f, 110f, 98f, 98f, 110f, 130.81f };
+            float[] melodyNotes = { 220f, 261.63f, 293.66f, 261.63f, 220f, 196f, 220f, 261.63f };
+            int noteSamples = samples / bassNotes.Length;
+            for (int n = 0; n < bassNotes.Length; n++)
+            {
+                for (int i = 0; i < noteSamples; i++)
+                {
+                    int idx = n * noteSamples + i;
+                    if (idx >= samples) break;
+                    float t = (float)i / sampleRate;
+                    float envelope = Mathf.Sin(Mathf.PI * (float)i / noteSamples);
+                    // 低音层
+                    float bass = Mathf.Sin(2 * Mathf.PI * bassNotes[n] * t) * 0.3f * envelope;
+                    // 旋律层（方波近似）
+                    float melody = Mathf.Sign(Mathf.Sin(2 * Mathf.PI * melodyNotes[n] * t)) * 0.15f * envelope;
+                    data[idx] = (bass + melody) * 0.5f;
+                }
+            }
+            var clip = AudioClip.Create("BossBGM", samples, 1, sampleRate, true);
             clip.SetData(data, 0);
             return clip;
         }

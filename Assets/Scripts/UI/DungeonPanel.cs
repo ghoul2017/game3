@@ -526,6 +526,17 @@ namespace Game.UI
             FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnContinue").onClick.AddListener(() =>
             {
                 PlayUIClick();
+                // 检查是否有Boss战警告待确认
+                if (pendingBossConfig != null)
+                {
+                    var cfg = pendingBossConfig;
+                    var bTile = pendingBossTile;
+                    pendingBossConfig = null;
+                    pendingBossTile = null;
+                    pendingMessage = null;
+                    StartBattleWithConfig(GameManager.Instance.Dungeon, bTile, cfg);
+                    return;
+                }
                 // 检查是否有事件选项1待执行
                 if (pendingEvent.HasValue && pendingEventOption1 != null)
                 {
@@ -1054,44 +1065,71 @@ namespace Game.UI
                 : monsters.Count > 0 ? monsters[Random.Range(0, monsters.Count)] : null;
             if (monsterCfg != null)
             {
-                // 记录战斗对应的瓦片，战斗胜利后标记 isCleared
-                pendingBattleTile = tile;
+                // Boss战：显示警告弹窗，玩家确认后进入战斗
+                if (tile.roomType == DungeonEventType.Boss)
+                {
+                    pendingBattleTile = tile;
+                    pendingMessage = $"强大的敌人出现了！\n{monsterCfg.name} 挡住了去路！\n\n无法从这里逃跑...";
+                    msgBtnContinueLabel.text = "迎战";
+                    // 存储Boss配置供确认后使用
+                    pendingBossConfig = monsterCfg;
+                    pendingBossTile = tile;
+                    RefreshUI();
+                    return;
+                }
 
-                float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
-                float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
-                float totalScale = floorScale * eliteScale;
+                StartBattleWithConfig(dungeon, tile, monsterCfg);
+            }
+        }
 
-                int scaledHp = Mathf.RoundToInt(monsterCfg.hp * totalScale);
-                int scaledAtk = Mathf.RoundToInt(monsterCfg.attack * totalScale);
-                int scaledDef = Mathf.RoundToInt(monsterCfg.defense * totalScale);
-                int rewardMul = tile.roomType == DungeonEventType.Elite ? 2 : 1;
+        /// <summary>存储待确认的Boss战配置</summary>
+        private MonsterConfig pendingBossConfig;
+        private DungeonTile pendingBossTile;
 
-                string displayName = tile.roomType == DungeonEventType.Elite
+        /// <summary>使用指定怪物配置开始战斗</summary>
+        private void StartBattleWithConfig(DungeonData dungeon, DungeonTile tile, MonsterConfig monsterCfg)
+        {
+            // 记录战斗对应的瓦片，战斗胜利后标记 isCleared
+            pendingBattleTile = tile;
+
+            float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
+            float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
+            float totalScale = floorScale * eliteScale;
+
+            int scaledHp = Mathf.RoundToInt(monsterCfg.hp * totalScale);
+            int scaledAtk = Mathf.RoundToInt(monsterCfg.attack * totalScale);
+            int scaledDef = Mathf.RoundToInt(monsterCfg.defense * totalScale);
+            int rewardMul = tile.roomType == DungeonEventType.Elite ? 2 : 1;
+
+            // Boss战使用原始名，不做缩放（Boss属性已经够高）
+            string displayName = tile.roomType == DungeonEventType.Boss
+                ? monsterCfg.name
+                : tile.roomType == DungeonEventType.Elite
                     ? $"精英{monsterCfg.name}" : monsterCfg.name;
 
-                // 向后兼容：找到对应旧 DungeonRoom
-                var room = FindMatchingRoom(dungeon, tile);
+            // 向后兼容：找到对应旧 DungeonRoom
+            var room = FindMatchingRoom(dungeon, tile);
 
-                var battleData = new BattleData
+            var battleData = new BattleData
+            {
+                monster = new BattleMonster
                 {
-                    monster = new BattleMonster
-                    {
-                        id = monsterCfg.id, name = displayName,
-                        hp = scaledHp, maxHp = scaledHp,
-                        attack = scaledAtk, defense = scaledDef,
-                        speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
-                        expReward = monsterCfg.expReward * rewardMul,
-                        goldReward = monsterCfg.goldReward * rewardMul,
-                        drops = monsterCfg.drops,
-                        isBoss = monsterCfg.isBoss,
-                        aiPattern = monsterCfg.aiPattern,
-                        level = Mathf.RoundToInt(monsterCfg.minFloor * 2 * totalScale) + 1
-                    },
-                    room = room
-                };
-                BattleManager.Instance.StartBattle(battleData);
-                UIManager.Instance.ShowPanel<BattlePanel>();
-            }
+                    id = monsterCfg.id, name = displayName,
+                    hp = scaledHp, maxHp = scaledHp,
+                    mp = monsterCfg.mp, maxMp = monsterCfg.mp,
+                    attack = scaledAtk, defense = scaledDef,
+                    speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
+                    expReward = monsterCfg.expReward * rewardMul,
+                    goldReward = monsterCfg.goldReward * rewardMul,
+                    drops = monsterCfg.drops,
+                    isBoss = monsterCfg.isBoss,
+                    aiPattern = monsterCfg.aiPattern,
+                    level = Mathf.RoundToInt(monsterCfg.minFloor * 2 * totalScale) + 1
+                },
+                room = room
+            };
+            BattleManager.Instance.StartBattle(battleData);
+            UIManager.Instance.ShowPanel<BattlePanel>();
         }
 
         /// <summary>根据 DungeonTile 查找旧 rooms 列表中对应的 DungeonRoom（兼容 BattleManager）</summary>

@@ -29,6 +29,11 @@ namespace Game.Data
         public int rewardExp;
         public int rewardGold;
         public List<string> rewardItems = new List<string>();
+
+        // Boss战特殊标记
+        public bool isBossBattle;          // 是否Boss战
+        public bool bossDefeated;          // Boss是否被击败（用于记录到defeatedBosses）
+        public string bossKillTitle;       // Boss击杀标识（如"击败了暗影领主！"）
     }
 
     [System.Serializable]
