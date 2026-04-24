@@ -66,3 +66,4 @@
 2026-04-25 F129 COMPLETED - 音频系统：AudioManager单例(SFX通道x5+Music通道x1)+程序化音效生成(正弦波/白噪声/琶音)+10种音效枚举+SettingsPanel音量联动+BattleManager/DungeonPanel关键音效埋点
 2026-04-25 F130 COMPLETED - 速度属性实装：DetermineTurnOrder先手判定+速度差闪避机制+加速/减速Buff+BattlePanel回合归属UI
 2026-04-25 F131 COMPLETED - 网格地牢数据模型：TileType枚举+DungeonTile/GridPos/ContentData数据类+DungeonData网格系统+GenerateGrid()+旧字段保守共存
+2026-04-25 F132 COMPLETED - 网格地牢生成算法：随机游走扩张+多尺寸房间(2x1/1x2/2x2)+BFS连通性保证+房间内容概率分配+特殊房间放置(Boss/Exit/Shrine)+旧接口同步

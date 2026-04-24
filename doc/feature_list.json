@@ -136,7 +136,7 @@
     "3. 多尺寸房间：扩张时20%概率尝试创建2x1或1x2大房间(需相邻2格都是Wall)，5%概率2x2，大房间只有1个ContentData",
     "4. 房间内容分配(生成后)：Monster 40%/Elite 8%/Treasure 10%/Spring 8%/Merchant 8%/Shrine 5%/Empty 16%/Exit 1个/Boss 1个(每5层)",
     "5. 连通性标记：遍历所有Room tile，对每个四方向邻居，若为Room则Connections[dir]=true，这将由F135用于移动判定"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F133","category":"dungeon","priority":6,"desc":"DungeonPanel网格地图渲染：ScrollRect可滚动缩放+对象池色块渲染+房间类型着色+当前房间高亮","steps":[
     "1. 地图区包裹在ScrollRect中：viewport固定约500x500px，content尺寸=GridWidth*cellSize x GridHeight*cellSize(初始cellSize=80px)",
