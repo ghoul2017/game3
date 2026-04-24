@@ -269,7 +269,7 @@
     "3. 饰品6件(L1-L18)：力量戒指(ATK+8)/敏捷护符(SPD+5 闪避+5%)/生命护符(HP+100)/勇气勋章(ATK+12 DEF+8)/贤者之石(MP+50 技能消耗-15%)/凤凰羽毛(死亡时复活一次回50%HP，战斗中生效后销毁)",
     "4. 特殊效果枚举：CritChance(暴击率)/Dodge(闪避)/Lifesteal(吸血)/Thorns(反伤)/SkillCostReduce(技能减耗)/BossDamageBonus(Boss增伤)/DamageVariance(伤害波动)/AutoRevive(自动复活)",
     "5. ConfigManager.InitItems()写入，每件装备标注reqLevel/price/sellPrice(售价=购买价*50%)/effectType/effectValue"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F149","category":"config","priority":22,"desc":"宝物+消耗品扩充：12+宝物效果丰富+10+消耗品多样战术选择","steps":[
     "1. 宝物12+个(原6个保留+6个新增)：保留原6个(攻击10%/防御15%/HP20%/吸血10%/金币30%/经验20%)+新增暴击率+10%/闪避+10%/技能消耗-20%/开局护盾(战斗开始HP+20%护盾吸收伤害)/反击(受击10%概率反伤50%)/贪婪(掉落翻倍但受伤+15%)",
