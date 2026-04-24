@@ -94,5 +94,227 @@
   {"id":"F124","category":"bug","desc":"修复BattlePanel自动战斗StopCoroutine bug：存储Coroutine引用而非创建新IEnumerator","passes":true},
   {"id":"F125","category":"bug","desc":"所有面板BindReferences添加null安全检查：FindComponent返回null时跳过绑定而非崩溃","passes":true},
   {"id":"F126","category":"bug","desc":"删除过时预制体文件，运行时回退到CreateVisuals生成正确UI结构","passes":true},
-  {"id":"F127","category":"bug","desc":"BattlePanel OnHide时停止自动战斗协程，防止面板隐藏后协程继续运行","passes":true}
+  {"id":"F127","category":"bug","desc":"BattlePanel OnHide时停止自动战斗协程，防止面板隐藏后协程继续运行","passes":true},
+
+  {"id":"F128","category":"framework","priority":1,"desc":"深色主题UI配色改造：全局配色改为黑底(#1a1a2e)+暗金强调(#c8a24c)，所有面板适配深色背景","steps":[
+    "1. UIColors类全局配色重定义：背景色BgDark=#0d0d1a(极深黑蓝)、面板底色PanelBg=#1a1a2e、卡片底色CardBg=#222244、标题金色GoldTitle=#c8a24c、正文色TextMain=#e0d8c0、次要文字TextSub=#8b7d6b、按钮正常BtnNormal=#2d2d55、按钮悬停BtnHover=#3d3d6a、按钮禁用BtnDisable=#1a1a33",
+    "2. 遍历所有10个面板CreateVisuals()方法，将硬编码颜色替换为UIColors常量引用",
+    "3. 怪物/房间/状态图标色板适配深色背景：提高饱和度20%以确保在暗底上可辨识，红色#e74c3c、金色#f0c040、蓝色#5dade2、绿色#58d68d、紫色#af7ac5",
+    "4. 所有面板背景Image的color设为PanelBg，主Canvas背景设为BgDark",
+    "5. 文字可读性检查：正文与背景对比度≥4.5:1，使用TextMeshPro默认字体或Unity内置字体",
+    "6. ScrollRect视口背景统一为PanelBg，滚动条颜色改为暗金半透明"
+  ],"passes":false},
+
+  {"id":"F129","category":"framework","priority":2,"desc":"音频系统：AudioManager单例管理音效/音乐播放，从Unity Asset Store下载免费音效包集成","steps":[
+    "1. 创建AudioManager单例(Assets/Scripts/Core/AudioManager.cs)：AudioSource池(SFX通道x5+Music通道x1)、音量属性SoundVolume/MusicVolume(0-1)、PlaySFX(clip)/PlayMusic(clip)/StopMusic() API",
+    "2. 创建AudioClip分类枚举：Battle_Attack/Battle_Skill/Battle_Hit/Battle_Victory/Battle_Defeat/UI_Click/UI_PanelOpen/UI_PanelClose/Dungeon_Move/Dungeon_Discover",
+    "3. 从Unity Asset Store搜索下载免费音效包(如'Free Sound Effects Pack')放入Assets/Resources/Audio/目录，或使用程序化生成(正弦波/白噪声)的基础音效作为fallback",
+    "4. SettingsPanel音量滑块实际生效：SettingsManager.ApplySettings()调用AudioManager更新音量",
+    "5. UIPanel基类OnButtonClick()统一播放UI_Click音效，BattleManager/DungeonPanel关键操作点插入对应音效",
+    "6. GameEntry.Awake()中初始化AudioManager，加载所有AudioClip到字典缓存"
+  ],"passes":false},
+
+  {"id":"F130","category":"battle","priority":3,"desc":"速度属性实装：speed参与回合顺序判定+高速度闪避加成，告别永远玩家先手","steps":[
+    "1. PlayerData.speed字段从职业配置取值(当前各职业speed=10或12)，MonsterData.speed从怪物配置取值",
+    "2. BattleManager新增DetermineTurnOrder()：每回合初获取player.effectiveSpeed(=speed+speedBuff)和monster.effectiveSpeed，高者先手，相等时玩家先手",
+    "3. 速度差≥5时，高速度方获得闪避率加成：(speedDiff * 2)%，闪避时战斗日志显示'{方}闪避了攻击！'，伤害为0",
+    "4. 速度Buff技能效果：加速术speed+10持续3回合、减速术speed-10持续3回合，Buff改变后立即重新排序",
+    "5. BattlePanel UI显示当前回合归属('你的回合⚔'/'敌人回合')和双方速度值"
+  ],"passes":false},
+
+  {"id":"F131","category":"dungeon","priority":4,"desc":"网格地牢数据模型：DungeonData从线性列表改为2D网格，支持Room/Wall双类型+多尺寸房间+四方向开放连接","steps":[
+    "1. 新增TileType枚举：Room(可通行房间)、Wall(不可通行墙壁)",
+    "2. 新增DungeonTile类：GridPos(x,y)、TileType、RoomType(Monster/Elite/Treasure/Spring/Merchant/Shrine/Empty/Boss/Exit)、Size(w,h默认1x1)、IsExplored、IsCleared、Connections[4方向bool-相邻格为Room时=true]",
+    "3. DungeonData改为：GridWidth、GridHeight、DungeonTile[,] Grid(二维数组)、List<DungeonTile> RoomTiles(所有房间tile引用方便遍历)、GridPos StartPos/CurrentPos/ExitPos",
+    "4. 保留现有DungeonRoom内容数据(monsterId/treasureId/goldAmount等)作为DungeonTile的ContentData子对象",
+    "5. 删除旧的Rooms线性列表、CurrentRoomIndex，迁移所有引用到新的Grid坐标系统"
+  ],"passes":false},
+
+  {"id":"F132","category":"dungeon","priority":5,"desc":"网格地牢生成算法：随机游走+多尺寸房间+保证连通性，每层独一无二的地图","steps":[
+    "1. GridSize=6+Mathf.Min(floor-1,4)，第一层6x6、第5层起10x10(最大)",
+    "2. 算法流程：(a)全Grid初始化为Wall (b)随机选网格中心附近为StartPos标记为Room (c)循环扩张直到房间数达标(40-55%格子)：随机选一个已有Room的邻接Wall，60%概率变为Room (d)放置特殊房间：Boss在距起点最远的房间(每5层)、Exit在Boss相邻或最远角、Shrine随机1-2个 (e)BFS验证起点到所有房间+起点到Exit连通，不通则打通中间墙壁 (f)剩余Wall保持",
+    "3. 多尺寸房间：扩张时20%概率尝试创建2x1或1x2大房间(需相邻2格都是Wall)，5%概率2x2，大房间只有1个ContentData",
+    "4. 房间内容分配(生成后)：Monster 40%/Elite 8%/Treasure 10%/Spring 8%/Merchant 8%/Shrine 5%/Empty 16%/Exit 1个/Boss 1个(每5层)",
+    "5. 连通性标记：遍历所有Room tile，对每个四方向邻居，若为Room则Connections[dir]=true，这将由F135用于移动判定"
+  ],"passes":false},
+
+  {"id":"F133","category":"dungeon","priority":6,"desc":"DungeonPanel网格地图渲染：ScrollRect可滚动缩放+对象池色块渲染+房间类型着色+当前房间高亮","steps":[
+    "1. 地图区包裹在ScrollRect中：viewport固定约500x500px，content尺寸=GridWidth*cellSize x GridHeight*cellSize(初始cellSize=80px)",
+    "2. 每个Tile渲染为正方形Image，使用对象池预创建MaxTiles(10x10=100)个，SetActive显隐+设置RectTransform位置/大小/颜色",
+    "3. 颜色方案(深色主题适配)：Wall=#0d0d0d(极黑)、Monster=#c0392b(深红)、Elite=#e74c3c(亮红)、Treasure=#f39c12(金)、Spring=#3498db(蓝)、Merchant=#2ecc71(绿)、Shrine=#9b59b6(紫)、Boss=#8e44ad(深紫)、Exit=#bdc3c7(灰白)、Empty=#2c3e50(暗蓝灰)",
+    "4. 当前房间：3px金色边框Outline(#c8a24c)高亮，已清房间覆盖灰色半透明叠加层",
+    "5. 缩放支持：鼠标滚轮调整cellSize(60-120px范围)，重算content大小和所有tile位置/大小",
+    "6. 右侧保留状态面板(HP/MP/EXP条+层数+金币)，底部保留技能快捷栏"
+  ],"passes":false},
+
+  {"id":"F134","category":"dungeon","priority":7,"desc":"战争迷雾系统：未探索全黑、已探索半透明、当前及相邻完全可见","steps":[
+    "1. TileVisibility枚举：Hidden(未探索全黑)、Explored(去过但不在视野)、Visible(当前房间+四方向相邻，完全可见)",
+    "2. 初始化：所有tile=Hidden，StartPos及相邻四方向=Visible",
+    "3. 玩家移动逻辑：OnMoveTo(newPos)→newPos及newPos相邻4格变Visible、旧位置如果不在任何Visible范围内则变Explored",
+    "4. Hidden tile渲染：纯黑Image(#000000)覆盖，不显示任何内容信息",
+    "5. Explored tile渲染：显示房间颜色但alpha=0.4，已清房间再加灰色叠加层(alpha=0.3的灰色Image)",
+    "6. Visible tile渲染：完全正常着色，当前房间金色边框高亮",
+    "7. 雾层实现：每个tile上叠一个fogOverlay Image，根据TileVisibility切换color/alpha(对象池管理overlay)"
+  ],"passes":false},
+
+  {"id":"F135","category":"dungeon","priority":8,"desc":"玩家网格移动：点击相邻连通房间移动+WASD/方向键+平滑过渡动画","steps":[
+    "1. 点击事件：在Grid tile上注册Button.onClick，检查是否Connections[dir]为true(相邻且连通)，是则调用MoveTo(targetTile)",
+    "2. 键盘移动：Update()中检测WASD/方向键，查找CurrentPos对应方向的连通房间，有则MoveTo",
+    "3. MoveTo逻辑：(a)已清房间：直接跳转+平滑移动指示器(0.15s) (b)未清房间：跳转+触发OnRoomEnter(tile)→调用房间事件逻辑(战斗/宝箱/泉水/商人/神龛)",
+    "4. 玩家位置指示器：圆形高亮标记(Image+金色边框)，移动时Lerp平滑过渡0.2s",
+    "5. 边界/墙壁处理：不可移动方向不响应点击，无连通方向的键盘输入忽略",
+    "6. 更新FogOfWar(F134)：移动后立即刷新迷雾状态"
+  ],"passes":false},
+
+  {"id":"F136","category":"dungeon","priority":9,"desc":"网格房间内容触发：进入房间根据类型触发战斗/宝箱/泉水/商人/神龛/事件/出口/Boss","steps":[
+    "1. DungeonTile.ContentData：RoomType、monsterId、goldAmount、treasureId(宝箱)、skillId(神龛)、itemIds(商人)",
+    "2. OnRoomEnter(tile)核心分发：Monster/Elite→生成BattleData→BattleManager.StartBattle()→ShowPanel<BattlePanel>；Treasure→奖励弹窗(gold+宝物+物品)；Spring→恢复弹窗(33%HP+MP)；Merchant→ShowPanel<ShopPanel>(layer)；Shrine→技能神龛弹窗；Empty→随机事件(F137)；Boss→Boss战(特殊提示+不可逃跑)；Exit→Yes/No确认进入下一层",
+    "3. 技能神龛(SkillShrine)逻辑：遍历全技能池，筛选玩家未学技能，随机选一个免费学习(PlayerData.LearnSkill(skillId))，弹窗显示'技能神龛：习得{技能名}！'",
+    "4. 房间清空后标记IsCleared=true，tile视觉变灰(覆盖灰色半透明层)，未来经过可直接穿行",
+    "5. 复用现有BattlePanel/ShopPanel等面板逻辑，只改变触发入口(从线性点击→网格移动触发)"
+  ],"passes":false},
+
+  {"id":"F137","category":"dungeon","priority":10,"desc":"随机房间事件：空房间概率触发文字选择事件，增加探索不确定性和趣味","steps":[
+    "1. 空房间事件触发率：16%空房间中有50%触发事件(即总房间约8%概率遇到事件)",
+    "2. 事件类型及概率：发现金币袋(40%: floor*20~50金)、发现消耗品(20%: 随机药水/卷轴)、地板陷阱(20%: 扣除当前HP的10-20%)、流浪商人(10%: 3件随机物品8折)、神秘力量(10%: 全恢复HP+MP或+20%经验)",
+    "3. UI实现：DungeonPanel中显示事件弹窗(深色半透明背景+居中白色卡片)，事件描述文字+1-2个选项按钮",
+    "4. 事件弹窗关闭后标记IsCleared=true",
+    "5. 事件全部通过UI文字呈现，不需要额外资源"
+  ],"passes":false},
+
+  {"id":"F138","category":"battle","priority":11,"desc":"状态效果框架：StatusEffect数据类+BattleData管理列表+每回合Tick/衰减/过期","steps":[
+    "1. 新增StatusEffect类(Assets/Scripts/Game/Battle/)：EffectType枚举(Bleed/Poison/Stun/Silence/Vulnerable/BuffATK/BuffDEF/BuffSpeed)、Value(效果数值)、Duration(剩余回合)、SourceId(来源技能id)",
+    "2. BattleData新增：List<StatusEffect> PlayerEffects、List<StatusEffect> MonsterEffects",
+    "3. BattleManager新增方法：ApplyEffect(target,type,value,duration)(叠加规则：同type刷新duration取max)、RemoveEffect(target,type)、TickEffects(target)(遍历所有effect：触发DoT伤害、duration--、duration=0时RemoveEffect)、GetEffectiveATK/DEF/SPD(target)(汇总所有Buff修正)",
+    "4. 回合流程修改：每回合开始→TickEffects(双方)→检查Stun跳过→执行行动→回合结束",
+    "5. 战斗日志状态消息：'{目标}受到{状态名}效果({value}点/持续{duration}回合)'、'{目标}的{状态名}效果消失了'、'{目标}因{流血/中毒}损失{damage}HP'"
+  ],"passes":false},
+
+  {"id":"F139","category":"battle","priority":12,"desc":"状态效果技能：5种新状态(流血/中毒/眩晕/沉默/易伤)+怪物也可使用，丰富战斗策略","steps":[
+    "1. 新增5个状态技能配置(加入ConfigManager.InitSkills)：(a)割裂-流血(MP20 power80% 附加流血3回合每回合扣ATK*0.25) (b)毒刃-中毒(MP25 power70% 附加中毒3回合每回合扣HP+降ATK10%) (c)重击-眩晕(MP30 power60% 附加眩晕2回合跳过行动) (d)封印-沉默(MP25 power50% 附加沉默2回合禁用技能) (e)破甲-易伤(MP20 power90% 附加易伤2回合受伤+30%)",
+    "2. 技能类型SkillType新增：StatusAttack(带状态的攻击技能)",
+    "3. BattleManager.ExecuteSkill()扩展：处理StatusAttack类型→先计算伤害→再ApplyEffect",
+    "4. 怪物配置：部分怪物拥有状态技能(如毒蛇-毒刃、暗影法师-沉默)，由AI(F141)决定使用时机",
+    "5. Stun/Silence的约束检查：Stun跳过整个行动阶段(不能攻击/技能/物品)，Silence禁用技能(仍可普攻/物品)"
+  ],"passes":false},
+
+  {"id":"F140","category":"battle","priority":13,"desc":"速度回合制集成：F130速度属性+F138状态框架在此完全集成，统一回合流程","steps":[
+    "1. BattleManager统一回合流程：RoundStart→TickEffects(双方)→DetermineTurnOrder(比较effectiveSpeed)→先手方Action→后手方Action→RoundEnd",
+    "2. 眩晕检测：在Action阶段前检查是否有Stun效果，有则跳过该方Action并显示'{方}被眩晕，无法行动！'",
+    "3. 沉默检测：在技能选择阶段检查是否有Silence效果，有则禁用技能按钮(灰色+solid文字)但保留攻击/物品可用",
+    "4. 战斗状态栏(BattlePanel)显示当前回合归属('⚔你的回合'/'敌人回合')，回合切换0.2s过渡",
+    "5. 自动战斗适配：AutoBattleCoroutine遵循新回合流程，使用普攻(不受沉默影响)"
+  ],"passes":false},
+
+  {"id":"F141","category":"battle","priority":14,"desc":"怪物AI模式系统：5种行为模式+模式专属决策逻辑，每种怪物有独特战斗风格","steps":[
+    "1. MonsterAIPattern枚举：Aggressive(狂暴-偏好高伤)、Defensive(防御-HP<50%治疗/防御)、Debuffer(控制-优先上debuff)、Balanced(均衡-随机合理决策)、Boss(多阶段)",
+    "2. MonsterData新增aiPattern字段，ConfigManager中每种怪物配置AI模式",
+    "3. AIManager.DecideAction(monster,battleState)返回行动：(a)Aggressive: MP>0且高伤技能可用→70%用技能/30%普攻 (b)Defensive: HP<50%→40%治疗/防御buff/30%普攻/30%其他 (c)Debuffer: 目标无debuff→70%上debuff/30%普攻；已有debuff→60%普攻/40%技能 (d)Balanced: 均匀分布 (e)Boss: HP>60%→Aggressive模式、HP30-60%→Debuffer+Defensive混合、HP<30%→全技能可用+伤害+20%+优先最高伤技能",
+    "4. 决策约束：MP不足时排除技能选项，已有同类型debuff时排除重复debuff",
+    "5. 战斗日志可显示怪物AI提示(可选)：'{怪物}摆出了防御姿态...'或'{怪物}愤怒地咆哮！'"
+  ],"passes":false},
+
+  {"id":"F142","category":"battle","priority":15,"desc":"战斗UI增强：状态图标显示+战斗日志颜色标记+HP/MP条平滑变化","steps":[
+    "1. BattlePanel新增状态显示区：怪物区/玩家区下方各4个状态图标位(对象池)，显示为小方块(16x16)+缩写文字(如'流血''眩晕''+ATK')，颜色按状态类型(流血红/中毒绿/眩晕黄/沉默灰/易伤橙/Buff蓝)",
+    "2. 战斗日志颜色标记系统：伤害数字红色(#e74c3c)、治疗数字绿色(#2ecc71)、状态施加黄色(#f39c12)、闪避蓝色(#3498db)、普通信息白色(#e0d8c0)，日志格式统一为'[{方}] {行动描述}'",
+    "3. HP/MP条平滑变化：使用Coroutine Lerp(0.3s从旧值渐变到新值)，低血量(<30%)HP条颜色从绿渐变到红色警告",
+    "4. Buff/Debuff数值显示：在玩家状态条旁显示ATK/DEF/SPD修正值小标签(+X/-X)，实时反映StatusEffect修正",
+    "5. 状态图标动画：新施加时短暂放大(1.0→1.3→1.0 持续0.3s)，过期时淡出(alpha 1→0 0.2s)"
+  ],"passes":false},
+
+  {"id":"F143","category":"battle","priority":16,"desc":"Boss战重设计：5层Boss各有独特技能+多阶段AI+必定掉落稀有装备+逃跑禁止","steps":[
+    "1. 5个Boss设计(对应5/10/15/20/25层)：暗影领主(L5 高攻+流血技)、堕落骑士(L10 高防+眩晕+防御AI)、深渊法师(L15 debuff为主+沉默+易伤)、混沌巨兽(L20 高血量+高伤害+多阶段)、最终Boss暗黑龙王(L25 三阶段+全技能类型)",
+    "2. Boss配置加入ConfigManager.InitMonsters()：各有1-2个独特技能(非通用技能池)、AI=Boss模式、属性约为同层普通怪2.5倍",
+    "3. Boss多阶段AI(已在F141定义)：HP>60%激进、30-60%混合、<30%狂暴(伤害+20%、减防20%)",
+    "4. Boss战特殊规则：逃跑按钮不可用(interactable=false+文字'Boss战无法逃跑')、战前警告弹窗'⚠警告！强大的敌人出现了！'、专属BGM切换",
+    "5. Boss掉落：100%掉落1件稀有装备+1个宝物+floor*100金币+大量经验(floor*50)，奖励面板显示特殊Boss击杀标识",
+    "6. 每击败Boss记录到PlayerData.defeatedBosses列表(用于成就/统计)"
+  ],"passes":false},
+
+  {"id":"F144","category":"skill","priority":17,"desc":"技能全职业通用：取消职业限制，任何职业可学任何技能，技能按类型分标签页展示","steps":[
+    "1. 移除SkillData.classId字段和所有职业限制检查(SkillLearnPanel/ConfigManager/BattleManager中)",
+    "2. SkillLearnPanel改为显示全部技能：顶部标签页切换(全部/攻击/治疗/Buff/控制/被动/已学)，每页使用对象池列表显示对应技能",
+    "3. 技能学习价格按强度分档：低级100-200金、中级300-500金、高级600-1000金，与职业无关",
+    "4. 已学技能绿色标记'已学'，可学技能显示金币价格，金币不足时灰色+半透明",
+    "5. 玩家仍只能装备4个技能(装备槽保持不变)，从已学技能池中自由选择"
+  ],"passes":false},
+
+  {"id":"F145","category":"skill","priority":18,"desc":"扩充技能池：从20个扩展到30+个，覆盖攻击/治疗/Buff/Debuff/DoT/控制/被动7类型","steps":[
+    "1. 技能设计(30+个，覆盖7类型)：攻击(10个-含不同倍率+暴击/吸血/连击效果)、治疗(4个-小回复/大回复/HoT/瞬回)、Buff(5个-加攻/加防/加速/加暴击/加吸血)、Debuff(4个-降攻/降防/减速/降命中)、DoT(3个-流血/中毒/燃烧)、控制(3个-眩晕/冰冻/恐惧)、被动(4个-保留F114的4个被动+新增2个：技能吸血/击杀回蓝)",
+    "2. 技能ID范围：保留4001-4020(原20个)+新增4021-4040(新增20个)，ConfigManager.InitSkills()写入",
+    "3. 每个技能配置：id/name/type(Attack/Heal/Buff/Debuff/DoT/Control/Passive)/mpCost/power(伤害/治疗倍率)/effectType(对应StatusEffect)/effectValue/effectDuration/goldCost(学习价格)/description",
+    "4. 技能命名和描述：中文命名，贴合RPG风格(如'烈焰斩''暗影步''龙息术')",
+    "5. 技能图标：纯代码生成小色块+缩写文字作为图标(16x16或24x24)，颜色按类型区分"
+  ],"passes":false},
+
+  {"id":"F146","category":"skill","priority":19,"desc":"技能装备UI自由化+地牢技能神龛：4装备槽自由搭配+神龛房间免费学技能","steps":[
+    "1. SkillLearnPanel底部装备槽改为4个独立下拉按钮：点击弹出已学技能列表小弹窗→选择技能→装备到该槽位，同一技能不可重复装备",
+    "2. 装备槽显示已装备技能名称+MP消耗标签，空槽显示'+空槽位'灰色提示",
+    "3. 装备/卸下操作：点击已装备槽位→弹出'卸下'选项→卸下后该槽位变空",
+    "4. 地牢技能神龛(F136已定义)：DungeonTile类型Shrine→进入后随机选取1个未学技能→免费学习(0金币)→弹窗'✨技能神龛：你领悟了{技能名}！'→回调SkillLearnPanel.RefreshUI如果打开",
+    "5. 神龛生成条件检查：玩家还有未学技能时才会放置Shrine类型房间，避免空神龛"
+  ],"passes":false},
+
+  {"id":"F147","category":"config","priority":20,"desc":"怪物扩充：18+种怪物分布在1-25层，每种配置独特AI模式+技能组合","steps":[
+    "1. 设计18+种怪物(原7种)，按楼层区间分布：1-4层(史莱姆/骷髅兵/哥布林/巨型蝙蝠-基础入门)、5-9层(暗影法师/石像鬼/丧尸/毒蛇-引入法术/DoT)、10-14层(亡灵骑士/火元素/食人魔/暗影刺客-高伤/控制)、15-19层(冰霜巨人/恶魔猎犬/魅魔/深渊之眼-强力debuff/高属性)、20-25层(远古龙裔/虚空行者/堕落天使/暗黑龙王-终局挑战)",
+    "2. ConfigManager.InitMonsters()写入每种怪物：id/name/HP/ATK/DEF/SPD/minFloor/maxFloor/aiPattern(Aggressive/Defensive/Debuffer/Balanced/Boss)/skillIds[1-3个]/goldDrop[low,high]/itemDropRate[0-0.3]/itemIds[]/icon(首字缩写)",
+    "3. 怪物属性曲线：基础属性*楼层缩放(F119的+15%/层，F150将微调为+12%)，确保各层战斗有挑战但不至于秒杀",
+    "4. 怪物技能引用：只能引用现有技能池中存在的技能ID(如毒蛇引用毒刃4021)，避免引用玩家职业技能",
+    "5. 怪物文本描述：每种怪物有简短中文描述(1-2句话)，在怪物配置中定义"
+  ],"passes":false},
+
+  {"id":"F148","category":"config","priority":21,"desc":"装备扩充：20+件装备覆盖武器/防具/饰品，增加特殊效果词缀","steps":[
+    "1. 武器8件(L1-L18)：短剑(L1 ATK+5)/长剑(L3 ATK+10)/战斧(L5 ATK+15 HP+20)/秘银剑(L7 ATK+20 SPD+3)/暗影之刃(L9 ATK+25 暴击+8%)/龙牙剑(L12 ATK+35 吸血+10%)/圣剑(L15 ATK+45 对Boss伤害+20%)/混沌之刃(L18 ATK+55 伤害波动+30%)",
+    "2. 防具7件(L1-L18)：布甲(L1 DEF+3)/皮甲(L3 DEF+6)/锁子甲(L5 DEF+10 HP+30)/板甲(L7 DEF+15)/秘银甲(L10 DEF+20 闪避+5%)/龙鳞甲(L13 DEF+28 HP+80)/暗金甲(L16 DEF+35 反伤15%)",
+    "3. 饰品6件(L1-L18)：力量戒指(ATK+8)/敏捷护符(SPD+5 闪避+5%)/生命护符(HP+100)/勇气勋章(ATK+12 DEF+8)/贤者之石(MP+50 技能消耗-15%)/凤凰羽毛(死亡时复活一次回50%HP，战斗中生效后销毁)",
+    "4. 特殊效果枚举：CritChance(暴击率)/Dodge(闪避)/Lifesteal(吸血)/Thorns(反伤)/SkillCostReduce(技能减耗)/BossDamageBonus(Boss增伤)/DamageVariance(伤害波动)/AutoRevive(自动复活)",
+    "5. ConfigManager.InitItems()写入，每件装备标注reqLevel/price/sellPrice(售价=购买价*50%)/effectType/effectValue"
+  ],"passes":false},
+
+  {"id":"F149","category":"config","priority":22,"desc":"宝物+消耗品扩充：12+宝物效果丰富+10+消耗品多样战术选择","steps":[
+    "1. 宝物12+个(原6个保留+6个新增)：保留原6个(攻击10%/防御15%/HP20%/吸血10%/金币30%/经验20%)+新增暴击率+10%/闪避+10%/技能消耗-20%/开局护盾(战斗开始HP+20%护盾吸收伤害)/反击(受击10%概率反伤50%)/贪婪(掉落翻倍但受伤+15%)",
+    "2. 宝物效果在RecalcStats中实现(Switch case按effectType处理)，护盾在BattleData中新增shieldAmount字段",
+    "3. 消耗品10+种(原4种保留+6种新增)：保留红药(HP+50)/蓝药(MP+30)/大红(HP+100)/大蓝(MP+60)+新增解毒药(移除中毒)/兴奋剂(ATK+20%持续3场战斗)/护盾卷轴(下次受伤减伤50%)/回城卷轴(地牢中直接回城镇)/经验书(下一场战斗经验+50%)/炸弹(战斗中造成固定50伤害，无视防御)",
+    "4. 消耗品使用限制：战斗中(battle=true)和战斗外(battle=false)均可使用，回城卷轴仅战斗外可用",
+    "5. ConfigManager.InitItems()中补充，宝物price=0(不可购买，仅掉落)，消耗品price按效果定价(50-300金)"
+  ],"passes":false},
+
+  {"id":"F150","category":"config","priority":23,"desc":"数值平衡重调：伤害公式微调+全数据曲线重新校准，确保游戏有挑战但不肝","steps":[
+    "1. 伤害公式微调：baseDmg = max(1, ATK*1.0 - DEF*0.6)，原为ATK - DEF/2改为稍微提高防御价值，variance=baseDmg*0.15(原0.1增加波动)",
+    "2. 怪物属性曲线：每层+12%HP/ATK/DEF(原+15%，给玩家更多操作容错)，基础属性重新校准使第1层怪物HP约30-50、第25层约300-500",
+    "3. 经验曲线：升级经验=level*120+80(原100+50，延长成长期)，满级30级，总经验约55800",
+    "4. 金币经济：怪物掉落floor*(8~15)、宝箱floor*(20~40)、Boss floor*100，装备价格覆盖50-3000金，技能学习100-1000金",
+    "5. MP消耗分档：低级技能5-15MP、中级20-30MP、高级35-50MP，确保MP在战斗中是有意义的约束",
+    "6. 属性成长：每级+2基础属性点(自动分配主属性+1副属性+1)，HP/MP成长随体力和智力线性增长",
+    "7. 整体难度曲线：第1-4层轻松入门、5-9层需要策略、10-14层挑战提升、15-19层高风险高回报、20-25层极难终局"
+  ],"passes":false},
+
+  {"id":"F151","category":"bug","priority":24,"desc":"Bug修复+死代码清理：修复已知Bug、删除未使用代码、统一null检查模式","steps":[
+    "1. DungeonPanel和RoleInfoPanel中EXP条计算统一使用PlayerData.GetExpToNextLevel()=level*100+50，修复当前DungeonPanel第428行的level*100错误",
+    "2. CreateRolePanel: InputField改为使用TMP_InputField（如项目无TMP则确保运行时对象正确创建并缓存），placeholder文字设置'输入角色名...'",
+    "3. 检查所有MonsterData.skillIds引用的技能ID在ConfigManager中存在且类型合理（如怪物不应使用玩家治疗技能），修复暗黑法师skillIds={5001}的配置错误",
+    "4. 删除GameConstants中未使用常量：EVENT_CHANCE/MIN_ROOMS/MAX_ROOMS/BOSS_ROOM_POSITION/ITEM_DROP_BASE_CHANCE/FLEE_SUCCESS_CHANCE等",
+    "5. 清理MonsterData中未使用的speed/dex/luk字段(如有)或标记为[SerializeField]保留但加注释说明用途",
+    "6. 清理DungeonRoom中monsterId/position死字段（F131已重构DungeonData，此处检查残留引用）",
+    "7. 统一所有面板OnDestroyed中停止协程+清理对象池引用的模式(BattlePanel autoBattleCoroutine检查已修复F127，确认其他面板一致)",
+    "8. DungeonPanel返回城镇添加空检查：GameManager.Instance?.Dungeon?.OnReturnTown()"
+  ],"passes":false},
+
+  {"id":"F152","category":"polish","priority":25,"desc":"音效集成：战斗/UI/地牢音效全面装配，Settings面板音量控制实际生效","steps":[
+    "1. AudioManager在GameEntry.Awake()中初始化，加载所有AudioClip到字典",
+    "2. 战斗音效集成：(a)PlayerAttack→sword_attack (b)ExecuteSkill→magic_cast (c)TakeDamage→hit_damage (d)Victory→victory_fanfare (e)Defeat→defeat_sound (f)Boss战开始→boss_roar (g)闪避→dodge_swoosh",
+    "3. UI音效集成：UIPanel基类OnButtonClick()统一播放UI_Click；ShowPanel/ReplacePanel时播放UI_PanelOpen；OnHide时播放UI_PanelClose",
+    "4. 地牢音效：移动→footstep；发现新房间(迷雾揭开)→discovery；宝箱打开→treasure_open；泉水恢复→heal_water；神龛学习→magic_learn",
+    "5. SettingsPanel音量滑块→SettingsManager.ApplySettings()→AudioManager.SetSoundVolume/MusicVolume()→AudioSource.volume实时更新",
+    "6. 背景音乐场景切换：城镇→peaceful_theme、地牢→dark_ambient、战斗→battle_theme、Boss战→boss_theme，使用AudioManager.CrossfadeMusic(newClip, 1.0f)"
+  ],"passes":false},
+
+  {"id":"F153","category":"polish","priority":26,"desc":"视听打磨：伤害浮动数字+Boss震动+面板过渡动画+最终配色检查","steps":[
+    "1. 战斗伤害浮动数字：攻击/技能命中时在目标位置生成浮动Text(伤害红色/治疗绿色/闪避蓝色'Miss')，从目标位置向上飘移+淡出(0.8s，移动30px)，使用对象池",
+    "2. Boss战屏幕震动：Boss使用技能时，BattlePanel的RectTransform.DOShake(无DOTween则用Coroutine手动震动：随机偏移±5px持续0.1s反复3次)",
+    "3. 面板过渡动画：UIPanel.OnShow时CanvasGroup.alpha从0 Lerp到1(0.2s)，OnHide时1→0(0.15s)，使用Coroutine",
+    "4. HP/MP条平滑变化：使用Coroutine Lerp 0.3s从旧值到新值(已在F142定义，此处实施)",
+    "5. 最终配色走查：检查所有10个面板在深色背景下的对比度和可读性，修正任何颜色问题",
+    "6. 整体性能检查：确保对象池正确回收、协程正确停止、Update中无GC分配"
+  ],"passes":false}
 ]
