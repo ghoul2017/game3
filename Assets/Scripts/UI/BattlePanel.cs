@@ -47,6 +47,11 @@ namespace Game.UI
         private Button btnResult;
         private Text btnResultLabel;
 
+        // ---- 自动战斗 ----
+        private Button btnAuto;
+        private Text btnAutoLabel;
+        private bool isAutoBattle;
+
         private struct SkillRow
         {
             public GameObject obj;
@@ -153,6 +158,11 @@ namespace Game.UI
             var (esBtn, _) = UIBuilder.CreateButtonWithRef(parent, "逃  跑", btnW, btnH, null, 22, "BtnEscape");
             UIBuilder.SetAnchored(esBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(gap * 3 + btnW * 1.5f, btnY), new Vector2(btnW, btnH));
+
+            // 自动战斗按钮（右上角）
+            var (autoBtn, _) = UIBuilder.CreateButtonWithRef(parent, "Auto", 80, 36, null, 16, "BtnAuto");
+            UIBuilder.SetAnchored(autoBtn.gameObject, new Vector2(1, 1), new Vector2(1, 1),
+                new Vector2(-20, -80), new Vector2(80, 36));
 
             // === 技能子面板（对象池 8 行） ===
             var sp = UIBuilder.CreateBorderedPanel(parent, 650, 340, "SkillPanel");
@@ -277,6 +287,10 @@ namespace Game.UI
             // 战斗结果按钮
             btnResult = FindComponent<Button>("BtnResult");
             btnResultLabel = FindComponent<Text>("BtnResult/Label");
+
+            // 自动战斗按钮
+            btnAuto = FindComponent<Button>("BtnAuto");
+            btnAutoLabel = FindComponent<Text>("BtnAuto/Label");
         }
 
         protected override void BindEvents()
@@ -286,6 +300,7 @@ namespace Game.UI
             btnItem.onClick.AddListener(OnItemMenu);
             btnEscape.onClick.AddListener(OnEscape);
             btnResult.onClick.AddListener(OnBattleEnd);
+            btnAuto.onClick.AddListener(OnToggleAutoBattle);
 
             FindComponent<Button>("SkillPanel/Inner/BtnCloseSkill").onClick.AddListener(() => skillPanel.gameObject.SetActive(false));
             FindComponent<Button>("ItemPanel/Inner/BtnCloseItem").onClick.AddListener(() => itemPanel.gameObject.SetActive(false));
@@ -293,9 +308,11 @@ namespace Game.UI
 
         public override void OnShow()
         {
+            isAutoBattle = false;
             skillPanel.gameObject.SetActive(false);
             itemPanel.gameObject.SetActive(false);
             btnResult.gameObject.SetActive(false);
+            btnAutoLabel.text = "Auto";
             RefreshUI();
         }
 
@@ -346,6 +363,8 @@ namespace Game.UI
             // 战斗结束处理
             if (b.isFinished)
             {
+                isAutoBattle = false;
+                btnAutoLabel.text = "Auto";
                 btnAttack.interactable = false;
                 btnSkill.interactable = false;
                 btnItem.interactable = false;
@@ -367,6 +386,7 @@ namespace Game.UI
 
         private void OnAttack()
         {
+            StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
             BattleManager.Instance.PlayerAttack();
@@ -376,6 +396,7 @@ namespace Game.UI
 
         private void OnSkillMenu()
         {
+            StopAutoBattle();
             bool showSkill = !skillPanel.gameObject.activeSelf;
             itemPanel.gameObject.SetActive(false);
             skillPanel.gameObject.SetActive(showSkill);
@@ -416,6 +437,7 @@ namespace Game.UI
 
         private void OnUseSkill(int skillId)
         {
+            StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
             BattleManager.Instance.PlayerSkill(skillId);
@@ -425,6 +447,7 @@ namespace Game.UI
 
         private void OnItemMenu()
         {
+            StopAutoBattle();
             bool showItem = !itemPanel.gameObject.activeSelf;
             skillPanel.gameObject.SetActive(false);
             itemPanel.gameObject.SetActive(showItem);
@@ -482,6 +505,7 @@ namespace Game.UI
 
         private void OnUseItemById(int itemId)
         {
+            StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
             BattleManager.Instance.PlayerUseItem(itemId);
@@ -491,6 +515,7 @@ namespace Game.UI
 
         private void OnEscape()
         {
+            StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
             BattleManager.Instance.TryEscape();
@@ -499,6 +524,7 @@ namespace Game.UI
 
         private void OnBattleEnd()
         {
+            StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b.isVictory)
             {
@@ -512,6 +538,57 @@ namespace Game.UI
                 GameManager.Instance.SaveGame();
                 UIManager.Instance.ReplacePanel<TownPanel>();
             }
+        }
+
+        // ---- 自动战斗 ----
+
+        private void OnToggleAutoBattle()
+        {
+            if (isAutoBattle)
+                StopAutoBattle();
+            else
+                StartAutoBattle();
+        }
+
+        private void StartAutoBattle()
+        {
+            isAutoBattle = true;
+            btnAutoLabel.text = "停止";
+            StartCoroutine(AutoBattleCoroutine());
+        }
+
+        private void StopAutoBattle()
+        {
+            if (!isAutoBattle) return;
+            isAutoBattle = false;
+            StopCoroutine(AutoBattleCoroutine());
+            btnAutoLabel.text = "Auto";
+        }
+
+        private System.Collections.IEnumerator AutoBattleCoroutine()
+        {
+            while (isAutoBattle)
+            {
+                var b = BattleManager.Instance.CurrentBattle;
+                if (b == null || b.isFinished) break;
+
+                // 玩家攻击
+                BattleManager.Instance.PlayerAttack();
+
+                // 如果怪物没死，怪物回合
+                if (!b.isFinished)
+                    BattleManager.Instance.MonsterTurn();
+
+                RefreshUI();
+
+                // 战斗结束则停止
+                if (b.isFinished) break;
+
+                yield return new WaitForSeconds(0.6f);
+            }
+
+            isAutoBattle = false;
+            btnAutoLabel.text = "Auto";
         }
     }
 }
