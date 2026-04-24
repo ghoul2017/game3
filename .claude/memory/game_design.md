@@ -34,8 +34,8 @@ type: project
 - 装备：武器/防具/饰品三个槽位
 
 ## 技术决策
-- UI框架：UIManager单例 + UIPanel基类 + 栈式导航（参考game1/client）
-- 纯代码UI构建：UIBuilder静态工厂
+- UI框架：UIManager单例 + UIPanel基类 + 栈式导航
+- UI构建：预制体模式（PrefabGenerator生成 + BindReferences绑定）
 - 场景管理：单场景 + UI面板切换
 - 数据存储：本地JSON存档
 - 配置系统：代码内初始化（ConfigManager），后续可迁移到JSON/CSV

@@ -22,16 +22,16 @@ Unity 项目文件（`.csproj` / `.sln`）由 Unity Editor 自动生成，不应
 ```
 Assets/
   Scripts/
-    Core/           - 框架层（UIManager, UIPanel, UIBuilder, GameManager, DataManager, GameEntry）
+    Core/           - 框架层（UIManager, UIPanel, UIBuilder, PrefabLoader, GameManager, DataManager, SettingsManager, GameEntry）
     Game/
       Battle/       - 战斗系统（BattleManager）
-      Config/       - 配置系统（ConfigManager, ConfigData, GameEnums）
+      Config/       - 配置系统（ConfigManager, ConfigData, GameEnums, GameConstants）
       Data/         - 数据模型（PlayerData, DungeonData, BattleData, GameData）
-      Dungeon/      - 地牢系统（规划中）
-      Item/         - 物品系统（规划中）
-      Player/       - 玩家系统（规划中）
-      Town/         - 城镇系统（规划中）
-    UI/             - UI面板（MainPanel, TownPanel, BattlePanel, DungeonPanel, ShopPanel, BagPanel, SkillLearnPanel, RoleInfoPanel, CreateRolePanel）
+    UI/             - UI面板（MainPanel, CreateRolePanel, TownPanel, DungeonPanel, BattlePanel, ShopPanel, BagPanel, SkillLearnPanel, RoleInfoPanel, SettingsPanel）
+  Editor/           - 编辑器工具（PrefabGenerator）
+  Resources/
+    UI/             - UI面板预制体（10个面板）
+    Prefabs/        - 通用预制体
 doc/
   feature_list.json   - 功能清单（JSON格式，Agent 工作流核心文件）
   progress.txt        - 跨 session 进度记录
@@ -48,9 +48,10 @@ doc/
 |---|---|
 | `doc/feature_list.json` | 功能清单（JSON 格式，每个功能有 id/category/desc/passes） |
 | `doc/progress.txt` | 跨 session 进度记录 |
-| `.claude/agents/initializer.md` | 初始化 Agent（首次运行） |
-| `.claude/agents/coding-agent.md` | 编码 Agent（每 session 一个功能） |
-| `.claude/agents/planner-agent.md` | 需求拆解 Agent（产品经理角色，交互式） |
+| `.claude/agents/dev-worker.md` | 编码 Agent（代码实现，读写+搜索+Bash） |
+| `.claude/agents/verify-feature.md` | 功能验证 Agent（只读，验证需求覆盖） |
+| `.claude/agents/verify-quality.md` | 质量验证 Agent（只读，审查代码质量） |
+| `.claude/agents/mem-writer.md` | 知识归档 Agent（读写+搜索，归档开发知识） |
 
 ### 开发流程
 
@@ -89,15 +90,19 @@ devloop.cmd [N]  # 循环开发，默认 8 轮
 
 ## UI 架构关键约定
 
-- **UIPanel 基类** → 所有面板继承，重写 `OnInit()`/`OnShow()`/`OnHide()`
+- **UIPanel 基类** → 所有面板继承，重写 `BindReferences()`/`BindEvents()`/`OnShow()`/`OnHide()`
 - **UIManager** → 单例，栈式面板管理（`ShowPanel<T>()`/`ReplacePanel<T>()`）
-- **UIBuilder** → 静态工具类，代码动态构建 UI（无需预制体）
+- **UIBuilder** → 静态工具类，提供 `CreateVisuals()` 静态方法生成预制体结构
+- **PrefabLoader** → 预制体加载器，缓存加载 `Resources/UI/{PanelName}`
+- **PrefabGenerator** → 编辑器工具，批量生成所有面板预制体
 - **UI 配色**: RPG 风格 — 深蓝/紫底色 + 金色强调色（常量在 UIBuilder 中）
 
 ### UI 面板编码规则（重要）
 
-- **OnInit()** 中创建所有 UI 控件并**缓存到字段**
-- **RefreshUI()** 只修改 `.text`/`.value`/`.color` 等属性，**零销毁零创建**
+- **CreateVisuals()** 静态方法构建 UI 结构（仅 PrefabGenerator 调用，运行时不执行）
+- **BindReferences()** 绑定预制体中的组件引用到字段
+- **BindEvents()** 绑定按钮等控件的事件
+- **OnShow()** → **RefreshUI()** 只修改 `.text`/`.value`/`.color` 等属性，**零销毁零创建**
 - **动态列表用对象池**：预创建行，SetActive 显隐，原地更新文字
 - **绝不使用 Object.DestroyImmediate** — 它是导致文字消失、面板错乱的根本原因
 - **Hide 用 CanvasGroup**（alpha=0），不用 SetActive(false) — 避免破坏 RectTransform 层级

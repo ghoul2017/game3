@@ -19,16 +19,15 @@
 待开发: X 条
 
 按分类统计:
-  network: X/X
-  shared: X/X
-  login: X/X
-  map: X/X
-  bag: X/X
-  mail: X/X
-  chat: X/X
-  task: X/X
-  fight: X/X
-  misc: X/X
+  framework: X/X
+  ui: X/X
+  player: X/X
+  dungeon: X/X
+  battle: X/X
+  town: X/X
+  item: X/X
+  config: X/X
+  refactor: X/X
 
 最近 5 条提交:
   <git log>
