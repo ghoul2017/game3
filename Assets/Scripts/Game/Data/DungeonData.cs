@@ -49,10 +49,12 @@ namespace Game.Data
 
         public void OnReturnTown()
         {
-            // 返回城镇后，小怪和泉水恢复
+            // 返回城镇后，小怪、精英和泉水恢复
             foreach (var room in rooms)
             {
-                if (room.type == DungeonEventType.Monster || room.type == DungeonEventType.Spring)
+                if (room.type == DungeonEventType.Monster ||
+                    room.type == DungeonEventType.Elite ||
+                    room.type == DungeonEventType.Spring)
                     room.cleared = false;
             }
         }

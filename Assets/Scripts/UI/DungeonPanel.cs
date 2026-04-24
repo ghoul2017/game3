@@ -663,12 +663,28 @@ namespace Game.UI
         private void HandleExit()
         {
             var player = GameManager.Instance.Player;
-            player.dungeonFloor = GameManager.Instance.Dungeon.floor + 1;
+            var currentDungeon = GameManager.Instance.Dungeon;
+            int nextFloor = currentDungeon.floor + 1;
+
+            // 通关检查：击败最终Boss后显示胜利
+            if (nextFloor > currentDungeon.maxFloor)
+            {
+                pendingMessage = "恭喜通关！\n你征服了地牢所有楼层！\n\n可继续探索无尽模式...";
+                player.dungeonFloor = nextFloor;
+                var endlessDungeon = new DungeonData();
+                endlessDungeon.GenerateFloor(nextFloor);
+                endlessDungeon.maxFloor = int.MaxValue; // 无尽模式
+                GameManager.Instance.Dungeon = endlessDungeon;
+                GameManager.Instance.SaveGame();
+                RefreshUI();
+                return;
+            }
+
+            player.dungeonFloor = nextFloor;
             var dungeon = new DungeonData();
-            dungeon.GenerateFloor(player.dungeonFloor);
+            dungeon.GenerateFloor(nextFloor);
             GameManager.Instance.Dungeon = dungeon;
             GameManager.Instance.SetState(GameState.InDungeon);
-            // 直接刷新，不销毁重建
             RefreshUI();
         }
     }
