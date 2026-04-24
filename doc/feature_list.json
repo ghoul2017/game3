@@ -298,7 +298,7 @@
     "6. 清理DungeonRoom中monsterId/position死字段（F131已重构DungeonData，此处检查残留引用）",
     "7. 统一所有面板OnDestroyed中停止协程+清理对象池引用的模式(BattlePanel autoBattleCoroutine检查已修复F127，确认其他面板一致)",
     "8. DungeonPanel返回城镇添加空检查：GameManager.Instance?.Dungeon?.OnReturnTown()"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F152","category":"polish","priority":25,"desc":"音效集成：战斗/UI/地牢音效全面装配，Settings面板音量控制实际生效","steps":[
     "1. AudioManager在GameEntry.Awake()中初始化，加载所有AudioClip到字典",
