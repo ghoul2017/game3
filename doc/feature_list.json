@@ -105,7 +105,7 @@
     "6. ScrollRect视口背景统一为PanelBg，滚动条颜色改为暗金半透明"
   ],"passes":true},
 
-  {"id":"F129","category":"framework","priority":2,"desc":"音频系统：AudioManager单例管理音效/音乐播放，从Unity Asset Store下载免费音效包集成","steps":[
+  {"id":"F129","category":"framework","priority":2,"desc":"音频系统：AudioManager单例管理音效/音乐播放，从Unity Asset Store下载免费音效包集成","passes":true,"steps":[
     "1. 创建AudioManager单例(Assets/Scripts/Core/AudioManager.cs)：AudioSource池(SFX通道x5+Music通道x1)、音量属性SoundVolume/MusicVolume(0-1)、PlaySFX(clip)/PlayMusic(clip)/StopMusic() API",
     "2. 创建AudioClip分类枚举：Battle_Attack/Battle_Skill/Battle_Hit/Battle_Victory/Battle_Defeat/UI_Click/UI_PanelOpen/UI_PanelClose/Dungeon_Move/Dungeon_Discover",
     "3. 从Unity Asset Store搜索下载免费音效包(如'Free Sound Effects Pack')放入Assets/Resources/Audio/目录，或使用程序化生成(正弦波/白噪声)的基础音效作为fallback",
