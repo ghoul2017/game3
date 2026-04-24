@@ -46,6 +46,33 @@ namespace Game.UI
         private string pendingMessage;
         private float cellSize = DefaultCellSize;
 
+        // ---- 随机房间事件 ----
+        /// <summary>空房间事件类型枚举</summary>
+        private enum EmptyRoomEvent
+        {
+            GoldBag,       // 发现金币袋
+            Consumable,    // 发现消耗品
+            Trap,          // 地板陷阱
+            WanderingMerchant, // 流浪商人
+            MysticPower    // 神秘力量
+        }
+
+        /// <summary>当前待处理的事件（null表示无事件）</summary>
+        private EmptyRoomEvent? pendingEvent;
+
+        /// <summary>事件弹窗中的选项回调（按钮1/按钮2）</summary>
+        private System.Action pendingEventOption1;
+        private System.Action pendingEventOption2;
+
+        /// <summary>事件关联的房间瓦片（用于标记 isCleared）</summary>
+        private DungeonTile pendingEventTile;
+
+        // 事件弹窗第二个按钮引用
+        private Button msgBtnOption2;
+        private Text msgBtnContinueLabel;
+        private Text msgBtnOption2Label;
+        private RectTransform msgBtnContinueRt;
+
         // ---- 移动状态 ----
         private bool isMoving;           // 移动动画进行中，阻止连续输入
         private const float MoveDuration = 0.2f; // 平滑移动过渡时长（秒）
@@ -206,7 +233,13 @@ namespace Game.UI
             var (btnContinue, _) = UIBuilder.CreateButtonWithRef(msgOverlay.transform, "继续", 160, 40, null, 20, "BtnContinue");
             UIBuilder.SetAnchored(btnContinue.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -60), new Vector2(160, 40));
+                new Vector2(-90, -60), new Vector2(160, 40));
+
+            // 事件弹窗第二个选项按钮（默认隐藏，仅事件弹窗时显示）
+            var (btnOption2, _) = UIBuilder.CreateButtonWithRef(msgOverlay.transform, "离开", 160, 40, null, 20, "BtnOption2");
+            UIBuilder.SetAnchored(btnOption2.gameObject,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(90, -60), new Vector2(160, 40));
 
             // ===== 右侧：状态面板 =====
             CreateStatusPanelVisuals(parent);
@@ -453,6 +486,10 @@ namespace Game.UI
             // 消息覆盖
             msgOverlay = transform.Find("MapPanel/Inner/MsgOverlay").gameObject;
             msgText = FindComponent<Text>("MapPanel/Inner/MsgOverlay/MsgText");
+            msgBtnOption2 = FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnOption2");
+            msgBtnContinueLabel = FindComponent<Text>("MapPanel/Inner/MsgOverlay/BtnContinue/Label");
+            msgBtnOption2Label = FindComponent<Text>("MapPanel/Inner/MsgOverlay/BtnOption2/Label");
+            msgBtnContinueRt = FindComponent<RectTransform>("MapPanel/Inner/MsgOverlay/BtnContinue");
 
             // 右侧状态面板
             hpSlider = FindComponent<Slider>("StatusPanel/Inner/HpSlider");
@@ -489,10 +526,34 @@ namespace Game.UI
             FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnContinue").onClick.AddListener(() =>
             {
                 PlayUIClick();
+                // 检查是否有事件选项1待执行
+                if (pendingEvent.HasValue && pendingEventOption1 != null)
+                {
+                    var action = pendingEventOption1;
+                    ClearPendingEvent();
+                    action();
+                }
                 // 检查是否有出口待确认
-                if (pendingExitFloor > 0)
+                else if (pendingExitFloor > 0)
                 {
                     ConfirmEnterNextFloor();
+                }
+                else
+                {
+                    pendingMessage = null;
+                }
+                RefreshUI();
+            });
+
+            // 事件弹窗第二个选项按钮
+            msgBtnOption2.onClick.AddListener(() =>
+            {
+                PlayUIClick();
+                if (pendingEvent.HasValue && pendingEventOption2 != null)
+                {
+                    var action = pendingEventOption2;
+                    ClearPendingEvent();
+                    action();
                 }
                 else
                 {
@@ -614,10 +675,25 @@ namespace Game.UI
             {
                 msgText.text = pendingMessage;
                 msgOverlay.SetActive(true);
+
+                // 事件弹窗模式：显示/隐藏第二个按钮，调整按钮1位置和文字
+                if (pendingEvent.HasValue)
+                {
+                    msgBtnOption2.gameObject.SetActive(true);
+                    // 双按钮布局：左-90 右+90
+                    msgBtnContinueRt.anchoredPosition = new Vector2(-90, -60);
+                }
+                else
+                {
+                    msgBtnOption2.gameObject.SetActive(false);
+                    // 单按钮居中
+                    msgBtnContinueRt.anchoredPosition = new Vector2(0, -60);
+                }
             }
             else
             {
                 msgOverlay.SetActive(false);
+                msgBtnOption2.gameObject.SetActive(false);
             }
         }
 
@@ -928,11 +1004,8 @@ namespace Game.UI
                     HandleShrine(tile);
                     break;
                 case DungeonEventType.Empty:
-                    // F137 随机事件尚未实现，直接标记为已清理
                     Debug.Log("[地牢] 空房间");
-                    tile.isCleared = true;
-                    var emptyRoom = FindMatchingRoom(dungeon, tile);
-                    emptyRoom.cleared = true;
+                    HandleEmptyRoom(dungeon, tile);
                     break;
             }
         }
@@ -1152,6 +1225,377 @@ namespace Game.UI
             }
 
             RefreshUI();
+        }
+
+        // ---- F137: 随机房间事件 ----
+
+        /// <summary>清除事件弹窗的待处理状态</summary>
+        private void ClearPendingEvent()
+        {
+            pendingEvent = null;
+            pendingEventOption1 = null;
+            pendingEventOption2 = null;
+            pendingEventTile = null;
+            pendingMessage = null;
+        }
+
+        /// <summary>标记事件关联房间为已清理</summary>
+        private void MarkEventTileCleared()
+        {
+            if (pendingEventTile != null)
+            {
+                pendingEventTile.isCleared = true;
+                var room = FindMatchingRoom(GameManager.Instance.Dungeon, pendingEventTile);
+                room.cleared = true;
+            }
+        }
+
+        /// <summary>
+        /// 空房间事件触发：50%概率触发随机事件（16%空房间 * 50% = 总约8%）
+        /// 事件类型及概率：金币袋(40%)、消耗品(20%)、陷阱(20%)、流浪商人(10%)、神秘力量(10%)
+        /// </summary>
+        private void HandleEmptyRoom(DungeonData dungeon, DungeonTile tile)
+        {
+            // 50%概率触发事件
+            if (Random.value >= 0.50f)
+            {
+                // 无事件，直接标记已清
+                tile.isCleared = true;
+                var room = FindMatchingRoom(dungeon, tile);
+                room.cleared = true;
+                return;
+            }
+
+            // 根据概率决定事件类型
+            float roll = Random.value;
+            EmptyRoomEvent eventType;
+            if (roll < 0.40f)
+                eventType = EmptyRoomEvent.GoldBag;
+            else if (roll < 0.60f)
+                eventType = EmptyRoomEvent.Consumable;
+            else if (roll < 0.80f)
+                eventType = EmptyRoomEvent.Trap;
+            else if (roll < 0.90f)
+                eventType = EmptyRoomEvent.WanderingMerchant;
+            else
+                eventType = EmptyRoomEvent.MysticPower;
+
+            Debug.Log($"[地牢] 空房间触发随机事件: {eventType}");
+            pendingEvent = eventType;
+            pendingEventTile = tile;
+
+            switch (eventType)
+            {
+                case EmptyRoomEvent.GoldBag:
+                    HandleEventGoldBag();
+                    break;
+                case EmptyRoomEvent.Consumable:
+                    HandleEventConsumable();
+                    break;
+                case EmptyRoomEvent.Trap:
+                    HandleEventTrap();
+                    break;
+                case EmptyRoomEvent.WanderingMerchant:
+                    HandleEventWanderingMerchant();
+                    break;
+                case EmptyRoomEvent.MysticPower:
+                    HandleEventMysticPower();
+                    break;
+            }
+
+            RefreshUI();
+        }
+
+        /// <summary>事件：发现金币袋 — floor*20~50金</summary>
+        private void HandleEventGoldBag()
+        {
+            var player = GameManager.Instance.Player;
+            var dungeon = GameManager.Instance.Dungeon;
+            int minGold = dungeon.floor * 20;
+            int maxGold = dungeon.floor * 50;
+            int goldAmount = Random.Range(minGold, maxGold + 1);
+
+            pendingMessage = $"你在角落发现了一个金币袋！\n大约有 {goldAmount} 枚金币。";
+
+            // 按钮1: 拿走金币
+            msgBtnContinueLabel.text = "拿走";
+            pendingEventOption1 = () =>
+            {
+                player.gold += goldAmount;
+                MarkEventTileCleared();
+                pendingMessage = $"获得 {goldAmount} 金币！";
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+
+            // 按钮2: 离开（不拿）
+            msgBtnOption2Label.text = "离开";
+            pendingEventOption2 = () =>
+            {
+                MarkEventTileCleared();
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+        }
+
+        /// <summary>事件：发现消耗品 — 随机药水/卷轴</summary>
+        private void HandleEventConsumable()
+        {
+            var player = GameManager.Instance.Player;
+            var consumables = ConfigManager.Instance.GetItemsByType(ItemType.Consumable);
+
+            if (consumables.Count == 0 || player.bagItems.Count >= player.maxBagSize)
+            {
+                // 背包满或无消耗品，改为少量金币
+                int goldAmount = Random.Range(5, 15) * GameManager.Instance.Dungeon.floor;
+                pendingMessage = "你发现了一些散落的物品，\n但背包已满无法携带。\n旁边有几枚金币。";
+                msgBtnContinueLabel.text = "拿走金币";
+                pendingEventOption1 = () =>
+                {
+                    player.gold += goldAmount;
+                    MarkEventTileCleared();
+                    pendingMessage = $"获得 {goldAmount} 金币！";
+                    msgBtnContinueLabel.text = "继续";
+                    RefreshUI();
+                };
+                msgBtnOption2Label.text = "离开";
+                pendingEventOption2 = () =>
+                {
+                    MarkEventTileCleared();
+                    msgBtnContinueLabel.text = "继续";
+                    RefreshUI();
+                };
+                return;
+            }
+
+            var item = consumables[Random.Range(0, consumables.Count)];
+            pendingMessage = $"你发现了一瓶 {item.name}！\n{item.desc}";
+
+            msgBtnContinueLabel.text = "拾取";
+            pendingEventOption1 = () =>
+            {
+                player.bagItems.Add(item.id);
+                MarkEventTileCleared();
+                pendingMessage = $"获得 {item.name}！";
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+
+            msgBtnOption2Label.text = "丢弃";
+            pendingEventOption2 = () =>
+            {
+                MarkEventTileCleared();
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+        }
+
+        /// <summary>事件：地板陷阱 — 扣除当前HP的10-20%</summary>
+        private void HandleEventTrap()
+        {
+            var player = GameManager.Instance.Player;
+            float hpPercent = Random.Range(0.10f, 0.21f); // 10-20%
+            int damage = Mathf.Max(1, Mathf.RoundToInt(player.hp * hpPercent));
+
+            pendingMessage = "你踩中了隐藏的地板陷阱！\n尖刺刺穿了你的鞋子。";
+
+            // 按钮1: 忍痛继续
+            msgBtnContinueLabel.text = "忍痛继续";
+            pendingEventOption1 = () =>
+            {
+                player.hp = Mathf.Max(1, player.hp - damage);
+                MarkEventTileCleared();
+                pendingMessage = $"受到 {damage} 点伤害！\n剩余HP: {player.hp}/{player.maxHp}";
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+
+            // 按钮2: 小心避开（无伤害但无事发生）
+            msgBtnOption2Label.text = "小心避开";
+            pendingEventOption2 = () =>
+            {
+                MarkEventTileCleared();
+                pendingMessage = "你小心翼翼地绕过了陷阱。";
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+        }
+
+        /// <summary>事件：流浪商人 — 3件随机物品8折</summary>
+        private void HandleEventWanderingMerchant()
+        {
+            var player = GameManager.Instance.Player;
+            var dungeon = GameManager.Instance.Dungeon;
+
+            // 从所有非消耗品中随机选3件
+            var allItems = new List<ItemConfig>();
+            allItems.AddRange(ConfigManager.Instance.GetItemsByType(ItemType.Weapon));
+            allItems.AddRange(ConfigManager.Instance.GetItemsByType(ItemType.Armor));
+            allItems.AddRange(ConfigManager.Instance.GetItemsByType(ItemType.Accessory));
+            allItems.AddRange(ConfigManager.Instance.GetItemsByType(ItemType.Consumable));
+
+            // 随机选取3件
+            var shopItems = new List<ItemConfig>();
+            for (int i = 0; i < 3 && allItems.Count > 0; i++)
+            {
+                int idx = Random.Range(0, allItems.Count);
+                shopItems.Add(allItems[idx]);
+                allItems.RemoveAt(idx);
+            }
+
+            if (shopItems.Count == 0)
+            {
+                // 无物品可卖，改为少量金币
+                int goldAmount = Random.Range(10, 25) * dungeon.floor;
+                pendingMessage = "一位流浪商人向你打了个招呼，\n但他今天没什么好卖的。\n他给了你一些金币作为路费。";
+                msgBtnContinueLabel.text = "感谢";
+                pendingEventOption1 = () =>
+                {
+                    player.gold += goldAmount;
+                    MarkEventTileCleared();
+                    pendingMessage = $"获得 {goldAmount} 金币！";
+                    msgBtnContinueLabel.text = "继续";
+                    RefreshUI();
+                };
+                msgBtnOption2Label.text = "离开";
+                pendingEventOption2 = () =>
+                {
+                    MarkEventTileCleared();
+                    msgBtnContinueLabel.text = "继续";
+                    RefreshUI();
+                };
+                return;
+            }
+
+            // 构建商品列表文字（8折价格）
+            string itemList = "";
+            for (int i = 0; i < shopItems.Count; i++)
+            {
+                int discountPrice = Mathf.RoundToInt(shopItems[i].price * 0.8f);
+                itemList += $"\n  {shopItems[i].name} - {discountPrice}金 ({shopItems[i].desc})";
+            }
+
+            pendingMessage = $"一位流浪商人出现在你面前！\n所有商品8折优惠：{itemList}";
+
+            // 按钮1: 逛逛（进入购买菜单）
+            msgBtnContinueLabel.text = "逛逛";
+            pendingEventOption1 = () =>
+            {
+                // 标记已清
+                pendingEventTile.content.itemIds.Clear();
+                foreach (var item in shopItems)
+                    pendingEventTile.content.itemIds.Add(item.id);
+                MarkEventTileCleared();
+
+                // 重新设置事件状态以保持双按钮弹窗
+                pendingEvent = EmptyRoomEvent.WanderingMerchant;
+                ShowMerchantBuyMenu(shopItems, 0);
+            };
+
+            msgBtnOption2Label.text = "不买";
+            pendingEventOption2 = () =>
+            {
+                MarkEventTileCleared();
+                msgBtnContinueLabel.text = "继续";
+                RefreshUI();
+            };
+        }
+
+        /// <summary>流浪商人购买菜单：逐个展示商品供购买</summary>
+        private void ShowMerchantBuyMenu(List<ItemConfig> items, int startIndex)
+        {
+            var player = GameManager.Instance.Player;
+
+            // 找到第一个买得起且背包有空间的
+            int buyableIdx = -1;
+            for (int i = startIndex; i < items.Count; i++)
+            {
+                int discountPrice = Mathf.RoundToInt(items[i].price * 0.8f);
+                if (player.gold >= discountPrice && player.bagItems.Count < player.maxBagSize)
+                {
+                    buyableIdx = i;
+                    break;
+                }
+            }
+
+            if (buyableIdx < 0)
+            {
+                pendingMessage = "你没有足够的金币或背包已满。\n商人离去了。";
+                msgBtnContinueLabel.text = "继续";
+                pendingEvent = null;
+                pendingEventOption1 = null;
+                pendingEventOption2 = null;
+                RefreshUI();
+                return;
+            }
+
+            var item = items[buyableIdx];
+            int price = Mathf.RoundToInt(item.price * 0.8f);
+            pendingMessage = $"商人向你推荐：\n{item.name} — {item.desc}\n价格: {price} 金币（你有 {player.gold} 金）";
+
+            msgBtnContinueLabel.text = $"购买({price}金)";
+            pendingEventOption1 = () =>
+            {
+                player.gold -= price;
+                player.bagItems.Add(item.id);
+                pendingMessage = $"购买了 {item.name}！";
+                msgBtnContinueLabel.text = "继续";
+                pendingEvent = null;
+                pendingEventOption1 = null;
+                pendingEventOption2 = null;
+                RefreshUI();
+            };
+
+            msgBtnOption2Label.text = "不买了";
+            pendingEventOption2 = () =>
+            {
+                pendingMessage = "你谢绝了商人的好意。";
+                msgBtnContinueLabel.text = "继续";
+                pendingEvent = null;
+                pendingEventOption1 = null;
+                pendingEventOption2 = null;
+                RefreshUI();
+            };
+
+            RefreshUI();
+        }
+
+        /// <summary>事件：神秘力量 — 全恢复HP+MP 或 +20%经验</summary>
+        private void HandleEventMysticPower()
+        {
+            var player = GameManager.Instance.Player;
+            int expBonus = Mathf.RoundToInt(player.GetExpToNextLevel() * 0.20f);
+
+            pendingMessage = "一道神秘的光芒笼罩了你！\n你感受到一股强大而温柔的力量。\n请选择接收的祝福：";
+
+            // 按钮1: 全恢复
+            msgBtnContinueLabel.text = "生命恢复";
+            pendingEventOption1 = () =>
+            {
+                player.hp = player.maxHp;
+                player.mp = player.maxMp;
+                MarkEventTileCleared();
+                pendingMessage = $"神秘力量恢复了你的生命力！\nHP: {player.hp}/{player.maxHp}\nMP: {player.mp}/{player.maxMp}";
+                msgBtnContinueLabel.text = "继续";
+                pendingEvent = null;
+                pendingEventOption1 = null;
+                RefreshUI();
+            };
+
+            // 按钮2: 经验加成
+            msgBtnOption2Label.text = $"经验+{expBonus}";
+            pendingEventOption2 = () =>
+            {
+                int oldLevel = player.level;
+                player.AddExp(expBonus);
+                MarkEventTileCleared();
+                string levelUpMsg = player.level > oldLevel ? $"\n恭喜升级！当前 Lv.{player.level}" : "";
+                pendingMessage = $"获得 {expBonus} 点经验！{levelUpMsg}";
+                msgBtnContinueLabel.text = "继续";
+                pendingEvent = null;
+                pendingEventOption1 = null;
+                RefreshUI();
+            };
         }
 
         /// <summary>待确认的出口层数（非0表示有出口待确认）</summary>
