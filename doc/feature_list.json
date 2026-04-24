@@ -128,7 +128,7 @@
     "3. DungeonData改为：GridWidth、GridHeight、DungeonTile[,] Grid(二维数组)、List<DungeonTile> RoomTiles(所有房间tile引用方便遍历)、GridPos StartPos/CurrentPos/ExitPos",
     "4. 保留现有DungeonRoom内容数据(monsterId/treasureId/goldAmount等)作为DungeonTile的ContentData子对象",
     "5. 删除旧的Rooms线性列表、CurrentRoomIndex，迁移所有引用到新的Grid坐标系统"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F132","category":"dungeon","priority":5,"desc":"网格地牢生成算法：随机游走+多尺寸房间+保证连通性，每层独一无二的地图","steps":[
     "1. GridSize=6+Mathf.Min(floor-1,4)，第一层6x6、第5层起10x10(最大)",
