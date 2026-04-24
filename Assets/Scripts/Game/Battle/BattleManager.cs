@@ -1203,7 +1203,7 @@ namespace Game.Battle
 
         private int CalcDamage(int atk, int def)
         {
-            int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - def / GameConstants.DEFENSE_DIVISOR);
+            int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - (int)(def * GameConstants.DEFENSE_REDUCTION_RATE));
             int variance = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(baseDmg * GameConstants.DAMAGE_VARIANCE_RATE));
             return Mathf.Max(GameConstants.MIN_DAMAGE, baseDmg + Random.Range(-variance, variance + 1));
         }
@@ -1211,7 +1211,7 @@ namespace Game.Battle
         /// <summary>计算玩家伤害（含装备伤害波动效果）</summary>
         private int CalcPlayerDamage(int atk, int def)
         {
-            int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - def / GameConstants.DEFENSE_DIVISOR);
+            int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - (int)(def * GameConstants.DEFENSE_REDUCTION_RATE));
             float varianceRate = GetEquipDamageVarianceRate();
             if (varianceRate > 0f)
             {

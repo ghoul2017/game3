@@ -17,13 +17,13 @@ namespace Game.Config
         public const float DEFEAT_GOLD_LOSS_RATE = 0.1f;
         
         /// <summary>伤害浮动比例</summary>
-        public const float DAMAGE_VARIANCE_RATE = 0.1f;
-        
+        public const float DAMAGE_VARIANCE_RATE = 0.15f;
+
         /// <summary>最小伤害值</summary>
         public const int MIN_DAMAGE = 1;
-        
-        /// <summary>防御减伤系数 (除以2)</summary>
-        public const int DEFENSE_DIVISOR = 2;
+
+        /// <summary>防御减伤系数（防御乘以此系数后从攻击中扣除）</summary>
+        public const float DEFENSE_REDUCTION_RATE = 0.6f;
 
         /// <summary>速度差闪避阈值：速度差>=此值时触发闪避</summary>
         public const int SPEED_DODGE_THRESHOLD = 5;
@@ -102,9 +102,9 @@ namespace Game.Config
         // ==================== Boss系统 ====================
 
         /// <summary>Boss战额外金币倍率：floor * 此值</summary>
-        public const int BOSS_GOLD_FLOOR_MULTIPLIER = 100;
+        public const int BOSS_GOLD_FLOOR_MULTIPLIER = 80;
 
         /// <summary>Boss战额外经验倍率：floor * 此值</summary>
-        public const int BOSS_EXP_FLOOR_MULTIPLIER = 50;
+        public const int BOSS_EXP_FLOOR_MULTIPLIER = 40;
     }
 }

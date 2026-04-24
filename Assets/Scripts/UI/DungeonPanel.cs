@@ -1093,7 +1093,7 @@ namespace Game.UI
             // 记录战斗对应的瓦片，战斗胜利后标记 isCleared
             pendingBattleTile = tile;
 
-            float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
+            float floorScale = 1f + (dungeon.floor - 1) * 0.12f;
             float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
             float totalScale = floorScale * eliteScale;
 
@@ -1121,7 +1121,7 @@ namespace Game.UI
                     attack = scaledAtk, defense = scaledDef,
                     speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
                     expReward = monsterCfg.expReward * rewardMul,
-                    goldReward = monsterCfg.goldReward * rewardMul,
+                    goldReward = monsterCfg.isBoss ? monsterCfg.goldReward : monsterCfg.goldReward * dungeon.floor * rewardMul,
                     drops = monsterCfg.drops,
                     isBoss = monsterCfg.isBoss,
                     aiPattern = monsterCfg.aiPattern,
@@ -1154,7 +1154,7 @@ namespace Game.UI
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
-            int goldFound = Random.Range(10, 30) * GameManager.Instance.Dungeon.floor;
+            int goldFound = Random.Range(20, 40) * GameManager.Instance.Dungeon.floor;
             player.gold += goldFound;
             pendingMessage = $"发现宝箱！获得 {goldFound} 金币";
 

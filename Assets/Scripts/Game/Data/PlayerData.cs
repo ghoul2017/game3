@@ -151,7 +151,7 @@ namespace Game.Data
 
         public int GetExpToNextLevel()
         {
-            return level * 100 + 50;
+            return level * 120 + 80;
         }
 
         public void AddExp(int amount)
