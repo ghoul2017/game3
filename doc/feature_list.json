@@ -89,5 +89,10 @@
   {"id":"F120","category":"dungeon","desc":"精英怪差异化：精英房间怪物获得1.5倍属性加成+2倍经验金币奖励","passes":true},
   {"id":"F121","category":"dungeon","desc":"地牢通关条件：击败第10层Boss后显示胜利画面+可选择继续无尽模式","passes":true},
   {"id":"F122","category":"dungeon","desc":"修复返回城镇重置：Elite房间也应重置(和Monster/Spring一样)","passes":true},
-  {"id":"F123","category":"item","desc":"装备等级限制：购买和装备时检查reqLevel，商店/背包显示等级要求","passes":true}
+  {"id":"F123","category":"item","desc":"装备等级限制：购买和装备时检查reqLevel，商店/背包显示等级要求","passes":true},
+
+  {"id":"F124","category":"bug","desc":"修复BattlePanel自动战斗StopCoroutine bug：存储Coroutine引用而非创建新IEnumerator","passes":false},
+  {"id":"F125","category":"bug","desc":"所有面板BindReferences添加null安全检查：FindComponent返回null时跳过绑定而非崩溃","passes":false},
+  {"id":"F126","category":"bug","desc":"重新生成所有UI预制体：确保预制体层级与代码BindReferences路径一致","passes":false},
+  {"id":"F127","category":"bug","desc":"BattlePanel OnHide时停止自动战斗协程，防止面板隐藏后协程继续运行","passes":false}
 ]

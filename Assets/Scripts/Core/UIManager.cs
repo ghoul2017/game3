@@ -125,18 +125,24 @@ namespace Game.Core
             else
             {
                 // 无预制体时回退到 CreateVisuals
-                panelObj = new GameObject(typeName);
-                panelObj.AddComponent<RectTransform>();
-                panelObj.transform.SetParent(canvasTransform, false);
-                var cvMethod = typeof(T).GetMethod("CreateVisuals",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                if (cvMethod != null)
-                    cvMethod.Invoke(null, new object[] { panelObj.transform });
+                panelObj = CreatePanelFromVisuals<T>(typeName);
             }
 
             var panel = panelObj.GetOrAddComponent<T>();
             panelCache[typeName] = panel;
             return panel;
+        }
+
+        private GameObject CreatePanelFromVisuals<T>(string typeName) where T : UIPanel
+        {
+            var panelObj = new GameObject(typeName);
+            panelObj.AddComponent<RectTransform>();
+            panelObj.transform.SetParent(canvasTransform, false);
+            var cvMethod = typeof(T).GetMethod("CreateVisuals",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (cvMethod != null)
+                cvMethod.Invoke(null, new object[] { panelObj.transform });
+            return panelObj;
         }
 
         public T GetPanel<T>() where T : UIPanel

@@ -107,9 +107,10 @@ namespace Game.UI
                 if (item == null) continue;
 
                 var row = itemRows[idx];
+                if (row.obj == null) { idx++; continue; }
                 row.obj.SetActive(true);
-                row.rt.anchoredPosition = new Vector2(0, 190 - idx * 49);
-                row.bg.color = idx % 2 == 0 ? UIBuilder.RowEven : UIBuilder.RowOdd;
+                if (row.rt != null) row.rt.anchoredPosition = new Vector2(0, 190 - idx * 49);
+                if (row.bg != null) row.bg.color = idx % 2 == 0 ? UIBuilder.RowEven : UIBuilder.RowOdd;
 
                 string statStr = "";
                 if (item.atk > 0) statStr += $"攻+{item.atk} ";
@@ -124,7 +125,7 @@ namespace Game.UI
                     ItemType.Accessory => "饰品", ItemType.Consumable => "消耗品", _ => ""
                 };
                 string reqStr = item.reqLevel > 0 ? $"  [需Lv.{item.reqLevel}]" : "";
-                row.nameText.text = $"[{typeName}] {item.name} x{kv.Value}  {statStr}{reqStr}";
+                if (row.nameText != null) row.nameText.text = $"[{typeName}] {item.name} x{kv.Value}  {statStr}{reqStr}";
 
                 int capturedId = kv.Key;
                 bool isEquipType = item.type == ItemType.Weapon || item.type == ItemType.Armor || item.type == ItemType.Accessory;
@@ -136,55 +137,75 @@ namespace Game.UI
                         || (item.type == ItemType.Accessory && player.accessoryId == capturedId);
                     bool levelOk = player.level >= item.reqLevel;
 
-                    row.actionBtn.gameObject.SetActive(true);
-                    row.actionBtn.interactable = !isEquipped && levelOk;
-                    row.actionBtnLabel.text = isEquipped ? "已装备" : (levelOk ? "装备" : $"需Lv.{item.reqLevel}");
-                    row.actionBtnLabel.color = isEquipped ? UIBuilder.Green : (levelOk ? UIBuilder.Gold : UIBuilder.TextDim);
-                    row.actionBtn.image.color = isEquipped
-                        ? new Color(0.08f, 0.2f, 0.1f, 0.5f)
-                        : UIBuilder.ButtonNormal;
-                    if (!isEquipped)
+                    if (row.actionBtn != null)
                     {
-                        row.actionBtn.onClick.RemoveAllListeners();
-                        int id = capturedId;
-                        row.actionBtn.onClick.AddListener(() => EquipItem(id));
+                        row.actionBtn.gameObject.SetActive(true);
+                        row.actionBtn.interactable = !isEquipped && levelOk;
+                        row.actionBtn.image.color = isEquipped
+                            ? new Color(0.08f, 0.2f, 0.1f, 0.5f)
+                            : UIBuilder.ButtonNormal;
+                        if (!isEquipped)
+                        {
+                            row.actionBtn.onClick.RemoveAllListeners();
+                            int id = capturedId;
+                            row.actionBtn.onClick.AddListener(() => EquipItem(id));
+                        }
+                    }
+                    if (row.actionBtnLabel != null)
+                    {
+                        row.actionBtnLabel.text = isEquipped ? "已装备" : (levelOk ? "装备" : $"需Lv.{item.reqLevel}");
+                        row.actionBtnLabel.color = isEquipped ? UIBuilder.Green : (levelOk ? UIBuilder.Gold : UIBuilder.TextDim);
                     }
                 }
                 else if (item.type == ItemType.Consumable)
                 {
-                    row.actionBtn.gameObject.SetActive(true);
-                    row.actionBtn.interactable = true;
-                    row.actionBtnLabel.text = "使用";
-                    row.actionBtnLabel.color = UIBuilder.Gold;
-                    row.actionBtn.image.color = UIBuilder.ButtonNormal;
-                    row.actionBtn.onClick.RemoveAllListeners();
-                    int id = capturedId;
-                    row.actionBtn.onClick.AddListener(() => UseItem(id));
+                    if (row.actionBtn != null)
+                    {
+                        row.actionBtn.gameObject.SetActive(true);
+                        row.actionBtn.interactable = true;
+                        row.actionBtn.image.color = UIBuilder.ButtonNormal;
+                        row.actionBtn.onClick.RemoveAllListeners();
+                        int id = capturedId;
+                        row.actionBtn.onClick.AddListener(() => UseItem(id));
+                    }
+                    if (row.actionBtnLabel != null)
+                    {
+                        row.actionBtnLabel.text = "使用";
+                        row.actionBtnLabel.color = UIBuilder.Gold;
+                    }
                 }
                 else
                 {
-                    row.actionBtn.gameObject.SetActive(false);
+                    if (row.actionBtn != null) row.actionBtn.gameObject.SetActive(false);
                 }
 
                 int sellPrice = item.price / 2;
-                row.secondBtn.gameObject.SetActive(true);
-                row.secondBtn.interactable = true;
-                row.secondBtnLabel.text = $"卖{sellPrice}金";
-                row.secondBtnLabel.color = UIBuilder.Gold;
-                row.secondBtn.image.color = UIBuilder.ButtonNormal;
-                row.secondBtn.onClick.RemoveAllListeners();
-                int sId = capturedId;
-                int sPrice = sellPrice;
-                row.secondBtn.onClick.AddListener(() => SellItem(sId, sPrice));
+                if (row.secondBtn != null)
+                {
+                    row.secondBtn.gameObject.SetActive(true);
+                    row.secondBtn.interactable = true;
+                    row.secondBtn.image.color = UIBuilder.ButtonNormal;
+                    row.secondBtn.onClick.RemoveAllListeners();
+                    int sId = capturedId;
+                    int sPrice = sellPrice;
+                    row.secondBtn.onClick.AddListener(() => SellItem(sId, sPrice));
+                }
+                if (row.secondBtnLabel != null)
+                {
+                    row.secondBtnLabel.text = $"卖{sellPrice}金";
+                    row.secondBtnLabel.color = UIBuilder.Gold;
+                }
 
                 idx++;
             }
 
             for (int i = idx; i < PoolSize; i++)
-                itemRows[i].obj.SetActive(false);
+            {
+                if (itemRows[i].obj != null) itemRows[i].obj.SetActive(false);
+            }
 
-            emptyText.gameObject.SetActive(idx == 0);
-            infoText.text = $"容量: {player.bagItems.Count}/{player.maxBagSize}    金币: {player.gold}";
+            if (emptyText != null) emptyText.gameObject.SetActive(idx == 0);
+            if (infoText != null) infoText.text = $"容量: {player.bagItems.Count}/{player.maxBagSize}    金币: {player.gold}";
         }
 
         private void EquipItem(int itemId)

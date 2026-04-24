@@ -51,6 +51,7 @@ namespace Game.UI
         private Button btnAuto;
         private Text btnAutoLabel;
         private bool isAutoBattle;
+        private Coroutine autoBattleCoroutine;
 
         // ---- 奖励面板 ----
         private GameObject rewardOverlay;
@@ -281,25 +282,35 @@ namespace Game.UI
             btnEscape = FindComponent<Button>("BtnEscape");
 
             // 技能子面板
-            skillPanel = transform.Find("SkillPanel").gameObject;
+            var skillPanelTr = transform.Find("SkillPanel");
+            skillPanel = skillPanelTr != null ? skillPanelTr.gameObject : null;
             skillRows = new SkillRow[MaxSkillRows];
             for (int i = 0; i < MaxSkillRows; i++)
             {
-                var rowObj = transform.Find($"SkillPanel/Inner/SkillRow_{i}").gameObject;
-                var rowBtn = rowObj.transform.Find("Btn").GetComponent<Button>();
-                var rowLabel = rowBtn.transform.Find("Label").GetComponent<Text>();
+                var rowTr = transform.Find($"SkillPanel/Inner/SkillRow_{i}");
+                if (rowTr == null) { skillRows[i] = new SkillRow(); continue; }
+                var rowObj = rowTr.gameObject;
+                var btnTr = rowObj.transform.Find("Btn");
+                var rowBtn = btnTr != null ? btnTr.GetComponent<Button>() : null;
+                var labelTr = btnTr != null ? btnTr.Find("Label") : null;
+                var rowLabel = labelTr != null ? labelTr.GetComponent<Text>() : null;
                 rowObj.SetActive(false);
                 skillRows[i] = new SkillRow { obj = rowObj, btn = rowBtn, label = rowLabel };
             }
 
             // 物品子面板
-            itemPanel = transform.Find("ItemPanel").gameObject;
+            var itemPanelTr = transform.Find("ItemPanel");
+            itemPanel = itemPanelTr != null ? itemPanelTr.gameObject : null;
             itemRows = new ItemRow[MaxItemRows];
             for (int i = 0; i < MaxItemRows; i++)
             {
-                var rowObj = transform.Find($"ItemPanel/Inner/ItemRow_{i}").gameObject;
-                var rowBtn = rowObj.transform.Find("Btn").GetComponent<Button>();
-                var rowLabel = rowBtn.transform.Find("Label").GetComponent<Text>();
+                var rowTr = transform.Find($"ItemPanel/Inner/ItemRow_{i}");
+                if (rowTr == null) { itemRows[i] = new ItemRow(); continue; }
+                var rowObj = rowTr.gameObject;
+                var btnTr = rowObj.transform.Find("Btn");
+                var rowBtn = btnTr != null ? btnTr.GetComponent<Button>() : null;
+                var labelTr = btnTr != null ? btnTr.Find("Label") : null;
+                var rowLabel = labelTr != null ? labelTr.GetComponent<Text>() : null;
                 rowObj.SetActive(false);
                 itemRows[i] = new ItemRow { obj = rowObj, btn = rowBtn, label = rowLabel };
             }
@@ -320,27 +331,38 @@ namespace Game.UI
 
         protected override void BindEvents()
         {
-            btnAttack.onClick.AddListener(OnAttack);
-            btnSkill.onClick.AddListener(OnSkillMenu);
-            btnItem.onClick.AddListener(OnItemMenu);
-            btnEscape.onClick.AddListener(OnEscape);
-            btnResult.onClick.AddListener(OnBattleEnd);
-            btnAuto.onClick.AddListener(OnToggleAutoBattle);
-            FindComponent<Button>("RewardOverlay/BtnRewardContinue").onClick.AddListener(OnRewardContinue);
+            if (btnAttack != null) btnAttack.onClick.AddListener(OnAttack);
+            if (btnSkill != null) btnSkill.onClick.AddListener(OnSkillMenu);
+            if (btnItem != null) btnItem.onClick.AddListener(OnItemMenu);
+            if (btnEscape != null) btnEscape.onClick.AddListener(OnEscape);
+            if (btnResult != null) btnResult.onClick.AddListener(OnBattleEnd);
+            if (btnAuto != null) btnAuto.onClick.AddListener(OnToggleAutoBattle);
 
-            FindComponent<Button>("SkillPanel/Inner/BtnCloseSkill").onClick.AddListener(() => skillPanel.gameObject.SetActive(false));
-            FindComponent<Button>("ItemPanel/Inner/BtnCloseItem").onClick.AddListener(() => itemPanel.gameObject.SetActive(false));
+            var rewardContinue = FindComponent<Button>("RewardOverlay/BtnRewardContinue");
+            if (rewardContinue != null) rewardContinue.onClick.AddListener(OnRewardContinue);
+
+            var closeSkillBtn = FindComponent<Button>("SkillPanel/Inner/BtnCloseSkill");
+            if (closeSkillBtn != null) closeSkillBtn.onClick.AddListener(() => { if (skillPanel != null) skillPanel.SetActive(false); });
+
+            var closeItemBtn = FindComponent<Button>("ItemPanel/Inner/BtnCloseItem");
+            if (closeItemBtn != null) closeItemBtn.onClick.AddListener(() => { if (itemPanel != null) itemPanel.SetActive(false); });
         }
 
         public override void OnShow()
         {
             isAutoBattle = false;
-            skillPanel.gameObject.SetActive(false);
-            itemPanel.gameObject.SetActive(false);
-            rewardOverlay.SetActive(false);
-            btnResult.gameObject.SetActive(false);
-            btnAutoLabel.text = "Auto";
+            autoBattleCoroutine = null;
+            if (skillPanel != null) skillPanel.SetActive(false);
+            if (itemPanel != null) itemPanel.SetActive(false);
+            if (rewardOverlay != null) rewardOverlay.SetActive(false);
+            if (btnResult != null) btnResult.gameObject.SetActive(false);
+            if (btnAutoLabel != null) btnAutoLabel.text = "Auto";
             RefreshUI();
+        }
+
+        public override void OnHide()
+        {
+            StopAutoBattle();
         }
 
         /// <summary>
@@ -354,50 +376,60 @@ namespace Game.UI
             var m = b.monster;
 
             // 怪物信息
-            monsterNameText.text = m.name;
-            monsterIconText.text = m.isBoss ? "王" : "怪";
-            monsterIconText.color = m.isBoss ? UIBuilder.Gold : UIBuilder.Red;
-            monsterTypeText.text = m.isBoss ? "BOSS" : (m.level > 0 ? $"Lv.{m.level}" : "");
-            monsterHpText.text = $"HP: {m.hp}/{m.maxHp}";
-            monsterHpSlider.value = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0;
-            monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}";
+            if (monsterNameText != null) monsterNameText.text = m.name;
+            if (monsterIconText != null)
+            {
+                monsterIconText.text = m.isBoss ? "王" : "怪";
+                monsterIconText.color = m.isBoss ? UIBuilder.Gold : UIBuilder.Red;
+            }
+            if (monsterTypeText != null) monsterTypeText.text = m.isBoss ? "BOSS" : (m.level > 0 ? $"Lv.{m.level}" : "");
+            if (monsterHpText != null) monsterHpText.text = $"HP: {m.hp}/{m.maxHp}";
+            if (monsterHpSlider != null) monsterHpSlider.value = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0;
+            if (monsterAtkDefText != null) monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}";
 
             // 战斗日志（池化 6 行）
-            int showCount = Mathf.Min(b.log.Count, MaxLogLines);
-            int startIdx = b.log.Count - showCount;
-            for (int i = 0; i < MaxLogLines; i++)
+            if (logTexts != null)
             {
-                if (i < showCount)
+                int showCount = Mathf.Min(b.log.Count, MaxLogLines);
+                int startIdx = b.log.Count - showCount;
+                for (int i = 0; i < MaxLogLines; i++)
                 {
-                    logTexts[i].text = b.log[startIdx + i];
-                    logTexts[i].gameObject.SetActive(true);
-                }
-                else
-                {
-                    logTexts[i].gameObject.SetActive(false);
+                    if (logTexts[i] == null) continue;
+                    if (i < showCount)
+                    {
+                        logTexts[i].text = b.log[startIdx + i];
+                        logTexts[i].gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        logTexts[i].gameObject.SetActive(false);
+                    }
                 }
             }
 
             // 玩家信息（含buff加成）
-            int buffAtk = BattleManager.Instance.CurrentBattle?.playerBuffAttack ?? 0;
-            int buffDef = BattleManager.Instance.CurrentBattle?.playerBuffDefense ?? 0;
-            int buffTurns = BattleManager.Instance.CurrentBattle?.playerBuffTurns ?? 0;
-            string atkStr = buffAtk > 0 ? $"{p.attack}+{buffAtk}" : $"{p.attack}";
-            string defStr = buffDef > 0 ? $"{p.defense}+{buffDef}" : $"{p.defense}";
-            string buffInfo = buffTurns > 0 ? $"  [增益{buffTurns}回合]" : "";
-            playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}{buffInfo}";
+            if (playerInfoText != null)
+            {
+                int buffAtk = b.playerBuffAttack;
+                int buffDef = b.playerBuffDefense;
+                int buffTurns = b.playerBuffTurns;
+                string atkStr = buffAtk > 0 ? $"{p.attack}+{buffAtk}" : $"{p.attack}";
+                string defStr = buffDef > 0 ? $"{p.defense}+{buffDef}" : $"{p.defense}";
+                string buffInfo = buffTurns > 0 ? $"  [增益{buffTurns}回合]" : "";
+                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}{buffInfo}";
+            }
 
             // 战斗结束处理
             if (b.isFinished)
             {
                 isAutoBattle = false;
-                btnAutoLabel.text = "Auto";
-                btnAttack.interactable = false;
-                btnSkill.interactable = false;
-                btnItem.interactable = false;
-                btnEscape.interactable = false;
-                skillPanel.gameObject.SetActive(false);
-                itemPanel.gameObject.SetActive(false);
+                if (btnAutoLabel != null) btnAutoLabel.text = "Auto";
+                if (btnAttack != null) btnAttack.interactable = false;
+                if (btnSkill != null) btnSkill.interactable = false;
+                if (btnItem != null) btnItem.interactable = false;
+                if (btnEscape != null) btnEscape.interactable = false;
+                if (skillPanel != null) skillPanel.SetActive(false);
+                if (itemPanel != null) itemPanel.SetActive(false);
 
                 if (b.isVictory)
                 {
@@ -405,24 +437,24 @@ namespace Game.UI
                     string rewardMsg = $"战斗胜利！\n\n获得 {b.rewardExp} 经验\n获得 {b.rewardGold} 金币";
                     foreach (var itemName in b.rewardItems)
                         rewardMsg += $"\n获得物品：{itemName}";
-                    rewardText.text = rewardMsg;
-                    rewardOverlay.SetActive(true);
-                    btnResult.gameObject.SetActive(false);
+                    if (rewardText != null) rewardText.text = rewardMsg;
+                    if (rewardOverlay != null) rewardOverlay.SetActive(true);
+                    if (btnResult != null) btnResult.gameObject.SetActive(false);
                 }
                 else
                 {
-                    rewardOverlay.SetActive(false);
-                    btnResultLabel.text = "返回城镇";
-                    btnResult.gameObject.SetActive(true);
+                    if (rewardOverlay != null) rewardOverlay.SetActive(false);
+                    if (btnResultLabel != null) btnResultLabel.text = "返回城镇";
+                    if (btnResult != null) btnResult.gameObject.SetActive(true);
                 }
             }
             else
             {
-                btnAttack.interactable = true;
-                btnSkill.interactable = true;
-                btnItem.interactable = true;
-                btnEscape.interactable = true;
-                btnResult.gameObject.SetActive(false);
+                if (btnAttack != null) btnAttack.interactable = true;
+                if (btnSkill != null) btnSkill.interactable = true;
+                if (btnItem != null) btnItem.interactable = true;
+                if (btnEscape != null) btnEscape.interactable = true;
+                if (btnResult != null) btnResult.gameObject.SetActive(false);
             }
         }
 
@@ -456,6 +488,7 @@ namespace Game.UI
                 if (idx >= MaxSkillRows) break;
 
                 var row = skillRows[idx];
+                if (row.obj == null || row.btn == null || row.label == null) { idx++; continue; }
                 bool canUse = player.mp >= skill.mpCost;
                 row.label.text = $"{skill.name}  (MP:{skill.mpCost})";
                 row.label.color = canUse ? UIBuilder.Gold : UIBuilder.TextDim;
@@ -466,7 +499,7 @@ namespace Game.UI
                     int captured = skillId;
                     row.btn.onClick.AddListener(() =>
                     {
-                        skillPanel.gameObject.SetActive(false);
+                        if (skillPanel != null) skillPanel.SetActive(false);
                         OnUseSkill(captured);
                     });
                 }
@@ -474,7 +507,10 @@ namespace Game.UI
                 idx++;
             }
             for (int i = idx; i < MaxSkillRows; i++)
-                skillRows[i].obj.SetActive(false);
+            {
+                if (skillRows[i].obj != null)
+                    skillRows[i].obj.SetActive(false);
+            }
         }
 
         private void OnUseSkill(int skillId)
@@ -513,36 +549,42 @@ namespace Game.UI
             if (groups.Count == 0)
             {
                 for (int i = 0; i < MaxItemRows; i++)
-                    itemRows[i].obj.SetActive(false);
-                itemEmptyText.gameObject.SetActive(true);
+                {
+                    if (itemRows[i].obj != null) itemRows[i].obj.SetActive(false);
+                }
+                if (itemEmptyText != null) itemEmptyText.gameObject.SetActive(true);
                 return;
             }
-            itemEmptyText.gameObject.SetActive(false);
+            if (itemEmptyText != null) itemEmptyText.gameObject.SetActive(false);
 
             int idx = 0;
             foreach (var kv in groups)
             {
                 if (idx >= MaxItemRows) break;
                 var item = ConfigManager.Instance.GetItem(kv.Key);
+                if (item == null) continue;
                 string desc = "";
                 if (item.restoreHp > 0) desc += $" HP+{item.restoreHp}";
                 if (item.restoreMp > 0) desc += $" MP+{item.restoreMp}";
                 string countStr = kv.Value > 1 ? $" x{kv.Value}" : "";
 
                 var row = itemRows[idx];
+                if (row.obj == null || row.btn == null || row.label == null) { idx++; continue; }
                 row.label.text = $"{item.name}{countStr}{desc}";
                 row.btn.onClick.RemoveAllListeners();
                 int capturedItemId = kv.Key;
                 row.btn.onClick.AddListener(() =>
                 {
-                    itemPanel.gameObject.SetActive(false);
+                    if (itemPanel != null) itemPanel.SetActive(false);
                     OnUseItemById(capturedItemId);
                 });
                 row.obj.SetActive(true);
                 idx++;
             }
             for (int i = idx; i < MaxItemRows; i++)
-                itemRows[i].obj.SetActive(false);
+            {
+                if (itemRows[i].obj != null) itemRows[i].obj.SetActive(false);
+            }
         }
 
         private void OnUseItemById(int itemId)
@@ -603,14 +645,18 @@ namespace Game.UI
         {
             isAutoBattle = true;
             btnAutoLabel.text = "停止";
-            StartCoroutine(AutoBattleCoroutine());
+            autoBattleCoroutine = StartCoroutine(AutoBattleCoroutine());
         }
 
         private void StopAutoBattle()
         {
             if (!isAutoBattle) return;
             isAutoBattle = false;
-            StopCoroutine(AutoBattleCoroutine());
+            if (autoBattleCoroutine != null)
+            {
+                StopCoroutine(autoBattleCoroutine);
+                autoBattleCoroutine = null;
+            }
             btnAutoLabel.text = "Auto";
         }
 
@@ -637,6 +683,7 @@ namespace Game.UI
             }
 
             isAutoBattle = false;
+            autoBattleCoroutine = null;
             btnAutoLabel.text = "Auto";
         }
     }
