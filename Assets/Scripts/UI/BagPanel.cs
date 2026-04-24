@@ -123,7 +123,8 @@ namespace Game.UI
                     ItemType.Weapon => "武器", ItemType.Armor => "防具",
                     ItemType.Accessory => "饰品", ItemType.Consumable => "消耗品", _ => ""
                 };
-                row.nameText.text = $"[{typeName}] {item.name} x{kv.Value}  {statStr}";
+                string reqStr = item.reqLevel > 0 ? $"  [需Lv.{item.reqLevel}]" : "";
+                row.nameText.text = $"[{typeName}] {item.name} x{kv.Value}  {statStr}{reqStr}";
 
                 int capturedId = kv.Key;
                 bool isEquipType = item.type == ItemType.Weapon || item.type == ItemType.Armor || item.type == ItemType.Accessory;
@@ -133,11 +134,12 @@ namespace Game.UI
                     bool isEquipped = (item.type == ItemType.Weapon && player.weaponId == capturedId)
                         || (item.type == ItemType.Armor && player.armorId == capturedId)
                         || (item.type == ItemType.Accessory && player.accessoryId == capturedId);
+                    bool levelOk = player.level >= item.reqLevel;
 
                     row.actionBtn.gameObject.SetActive(true);
-                    row.actionBtn.interactable = !isEquipped;
-                    row.actionBtnLabel.text = isEquipped ? "已装备" : "装备";
-                    row.actionBtnLabel.color = isEquipped ? UIBuilder.Green : UIBuilder.Gold;
+                    row.actionBtn.interactable = !isEquipped && levelOk;
+                    row.actionBtnLabel.text = isEquipped ? "已装备" : (levelOk ? "装备" : $"需Lv.{item.reqLevel}");
+                    row.actionBtnLabel.color = isEquipped ? UIBuilder.Green : (levelOk ? UIBuilder.Gold : UIBuilder.TextDim);
                     row.actionBtn.image.color = isEquipped
                         ? new Color(0.08f, 0.2f, 0.1f, 0.5f)
                         : UIBuilder.ButtonNormal;
@@ -191,6 +193,13 @@ namespace Game.UI
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
+
+            // 等级限制检查
+            if (player.level < item.reqLevel)
+            {
+                Debug.Log($"[背包] 等级不足，需要 {item.reqLevel} 级");
+                return;
+            }
 
             switch (item.type)
             {

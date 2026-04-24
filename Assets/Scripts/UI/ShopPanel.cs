@@ -145,10 +145,12 @@ namespace Game.UI
                 if (item.restoreHp > 0) statStr += $" 恢复HP {item.restoreHp}";
                 if (item.restoreMp > 0) statStr += $" 恢复MP {item.restoreMp}";
 
-                row.nameText.text = $"{item.name}  {statStr}";
+                string reqStr = item.reqLevel > 0 ? $"  [需Lv.{item.reqLevel}]" : "";
+                row.nameText.text = $"{item.name}  {statStr}{reqStr}";
 
                 // 购买按钮
-                bool canBuy = player.gold >= item.price && player.bagItems.Count < player.maxBagSize;
+                bool levelOk = item.reqLevel <= 0 || player.level >= item.reqLevel;
+                bool canBuy = levelOk && player.gold >= item.price && player.bagItems.Count < player.maxBagSize;
 
                 row.actionBtn.gameObject.SetActive(true);
                 row.actionBtn.interactable = canBuy;
@@ -177,6 +179,8 @@ namespace Game.UI
         {
             Debug.Log($"[商店] 购买物品 id={itemId} 价格={price}");
             var player = GameManager.Instance.Player;
+            var item = ConfigManager.Instance.GetItem(itemId);
+            if (item != null && player.level < item.reqLevel) return; // 等级限制
             if (player.gold < price || player.bagItems.Count >= player.maxBagSize) return;
 
             player.gold -= price;
