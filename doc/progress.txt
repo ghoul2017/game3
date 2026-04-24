@@ -49,3 +49,7 @@
 2026-04-24 F121 COMPLETED - 地牢通关条件：击败10层Boss后胜利+无尽模式
 2026-04-24 F122 COMPLETED - 返回城镇重置精英房
 2026-04-24 F123 COMPLETED - 装备等级限制：reqLevel检查+UI显示
+2026-04-24 F124 COMPLETED - 修复BattlePanel自动战斗StopCoroutine bug：存储Coroutine引用
+2026-04-24 F125 COMPLETED - 所有面板BindReferences添加null安全检查
+2026-04-24 F126 COMPLETED - 删除过时预制体，运行时回退CreateVisuals生成正确UI
+2026-04-24 F127 COMPLETED - BattlePanel OnHide停止自动战斗协程
