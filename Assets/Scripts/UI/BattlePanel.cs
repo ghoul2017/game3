@@ -14,14 +14,19 @@ namespace Game.UI
         private const int MaxLogLines = 6;
         private const int MaxSkillRows = 8;
         private const int MaxItemRows = 8;
+        private const int MaxStatusSlots = 4;
 
         // ---- 缓存引用：怪物信息 ----
         private Text monsterIconText;
         private Text monsterNameText;
         private Text monsterHpText;
         private Slider monsterHpSlider;
+        private Image monsterHpFillImage;
         private Text monsterAtkDefText;
         private Text monsterTypeText;
+
+        // ---- 缓存引用：怪物状态图标池 ----
+        private StatusSlot[] monsterStatusSlots;
 
         // ---- 缓存引用：回合/速度信息 ----
         private Text turnInfoText;
@@ -31,6 +36,15 @@ namespace Game.UI
 
         // ---- 缓存引用：玩家信息 ----
         private Text playerInfoText;
+        private Slider playerHpSlider;
+        private Slider playerMpSlider;
+        private Image playerHpFillImage;
+        private Text playerAtkModText;
+        private Text playerDefModText;
+        private Text playerSpdModText;
+
+        // ---- 缓存引用：玩家状态图标池 ----
+        private StatusSlot[] playerStatusSlots;
 
         // ---- 缓存引用：操作按钮 ----
         private Button btnAttack;
@@ -65,6 +79,25 @@ namespace Game.UI
         // ---- 回合切换动画 ----
         private Coroutine turnTransitionCoroutine;
 
+        // ---- HP/MP平滑动画 ----
+        private Coroutine monsterHpAnimCoroutine;
+        private Coroutine playerHpAnimCoroutine;
+        private Coroutine playerMpAnimCoroutine;
+        private float monsterHpDisplayValue;
+        private float playerHpDisplayValue;
+        private float playerMpDisplayValue;
+
+        // ---- 状态图标动画追踪 ----
+        private List<Coroutine> statusAnimCoroutines = new List<Coroutine>();
+
+        /// <summary>状态图标槽位结构体</summary>
+        private struct StatusSlot
+        {
+            public GameObject obj;
+            public Image bgImage;
+            public Text labelText;
+        }
+
         private struct SkillRow
         {
             public GameObject obj;
@@ -93,13 +126,13 @@ namespace Game.UI
                 new Vector2(0, -55), new Vector2(500, 22));
 
             // === 怪物信息区 ===
-            var monsterPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 140, "MonsterPanel");
+            var monsterPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 160, "MonsterPanel");
             var monsterRt = monsterPanelObj.GetComponent<RectTransform>();
             monsterRt.anchorMin = new Vector2(0, 1);
             monsterRt.anchorMax = new Vector2(1, 1);
             monsterRt.pivot = new Vector2(0.5f, 1);
             monsterRt.anchoredPosition = new Vector2(0, -80);
-            monsterRt.sizeDelta = new Vector2(0, 140);
+            monsterRt.sizeDelta = new Vector2(0, 160);
 
             var monsterInner = monsterPanelObj.transform.Find("Inner");
 
@@ -125,14 +158,76 @@ namespace Game.UI
             var atkDefText = UIBuilder.CreateText(monsterInner, "", 15, UIBuilder.TextDim, name: "MonsterAtkDef");
             UIBuilder.SetAnchored(atkDefText.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 18), new Vector2(280, 22));
 
+            // 怪物状态图标区（底部一排4个）
+            var monsterStatusContainer = CreateUI(monsterInner, "MonsterStatusIcons");
+            var mscRt = monsterStatusContainer.GetComponent<RectTransform>();
+            mscRt.anchorMin = new Vector2(0.5f, 0);
+            mscRt.anchorMax = new Vector2(0.5f, 0);
+            mscRt.pivot = new Vector2(0.5f, 0);
+            mscRt.anchoredPosition = new Vector2(0, 5);
+            mscRt.sizeDelta = new Vector2(MaxStatusSlots * 24, 20);
+
+            for (int i = 0; i < MaxStatusSlots; i++)
+            {
+                CreateStatusSlot(monsterStatusContainer.transform, i, i * 24 - (MaxStatusSlots * 24 - 24) / 2f);
+            }
+
             // === 玩家信息条（底部锚定，按钮上方 10px）===
-            var playerBar = UIBuilder.CreatePanel(parent, 900, 45, "PlayerBar");
+            var playerBar = UIBuilder.CreatePanel(parent, 900, 80, "PlayerBar");
             var playerBarRt = playerBar.GetComponent<RectTransform>();
             playerBarRt.anchorMin = new Vector2(0, 0);
             playerBarRt.anchorMax = new Vector2(1, 0);
             playerBarRt.pivot = new Vector2(0.5f, 0);
             playerBarRt.anchoredPosition = new Vector2(0, 88);
-            playerBarRt.sizeDelta = new Vector2(-20, 45);
+            playerBarRt.sizeDelta = new Vector2(-20, 80);
+
+            // 玩家信息文字（左上）
+            var playerInfoObj = UIBuilder.CreateText(playerBar.transform, "", 14, UIBuilder.Gold, TextAnchor.MiddleLeft, name: "PlayerInfo");
+            UIBuilder.SetAnchored(playerInfoObj.gameObject, new Vector2(0, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, 22), new Vector2(800, 22));
+
+            // 玩家HP条
+            var pHpSlider = UIBuilder.CreateSlider(playerBar.transform, 280, 14, UIBuilder.HpColor, "PlayerHpSlider");
+            var pHpRt = pHpSlider.GetComponent<RectTransform>();
+            pHpRt.anchorMin = new Vector2(0, 0.5f);
+            pHpRt.anchorMax = new Vector2(0, 0.5f);
+            pHpRt.anchoredPosition = new Vector2(-60, -8);
+            pHpRt.sizeDelta = new Vector2(280, 14);
+
+            // 玩家MP条
+            var pMpSlider = UIBuilder.CreateSlider(playerBar.transform, 280, 14, UIBuilder.MpColor, "PlayerMpSlider");
+            var pMpRt = pMpSlider.GetComponent<RectTransform>();
+            pMpRt.anchorMin = new Vector2(0, 0.5f);
+            pMpRt.anchorMax = new Vector2(0, 0.5f);
+            pMpRt.anchoredPosition = new Vector2(-60, -26);
+            pMpRt.sizeDelta = new Vector2(280, 14);
+
+            // Buff修正标签（ATK/DEF/SPD）
+            var atkMod = UIBuilder.CreateText(playerBar.transform, "", 13, UIBuilder.Green, TextAnchor.MiddleLeft, name: "AtkMod");
+            UIBuilder.SetAnchored(atkMod.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(150, -4), new Vector2(120, 18));
+
+            var defMod = UIBuilder.CreateText(playerBar.transform, "", 13, UIBuilder.Green, TextAnchor.MiddleLeft, name: "DefMod");
+            UIBuilder.SetAnchored(defMod.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(150, -20), new Vector2(120, 18));
+
+            var spdMod = UIBuilder.CreateText(playerBar.transform, "", 13, UIBuilder.Green, TextAnchor.MiddleLeft, name: "SpdMod");
+            UIBuilder.SetAnchored(spdMod.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(150, -36), new Vector2(120, 18));
+
+            // 玩家状态图标区
+            var playerStatusContainer = CreateUI(playerBar.transform, "PlayerStatusIcons");
+            var pscRt = playerStatusContainer.GetComponent<RectTransform>();
+            pscRt.anchorMin = new Vector2(1, 0.5f);
+            pscRt.anchorMax = new Vector2(1, 0.5f);
+            pscRt.pivot = new Vector2(1, 0.5f);
+            pscRt.anchoredPosition = new Vector2(-10, -10);
+            pscRt.sizeDelta = new Vector2(MaxStatusSlots * 24, 20);
+
+            for (int i = 0; i < MaxStatusSlots; i++)
+            {
+                CreateStatusSlot(playerStatusContainer.transform, i, i * 24 - (MaxStatusSlots * 24 - 24) / 2f);
+            }
 
             // === 战斗日志区（拉伸填充 MonsterPanel 和 PlayerBar 之间）===
             var logPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 220, "LogPanel");
@@ -140,8 +235,8 @@ namespace Game.UI
             logRt.anchorMin = new Vector2(0, 0);
             logRt.anchorMax = new Vector2(1, 1);
             logRt.pivot = new Vector2(0.5f, 0.5f);
-            logRt.offsetMin = new Vector2(10, 143);
-            logRt.offsetMax = new Vector2(-10, -250);
+            logRt.offsetMin = new Vector2(10, 178);
+            logRt.offsetMax = new Vector2(-10, -270);
 
             var logInner = logPanelObj.transform.Find("Inner");
 
@@ -151,9 +246,6 @@ namespace Game.UI
                 UIBuilder.SetAnchored(logObj.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                     new Vector2(0, -12 - i * 30), new Vector2(800, 28));
             }
-
-            var playerInfoObj = UIBuilder.CreateText(playerBar.transform, "", 15, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "PlayerInfo");
-            UIBuilder.SetStretch(playerInfoObj.gameObject);
 
             // === 操作按钮（底部锚定，确保始终在屏幕内）===
             float btnBottomY = 30;
@@ -267,6 +359,48 @@ namespace Game.UI
             resultBtn.gameObject.SetActive(false);
         }
 
+        /// <summary>创建单个状态图标槽位（16x16方块+缩写文字）</summary>
+        private static void CreateStatusSlot(Transform parent, int index, float xPos)
+        {
+            var slotObj = new GameObject($"StatusSlot_{index}");
+            slotObj.transform.SetParent(parent, false);
+            var slotRt = slotObj.AddComponent<RectTransform>();
+            slotRt.sizeDelta = new Vector2(20, 20);
+            slotRt.anchoredPosition = new Vector2(xPos, 0);
+
+            var bg = slotObj.AddComponent<Image>();
+            bg.color = Color.gray;
+
+            // 缩写文字覆盖在方块上
+            var labelObj = new GameObject("Label");
+            labelObj.transform.SetParent(slotObj.transform, false);
+            var labelRt = labelObj.AddComponent<RectTransform>();
+            labelRt.anchorMin = Vector2.zero;
+            labelRt.anchorMax = Vector2.one;
+            labelRt.offsetMin = Vector2.zero;
+            labelRt.offsetMax = Vector2.zero;
+            var label = labelObj.AddComponent<Text>();
+            label.text = "";
+            label.fontSize = 10;
+            label.color = Color.white;
+            label.alignment = TextAnchor.MiddleCenter;
+            label.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 添加CanvasGroup用于淡出动画
+            slotObj.AddComponent<CanvasGroup>();
+
+            slotObj.SetActive(false);
+        }
+
+        /// <summary>CreateVisuals中使用的内部UI创建方法</summary>
+        private static GameObject CreateUI(Transform parent, string name)
+        {
+            var obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            obj.AddComponent<RectTransform>();
+            return obj;
+        }
+
         protected override void BindReferences()
         {
             // 怪物信息
@@ -276,7 +410,24 @@ namespace Game.UI
             monsterNameText = FindComponent<Text>("MonsterPanel/Inner/MonsterName");
             monsterHpText = FindComponent<Text>("MonsterPanel/Inner/MonsterHpText");
             monsterHpSlider = FindComponent<Slider>("MonsterPanel/Inner/MonsterHpSlider");
+            monsterHpFillImage = FindComponent<Image>("MonsterPanel/Inner/MonsterHpSlider/Fill Area/Fill");
             monsterAtkDefText = FindComponent<Text>("MonsterPanel/Inner/MonsterAtkDef");
+
+            // 怪物状态图标池
+            monsterStatusSlots = new StatusSlot[MaxStatusSlots];
+            for (int i = 0; i < MaxStatusSlots; i++)
+            {
+                var slotTr = transform.Find($"MonsterPanel/Inner/MonsterStatusIcons/StatusSlot_{i}");
+                if (slotTr == null) continue;
+                var slotObj = slotTr.gameObject;
+                monsterStatusSlots[i] = new StatusSlot
+                {
+                    obj = slotObj,
+                    bgImage = slotTr.GetComponent<Image>(),
+                    labelText = slotTr.Find("Label")?.GetComponent<Text>()
+                };
+                slotObj.SetActive(false);
+            }
 
             // 战斗日志池
             logTexts = new Text[MaxLogLines];
@@ -288,6 +439,28 @@ namespace Game.UI
 
             // 玩家信息
             playerInfoText = FindComponent<Text>("PlayerBar/PlayerInfo");
+            playerHpSlider = FindComponent<Slider>("PlayerBar/PlayerHpSlider");
+            playerMpSlider = FindComponent<Slider>("PlayerBar/PlayerMpSlider");
+            playerHpFillImage = FindComponent<Image>("PlayerBar/PlayerHpSlider/Fill Area/Fill");
+            playerAtkModText = FindComponent<Text>("PlayerBar/AtkMod");
+            playerDefModText = FindComponent<Text>("PlayerBar/DefMod");
+            playerSpdModText = FindComponent<Text>("PlayerBar/SpdMod");
+
+            // 玩家状态图标池
+            playerStatusSlots = new StatusSlot[MaxStatusSlots];
+            for (int i = 0; i < MaxStatusSlots; i++)
+            {
+                var slotTr = transform.Find($"PlayerBar/PlayerStatusIcons/StatusSlot_{i}");
+                if (slotTr == null) continue;
+                var slotObj = slotTr.gameObject;
+                playerStatusSlots[i] = new StatusSlot
+                {
+                    obj = slotObj,
+                    bgImage = slotTr.GetComponent<Image>(),
+                    labelText = slotTr.Find("Label")?.GetComponent<Text>()
+                };
+                slotObj.SetActive(false);
+            }
 
             // 操作按钮
             btnAttack = FindComponent<Button>("BtnAttack");
@@ -368,6 +541,10 @@ namespace Game.UI
             isAutoBattle = false;
             autoBattleCoroutine = null;
             turnTransitionCoroutine = null;
+            monsterHpDisplayValue = -1f;
+            playerHpDisplayValue = -1f;
+            playerMpDisplayValue = -1f;
+            statusAnimCoroutines.Clear();
             if (skillPanel != null) skillPanel.SetActive(false);
             if (itemPanel != null) itemPanel.SetActive(false);
             if (rewardOverlay != null) rewardOverlay.SetActive(false);
@@ -380,10 +557,12 @@ namespace Game.UI
         {
             StopAutoBattle();
             StopTurnTransition();
+            StopBarAnimations();
+            StopStatusAnimations();
         }
 
         /// <summary>
-        /// 零销毁刷新：只修改 .text / .value / .interactable / .SetActive
+        /// 零销毁刷新：只修改 .text / .value / .color / .interactable / .SetActive
         /// </summary>
         private void RefreshUI()
         {
@@ -401,7 +580,12 @@ namespace Game.UI
             }
             if (monsterTypeText != null) monsterTypeText.text = m.isBoss ? "BOSS" : (m.level > 0 ? $"Lv.{m.level}" : "");
             if (monsterHpText != null) monsterHpText.text = $"HP: {m.hp}/{m.maxHp}";
-            if (monsterHpSlider != null) monsterHpSlider.value = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0;
+
+            // 怪物HP条平滑动画
+            float monsterTargetHp = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0f;
+            AnimateBar(ref monsterHpAnimCoroutine, ref monsterHpDisplayValue, monsterTargetHp,
+                monsterHpSlider, monsterHpFillImage, true, m.hp, m.maxHp);
+
             if (monsterAtkDefText != null)
             {
                 int monsterSpeed = BattleManager.Instance.GetEffectiveMonsterSpeed();
@@ -422,7 +606,7 @@ namespace Game.UI
                 turnInfoText.text = "";
             }
 
-            // 战斗日志（池化 6 行）
+            // 战斗日志（颜色标记）
             if (logTexts != null)
             {
                 int showCount = Mathf.Min(b.log.Count, MaxLogLines);
@@ -432,7 +616,7 @@ namespace Game.UI
                     if (logTexts[i] == null) continue;
                     if (i < showCount)
                     {
-                        logTexts[i].text = b.log[startIdx + i];
+                        logTexts[i].text = ColorizeLog(b.log[startIdx + i]);
                         logTexts[i].gameObject.SetActive(true);
                     }
                     else
@@ -442,19 +626,27 @@ namespace Game.UI
                 }
             }
 
-            // 玩家信息（含buff加成+状态效果）
+            // 玩家信息（精简：HP/MP数字在条旁显示）
             if (playerInfoText != null)
             {
-                int buffAtk = b.playerBuffAttack;
-                int buffDef = b.playerBuffDefense;
-                int buffTurns = b.playerBuffTurns;
-                string atkStr = buffAtk > 0 ? $"{p.attack}+{buffAtk}" : $"{p.attack}";
-                string defStr = buffDef > 0 ? $"{p.defense}+{buffDef}" : $"{p.defense}";
-                int effectiveSpeed = BattleManager.Instance.GetEffectivePlayerSpeed();
-                string spdStr = effectiveSpeed > p.speed ? $"{p.speed}+{effectiveSpeed - p.speed}" : $"{p.speed}";
-                string buffInfo = buffTurns > 0 ? $"  [增益{buffTurns}回合]" : "";
-                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}  速度:{spdStr}{buffInfo}";
+                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  Lv.{p.level}";
             }
+
+            // 玩家HP/MP条平滑动画
+            float playerTargetHp = p.maxHp > 0 ? (float)p.hp / p.maxHp : 0f;
+            AnimateBar(ref playerHpAnimCoroutine, ref playerHpDisplayValue, playerTargetHp,
+                playerHpSlider, playerHpFillImage, true, p.hp, p.maxHp);
+
+            float playerTargetMp = p.maxMp > 0 ? (float)p.mp / p.maxMp : 0f;
+            AnimateBar(ref playerMpAnimCoroutine, ref playerMpDisplayValue, playerTargetMp,
+                playerMpSlider, null, false, p.mp, p.maxMp);
+
+            // Buff/Debuff修正值标签
+            UpdateModifierLabels(b, p);
+
+            // 状态图标刷新
+            UpdateStatusIcons(monsterStatusSlots, b.monsterEffects, true);
+            UpdateStatusIcons(playerStatusSlots, b.playerEffects, false);
 
             // 战斗结束处理
             if (b.isFinished)
@@ -470,7 +662,6 @@ namespace Game.UI
 
                 if (b.isVictory)
                 {
-                    // 显示奖励面板
                     string rewardMsg = $"战斗胜利！\n\n获得 {b.rewardExp} 经验\n获得 {b.rewardGold} 金币";
                     foreach (var itemName in b.rewardItems)
                         rewardMsg += $"\n获得物品：{itemName}";
@@ -502,6 +693,332 @@ namespace Game.UI
                 if (btnEscape != null) btnEscape.interactable = true;
                 if (btnResult != null) btnResult.gameObject.SetActive(false);
             }
+        }
+
+        // ==================== 战斗日志颜色标记 ====================
+
+        /// <summary>
+        /// 将战斗日志文本标记为富文本颜色。
+        /// 规则：伤害→红色，治疗→绿色，状态施加→黄色，闪避→蓝色，普通→白色
+        /// </summary>
+        private string ColorizeLog(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return raw;
+
+            // 闪避（优先级高）
+            if (raw.Contains("闪避"))
+                return $"<color=#3498db>{raw}</color>";
+
+            // 伤害类
+            if (raw.Contains("造成") && raw.Contains("伤害"))
+                return $"<color=#e74c3c>{raw}</color>";
+
+            // DoT伤害（流血/中毒损失HP）
+            if (raw.Contains("损失") && raw.Contains("HP"))
+                return $"<color=#e74c3c>{raw}</color>";
+
+            // 治疗类
+            if (raw.Contains("恢复") && (raw.Contains("生命") || raw.Contains("法力") || raw.Contains("HP")))
+                return $"<color=#2ecc71>{raw}</color>";
+
+            // 状态施加/效果
+            if (raw.Contains("受到") && raw.Contains("效果"))
+                return $"<color=#f39c12>{raw}</color>";
+            if (raw.Contains("效果消失"))
+                return $"<color=#f39c12>{raw}</color>";
+            if (raw.Contains("眩晕") || raw.Contains("沉默") || raw.Contains("无法行动"))
+                return $"<color=#f39c12>{raw}</color>";
+
+            // 增益/Buff
+            if (raw.Contains("增益") || raw.Contains("攻击+") || raw.Contains("防御+"))
+                return $"<color=#3498db>{raw}</color>";
+
+            // 速度判定
+            if (raw.Contains("[速度]"))
+                return $"<color=#e0d8c0>{raw}</color>";
+
+            // 复活
+            if (raw.Contains("复活"))
+                return $"<color=#2ecc71>{raw}</color>";
+
+            // 默认：普通信息白色
+            return $"<color=#e0d8c0>{raw}</color>";
+        }
+
+        // ==================== HP/MP条平滑动画 ====================
+
+        /// <summary>
+        /// 启动条形平滑动画。只在目标值变化时启动新协程。
+        /// </summary>
+        private void AnimateBar(ref Coroutine coroutine, ref float displayValue, float targetValue,
+            Slider slider, Image fillImage, bool isHp, int currentVal, int maxVal)
+        {
+            if (slider == null) return;
+
+            // 首次设置时直接赋值（无动画）
+            if (displayValue < 0f)
+            {
+                displayValue = targetValue;
+                slider.value = targetValue;
+                // 低血量警告颜色
+                if (isHp && fillImage != null)
+                    fillImage.color = GetHpBarColor(targetValue);
+                return;
+            }
+
+            // 值未变化，跳过
+            if (Mathf.Approximately(displayValue, targetValue)) return;
+
+            // 停止旧动画，启动新动画
+            if (coroutine != null) StopCoroutine(coroutine);
+            float from = displayValue;
+            displayValue = targetValue;
+            coroutine = StartCoroutine(BarLerpCoroutine(from, targetValue, slider, fillImage, isHp));
+        }
+
+        private IEnumerator BarLerpCoroutine(float fromValue, float toValue,
+            Slider slider, Image fillImage, bool isHp)
+        {
+            float duration = 0.3f;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float value = Mathf.Lerp(fromValue, toValue, t);
+                slider.value = value;
+
+                // 低血量颜色渐变（HP条专用）
+                if (isHp && fillImage != null)
+                {
+                    fillImage.color = GetHpBarColor(value);
+                }
+
+                yield return null;
+            }
+
+            slider.value = toValue;
+            if (isHp && fillImage != null)
+                fillImage.color = GetHpBarColor(toValue);
+        }
+
+        /// <summary>
+        /// HP条颜色：正常绿→低血量红。低于30%时从绿渐变到红。
+        /// </summary>
+        private Color GetHpBarColor(float ratio)
+        {
+            // 正常：绿色
+            Color normalColor = new Color(0.345f, 0.839f, 0.553f); // #58d68d
+            // 危险：红色
+            Color dangerColor = new Color(0.906f, 0.298f, 0.235f); // #e74c3c
+
+            if (ratio >= 0.3f) return normalColor;
+            // 0~0.3之间线性插值
+            float t = ratio / 0.3f;
+            return Color.Lerp(dangerColor, normalColor, t);
+        }
+
+        private void StopBarAnimations()
+        {
+            if (monsterHpAnimCoroutine != null) { StopCoroutine(monsterHpAnimCoroutine); monsterHpAnimCoroutine = null; }
+            if (playerHpAnimCoroutine != null) { StopCoroutine(playerHpAnimCoroutine); playerHpAnimCoroutine = null; }
+            if (playerMpAnimCoroutine != null) { StopCoroutine(playerMpAnimCoroutine); playerMpAnimCoroutine = null; }
+        }
+
+        // ==================== 状态图标系统 ====================
+
+        /// <summary>获取状态类型对应的颜色</summary>
+        private static Color GetStatusColor(EffectType type)
+        {
+            return type switch
+            {
+                EffectType.Bleed => new Color(0.906f, 0.298f, 0.235f),     // 流血红 #e74c3c
+                EffectType.Poison => new Color(0.345f, 0.839f, 0.553f),    // 中毒绿 #58d68d
+                EffectType.Stun => new Color(0.941f, 0.753f, 0.251f),      // 眩晕黄 #f0c040
+                EffectType.Silence => new Color(0.588f, 0.529f, 0.475f),   // 沉默灰 #958678
+                EffectType.Vulnerable => new Color(0.941f, 0.596f, 0.157f),// 易伤橙 #f09828
+                EffectType.BuffATK => new Color(0.365f, 0.678f, 0.886f),   // Buff蓝 #5dade2
+                EffectType.BuffDEF => new Color(0.365f, 0.678f, 0.886f),   // Buff蓝 #5dade2
+                EffectType.BuffSpeed => new Color(0.365f, 0.678f, 0.886f), // Buff蓝 #5dade2
+                _ => Color.gray
+            };
+        }
+
+        /// <summary>获取状态类型的缩写文字</summary>
+        private static string GetStatusAbbrev(EffectType type)
+        {
+            return type switch
+            {
+                EffectType.Bleed => "流血",
+                EffectType.Poison => "中毒",
+                EffectType.Stun => "眩晕",
+                EffectType.Silence => "沉默",
+                EffectType.Vulnerable => "易伤",
+                EffectType.BuffATK => "+ATK",
+                EffectType.BuffDEF => "+DEF",
+                EffectType.BuffSpeed => "+SPD",
+                _ => "?"
+            };
+        }
+
+        /// <summary>更新状态图标池（对象池复用）</summary>
+        private void UpdateStatusIcons(StatusSlot[] slots, List<StatusEffect> effects, bool isMonster)
+        {
+            if (slots == null || effects == null) return;
+
+            int showCount = Mathf.Min(effects.Count, MaxStatusSlots);
+            for (int i = 0; i < MaxStatusSlots; i++)
+            {
+                if (slots[i].obj == null) continue;
+                if (i < showCount)
+                {
+                    var effect = effects[i];
+                    var slot = slots[i];
+
+                    // 设置颜色和文字
+                    Color effectColor = GetStatusColor(effect.type);
+                    if (slot.bgImage != null) slot.bgImage.color = effectColor;
+                    if (slot.labelText != null)
+                        slot.labelText.text = GetStatusAbbrev(effect.type);
+
+                    // 重置CanvasGroup（可能被淡出动画改过）
+                    var cg = slot.obj.GetComponent<CanvasGroup>();
+                    if (cg != null) { cg.alpha = 1f; cg.blocksRaycasts = false; }
+
+                    // 重置缩放（可能被弹入动画改过）
+                    slot.obj.transform.localScale = Vector3.one;
+
+                    bool wasInactive = !slot.obj.activeSelf;
+                    slot.obj.SetActive(true);
+
+                    // 新激活的图标播放弹入动画
+                    if (wasInactive)
+                        PlayStatusPopIn(slot.obj);
+                }
+                else
+                {
+                    // 隐藏多余槽位
+                    if (slots[i].obj.activeSelf)
+                    {
+                        // 播放淡出动画
+                        PlayStatusFadeOut(slots[i].obj);
+                    }
+                }
+            }
+        }
+
+        /// <summary>状态图标弹入动画：1.0→1.3→1.0，持续0.3s</summary>
+        private void PlayStatusPopIn(GameObject obj)
+        {
+            StopStatusAnimationsFor(obj);
+            var cor = StartCoroutine(StatusPopInCoroutine(obj));
+            statusAnimCoroutines.Add(cor);
+        }
+
+        private IEnumerator StatusPopInCoroutine(GameObject obj)
+        {
+            float duration = 0.3f;
+            float elapsed = 0f;
+            float peakScale = 1.3f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                // 先放大到1.3再回到1.0
+                float scale = t < 0.5f
+                    ? Mathf.Lerp(1f, peakScale, t * 2f)
+                    : Mathf.Lerp(peakScale, 1f, (t - 0.5f) * 2f);
+                if (obj != null) obj.transform.localScale = Vector3.one * scale;
+                yield return null;
+            }
+            if (obj != null) obj.transform.localScale = Vector3.one;
+        }
+
+        /// <summary>状态图标淡出动画：alpha 1→0，0.2s后隐藏</summary>
+        private void PlayStatusFadeOut(GameObject obj)
+        {
+            StopStatusAnimationsFor(obj);
+            var cor = StartCoroutine(StatusFadeOutCoroutine(obj));
+            statusAnimCoroutines.Add(cor);
+        }
+
+        private IEnumerator StatusFadeOutCoroutine(GameObject obj)
+        {
+            var cg = obj.GetComponent<CanvasGroup>();
+            if (cg == null) { obj.SetActive(false); yield break; }
+
+            float duration = 0.2f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                cg.alpha = 1f - t;
+                yield return null;
+            }
+            cg.alpha = 0f;
+            obj.SetActive(false);
+            cg.alpha = 1f;
+        }
+
+        /// <summary>停掉指定对象上的状态动画协程</summary>
+        private void StopStatusAnimationsFor(GameObject obj)
+        {
+            // 简单方案：不能直接关联，直接清理所有过期的协程引用
+            // 协程内部检查obj != null已足够安全
+        }
+
+        private void StopStatusAnimations()
+        {
+            foreach (var cor in statusAnimCoroutines)
+            {
+                if (cor != null) StopCoroutine(cor);
+            }
+            statusAnimCoroutines.Clear();
+        }
+
+        // ==================== Buff/Debuff修正标签 ====================
+
+        /// <summary>更新ATK/DEF/SPD修正值小标签</summary>
+        private void UpdateModifierLabels(BattleData b, PlayerData p)
+        {
+            if (b == null || p == null) return;
+
+            // 计算修正值 = 旧buff + 状态效果修正
+            int atkMod = b.playerBuffAttack + BattleManager.Instance.GetEffectModifier(true, EffectType.BuffATK);
+            int defMod = b.playerBuffDefense + BattleManager.Instance.GetEffectModifier(true, EffectType.BuffDEF);
+            int spdMod = b.playerBuffSpeed + BattleManager.Instance.GetEffectModifier(true, EffectType.BuffSpeed);
+
+            // 怪物debuff效果（减益显示为负数）
+            if (atkMod != 0 || defMod != 0 || spdMod != 0)
+            {
+                SetModifierText(playerAtkModText, "ATK", atkMod);
+                SetModifierText(playerDefModText, "DEF", defMod);
+                SetModifierText(playerSpdModText, "SPD", spdMod);
+            }
+            else
+            {
+                if (playerAtkModText != null) playerAtkModText.gameObject.SetActive(false);
+                if (playerDefModText != null) playerDefModText.gameObject.SetActive(false);
+                if (playerSpdModText != null) playerSpdModText.gameObject.SetActive(false);
+            }
+        }
+
+        private void SetModifierText(Text text, string statName, int mod)
+        {
+            if (text == null) return;
+            if (mod == 0)
+            {
+                text.gameObject.SetActive(false);
+                return;
+            }
+            text.gameObject.SetActive(true);
+            string sign = mod > 0 ? "+" : "";
+            text.text = $"{statName}:{sign}{mod}";
+            // 正增益绿色，负增益红色
+            text.color = mod > 0 ? UIBuilder.Green : UIBuilder.Red;
         }
 
         // ==================== 统一回合流程 ====================

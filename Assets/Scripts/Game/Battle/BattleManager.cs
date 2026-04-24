@@ -906,7 +906,7 @@ namespace Game.Battle
         }
 
         /// <summary>汇总指定类型Buff修正值</summary>
-        private int GetEffectModifier(bool isPlayer, EffectType type)
+        public int GetEffectModifier(bool isPlayer, EffectType type)
         {
             var effects = isPlayer ? CurrentBattle.playerEffects : CurrentBattle.monsterEffects;
             int total = 0;
