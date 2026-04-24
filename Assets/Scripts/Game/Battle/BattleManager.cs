@@ -13,6 +13,58 @@ namespace Game.Battle
 
         public BattleData CurrentBattle { get; private set; }
 
+        // 被动技能：复活已使用标记
+        private bool reviveUsed;
+
+        // ---- 被动技能辅助方法 ----
+
+        private bool HasPassive(int skillId)
+        {
+            var p = GameManager.Instance.Player;
+            return p.equippedSkills.Contains(skillId);
+        }
+
+        /// <summary>狂战之怒：HP越低攻击越高，最高+50%</summary>
+        private int GetRageBonus(int baseAtk)
+        {
+            if (!HasPassive(1004)) return 0;
+            var p = GameManager.Instance.Player;
+            float hpRatio = p.maxHp > 0 ? (float)p.hp / p.maxHp : 1f;
+            // 缺失HP比例的一半作为攻击加成，最高50%
+            float bonus = (1f - hpRatio) * 0.5f;
+            return (int)(baseAtk * bonus);
+        }
+
+        /// <summary>坚守：HP低于30%时减伤30%</summary>
+        private float GetSteadfastMultiplier()
+        {
+            if (!HasPassive(3004)) return 1f;
+            var p = GameManager.Instance.Player;
+            float hpRatio = p.maxHp > 0 ? (float)p.hp / p.maxHp : 1f;
+            return hpRatio < 0.3f ? 0.7f : 1f; // 受到70%伤害
+        }
+
+        /// <summary>魔力涌动：每回合恢复10%最大法力</summary>
+        private void ApplyManaSurge()
+        {
+            if (!HasPassive(5004)) return;
+            var p = GameManager.Instance.Player;
+            int restore = Mathf.Max(1, p.maxMp / 10);
+            p.mp = Mathf.Min(p.mp + restore, p.maxMp);
+        }
+
+        /// <summary>复活：死亡时复活一次，恢复30%HP</summary>
+        private bool TryRevive()
+        {
+            if (!HasPassive(4004) || reviveUsed) return false;
+            var p = GameManager.Instance.Player;
+            reviveUsed = true;
+            int reviveHp = Mathf.Max(1, p.maxHp * 30 / 100);
+            p.hp = reviveHp;
+            CurrentBattle.log.Add($"【复活】被动技能触发！恢复 {reviveHp} 生命");
+            return true;
+        }
+
         public void StartBattle(BattleData battleData)
         {
             CurrentBattle = battleData;
@@ -25,6 +77,7 @@ namespace Game.Battle
             CurrentBattle.playerBuffTurns = 0;
             CurrentBattle.log.Clear();
             CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
+            reviveUsed = false;
         }
 
         public string PlayerAttack()
@@ -33,7 +86,11 @@ namespace Game.Battle
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
 
-            int totalAtk = p.attack + b.playerBuffAttack;
+            // 魔力涌动：每回合回蓝
+            ApplyManaSurge();
+
+            // 狂战之怒：HP越低攻击越高
+            int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
             int dmg = CalcDamage(totalAtk, b.monster.defense + b.monster.buffDefense);
             b.monster.hp -= dmg;
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
@@ -72,6 +129,9 @@ namespace Game.Battle
                 b.log.Add(errMsg);
                 return errMsg;
             }
+
+            // 魔力涌动：每回合回蓝
+            ApplyManaSurge();
 
             p.mp -= skill.mpCost;
             string msg;
@@ -114,7 +174,7 @@ namespace Game.Battle
             }
 
             // 主动攻击技能
-            int totalAtk = p.attack + b.playerBuffAttack;
+            int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
             int dmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
@@ -148,6 +208,9 @@ namespace Game.Battle
             var item = ConfigManager.Instance.GetItem(itemId);
             if (b == null || b.isFinished || item == null) return "";
 
+            // 魔力涌动：每回合回蓝
+            ApplyManaSurge();
+
             if (item.restoreHp > 0)
             {
                 int heal = Mathf.Min(item.restoreHp, p.maxHp - p.hp);
@@ -176,6 +239,7 @@ namespace Game.Battle
             var m = b.monster;
             int monsterAtk = m.attack + m.buffAttack;
             int playerDef = p.defense + b.playerBuffDefense;
+            float dmgMultiplier = GetSteadfastMultiplier(); // 坚守减伤
 
             // 怪物有技能时，根据概率使用
             if (m.skillIds.Count > 0 && Random.value < GameConstants.MONSTER_SKILL_CHANCE)
@@ -184,29 +248,41 @@ namespace Game.Battle
                 var skill = ConfigManager.Instance.GetSkill(sid);
                 if (skill != null)
                 {
-                    int dmg = CalcDamage((int)(monsterAtk * skill.power / 100f), playerDef);
+                    int rawDmg = CalcDamage((int)(monsterAtk * skill.power / 100f), playerDef);
+                    int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * dmgMultiplier));
                     p.hp -= dmg;
                     if (p.hp < 0) p.hp = 0;
                     string msg = $"{m.name} 使用 {skill.name}，对你造成 {dmg} 点伤害";
+                    if (dmgMultiplier < 1f) msg += "（坚守减伤）";
                     b.log.Add(msg);
 
                     DecayBuffs(b);
 
-                    if (p.hp <= 0) return msg + "\n" + OnDefeat();
+                    if (p.hp <= 0)
+                    {
+                        if (TryRevive()) return msg; // 复活
+                        return msg + "\n" + OnDefeat();
+                    }
                     return msg;
                 }
             }
 
             // 普通攻击
-            int normalDmg = CalcDamage(monsterAtk, playerDef);
+            int rawNormalDmg = CalcDamage(monsterAtk, playerDef);
+            int normalDmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawNormalDmg * dmgMultiplier));
             p.hp -= normalDmg;
             if (p.hp < 0) p.hp = 0;
             string normalMsg = $"{m.name} 攻击了你，造成 {normalDmg} 点伤害";
+            if (dmgMultiplier < 1f) normalMsg += "（坚守减伤）";
             b.log.Add(normalMsg);
 
             DecayBuffs(b);
 
-            if (p.hp <= 0) return normalMsg + "\n" + OnDefeat();
+            if (p.hp <= 0)
+            {
+                if (TryRevive()) return normalMsg; // 复活
+                return normalMsg + "\n" + OnDefeat();
+            }
             return normalMsg;
         }
 
@@ -241,6 +317,9 @@ namespace Game.Battle
             var b = CurrentBattle;
             var p = GameManager.Instance.Player;
             if (b == null || b.isFinished) return "";
+
+            // 魔力涌动：每回合回蓝
+            ApplyManaSurge();
 
             // 50%逃跑概率，Boss不可逃跑
             var m = b.monster;
