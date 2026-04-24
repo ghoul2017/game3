@@ -862,7 +862,6 @@ namespace Game.Data
     {
         public DungeonEventType type;
         public bool cleared;
-        public int monsterId;  // 怪物配置ID
         public Vector2Int position;
     }
 }

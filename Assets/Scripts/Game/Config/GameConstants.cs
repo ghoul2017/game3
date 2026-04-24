@@ -38,23 +38,6 @@ namespace Game.Config
         
         /// <summary>消耗品掉落概率</summary>
         public const float CONSUMABLE_DROP_CHANCE = 0.3f;
-        
-        /// <summary>事件触发概率</summary>
-        public const float EVENT_CHANCE = 0.2f;
-        
-        /// <summary>房间最小数量</summary>
-        public const int MIN_ROOMS = 5;
-        
-        /// <summary>房间最大数量</summary>
-        public const int MAX_ROOMS = 15;
-        
-        /// <summary>Boss房间位置比例</summary>
-        public const float BOSS_ROOM_POSITION = 0.8f;
-
-        // ==================== 物品系统 ====================
-        
-        /// <summary>物品掉落基础概率</summary>
-        public const float ITEM_DROP_BASE_CHANCE = 0.3f;
 
         // ==================== 宝物效果 ====================
 

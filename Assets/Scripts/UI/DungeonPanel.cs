@@ -577,8 +577,10 @@ namespace Game.UI
             {
                 PlayUIClick();
                 Debug.Log("[操作] 返回城镇");
-                GameManager.Instance.Dungeon.OnReturnTown();
-                GameManager.Instance.Player.dungeonFloor = GameManager.Instance.Dungeon.floor;
+                if (GameManager.Instance?.Dungeon != null)
+                    GameManager.Instance.Dungeon.OnReturnTown();
+                if (GameManager.Instance.Dungeon != null)
+                    GameManager.Instance.Player.dungeonFloor = GameManager.Instance.Dungeon.floor;
                 GameManager.Instance.SetState(GameState.InTown);
                 GameManager.Instance.SaveGame();
                 UIManager.Instance.ReplacePanel<TownPanel>();

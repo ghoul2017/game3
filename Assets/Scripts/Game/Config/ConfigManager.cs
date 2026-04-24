@@ -320,8 +320,8 @@ namespace Game.Config
                 // ==================== 5-9层：法术/DoT引入区 ====================
                 // 石像鬼：高防，防御AI
                 [1006] = new MonsterConfig { id = 1006, name = "石像鬼", desc = "石化守护者，坚硬如岩石的外壳使其极难被击倒", icon = "石", hp = 120, attack = 12, defense = 15, speed = 3, expReward = 40, goldReward = 10, minFloor = 4, maxFloor = 12, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 2002, chance = 0.05f } } },
-                // 暗黑法师：火球术，狂暴AI
-                [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", desc = "掌握黑暗魔法的法师，擅长火系攻击", icon = "暗", hp = 70, attack = 18, defense = 4, speed = 8, mp = 35, expReward = 45, goldReward = 10, minFloor = 5, maxFloor = 13, skillIds = { 5001 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
+                // 暗黑法师：燃烧DoT，狂暴AI
+                [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", desc = "掌握黑暗魔法的法师，擅长火系攻击", icon = "暗", hp = 70, attack = 18, defense = 4, speed = 8, mp = 35, expReward = 45, goldReward = 10, minFloor = 5, maxFloor = 13, skillIds = { 6013 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
                 // 暗影法师：沉默技能，控制AI
                 [1009] = new MonsterConfig { id = 1009, name = "暗影法师", desc = "操控暗影之力的法师，能封印敌人的技能", icon = "影", hp = 65, attack = 16, defense = 3, speed = 9, mp = 35, expReward = 50, goldReward = 12, minFloor = 5, maxFloor = 14, skillIds = { 5006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
                 // 丧尸：高血+流血，均衡AI

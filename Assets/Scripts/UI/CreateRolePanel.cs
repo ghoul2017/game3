@@ -118,7 +118,7 @@ namespace Game.UI
             placeholderRt.offsetMin = new Vector2(8, 2);
             placeholderRt.offsetMax = new Vector2(-8, -2);
             var placeholder = placeholderObj.AddComponent<Text>();
-            placeholder.text = "输入角色名";
+            placeholder.text = "输入角色名...";
             placeholder.fontSize = 18;
             placeholder.color = UIBuilder.TextDim;
             placeholder.alignment = TextAnchor.MiddleLeft;
