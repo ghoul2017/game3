@@ -86,3 +86,4 @@
 2026-04-25 F149 COMPLETED - 宝物+消耗品扩充：12宝物(6旧+6新含护盾/反击/贪婪)+11消耗品(5旧+6新含炸弹/回城卷轴)
 2026-04-25 F150 COMPLETED - 数值平衡重调：伤害公式ATK-DEF*0.6+15%波动+怪物每层+12%+经验level*120+80+金币经济校准+MP分档
 2026-04-25 F151 COMPLETED - Bug修复+死代码清理：暗黑法师skillIds修正+5常量清理+DungeonRoom.monsterId删除+placeholder更新+null检查
+2026-04-25 F152 COMPLETED - 音效集成：19种音效全面装配(战斗7/UI3/地牢5/BGM4)+CrossfadeMusic淡入淡出+SettingsPanel音量实时控制+场景BGM切换

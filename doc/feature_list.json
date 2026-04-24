@@ -307,7 +307,7 @@
     "4. 地牢音效：移动→footstep；发现新房间(迷雾揭开)→discovery；宝箱打开→treasure_open；泉水恢复→heal_water；神龛学习→magic_learn",
     "5. SettingsPanel音量滑块→SettingsManager.ApplySettings()→AudioManager.SetSoundVolume/MusicVolume()→AudioSource.volume实时更新",
     "6. 背景音乐场景切换：城镇→peaceful_theme、地牢→dark_ambient、战斗→battle_theme、Boss战→boss_theme，使用AudioManager.CrossfadeMusic(newClip, 1.0f)"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F153","category":"polish","priority":26,"desc":"视听打磨：伤害浮动数字+Boss震动+面板过渡动画+最终配色检查","steps":[
     "1. 战斗伤害浮动数字：攻击/技能命中时在目标位置生成浮动Text(伤害红色/治疗绿色/闪避蓝色'Miss')，从目标位置向上飘移+淡出(0.8s，移动30px)，使用对象池",
