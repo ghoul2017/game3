@@ -61,6 +61,9 @@ namespace Game.Config
                 SkillType.Buff => "增益",
                 SkillType.StatusAttack => "控制",
                 SkillType.Heal => "治疗",
+                SkillType.Debuff => "减益",
+                SkillType.DoT => "持续",
+                SkillType.Control => "控制",
                 _ => ""
             };
         }

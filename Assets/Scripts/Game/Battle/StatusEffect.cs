@@ -9,6 +9,7 @@ namespace Game.Battle
     {
         Bleed,      // 流血：每回合损失HP
         Poison,     // 中毒：每回合损失HP
+        Burn,       // 燃烧：每回合损失HP（基于施放者攻击力）
         Stun,       // 眩晕：跳过行动回合
         Silence,    // 沉默：无法使用技能
         Vulnerable, // 易伤：受到伤害增加
@@ -50,6 +51,7 @@ namespace Game.Battle
             {
                 EffectType.Bleed => "流血",
                 EffectType.Poison => "中毒",
+                EffectType.Burn => "燃烧",
                 EffectType.Stun => "眩晕",
                 EffectType.Silence => "沉默",
                 EffectType.Vulnerable => "易伤",

@@ -59,7 +59,10 @@ namespace Game.Config
                 case SkillTab.Buff:
                     return all.Where(s => s.type == SkillType.Buff).ToList();
                 case SkillTab.Control:
-                    return all.Where(s => s.type == SkillType.StatusAttack).ToList();
+                    return all.Where(s => s.type == SkillType.StatusAttack
+                        || s.type == SkillType.Debuff
+                        || s.type == SkillType.DoT
+                        || s.type == SkillType.Control).ToList();
                 case SkillTab.Passive:
                     return all.Where(s => s.type == SkillType.Passive).ToList();
                 case SkillTab.Learned:
@@ -204,6 +207,33 @@ namespace Game.Config
                 [5003] = new SkillConfig { id = 5003, name = "暴风雪", desc = "强力冰系范围攻击", type = SkillType.Active, profession = Profession.Mage, mpCost = 15, power = 220, level = 3, prereqSkillId = 5001, isAoE = true, learnCost = 500 },
                 [5004] = new SkillConfig { id = 5004, name = "魔力涌动", desc = "每回合恢复法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 5, prereqSkillId = 5002, learnCost = 750 },
 
+                // ==================== 通用技能（全职业可学） ====================
+                // 攻击类
+                [6001] = new SkillConfig { id = 6001, name = "烈焰斩", desc = "附带火焰的强力斩击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 15, power = 130, level = 5, learnCost = 300 },
+                [6002] = new SkillConfig { id = 6002, name = "暗影步", desc = "暗影中突袭敌人", type = SkillType.Active, profession = Profession.Ranger, mpCost = 10, power = 110, level = 3, learnCost = 200 },
+                [6003] = new SkillConfig { id = 6003, name = "龙息术", desc = "喷射灼热龙息，攻击全体敌人", type = SkillType.Active, profession = Profession.Mage, mpCost = 25, power = 150, level = 10, isAoE = true, learnCost = 600 },
+                [6004] = new SkillConfig { id = 6004, name = "连击", desc = "快速连续两次攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 12, power = 85, level = 4, isAoE = true, learnCost = 250 },
+                // 治疗类
+                [6005] = new SkillConfig { id = 6005, name = "生命涌泉", desc = "涌出生命之泉恢复体力", type = SkillType.Active, profession = Profession.Priest, mpCost = 20, power = 80, level = 6, isHeal = true, learnCost = 350 },
+                [6006] = new SkillConfig { id = 6006, name = "神圣祝福", desc = "强大的神圣治愈之力", type = SkillType.Active, profession = Profession.Priest, mpCost = 35, power = 150, level = 12, isHeal = true, learnCost = 800 },
+                // Buff类
+                [6007] = new SkillConfig { id = 6007, name = "战斗怒吼", desc = "提升攻击力20%，持续3回合", type = SkillType.Buff, profession = Profession.Warrior, mpCost = 15, power = 0, level = 5, buffId = 8, buffTurns = 3, learnCost = 300 },
+                [6008] = new SkillConfig { id = 6008, name = "铁壁防御", desc = "提升防御力25%，持续3回合", type = SkillType.Buff, profession = Profession.Knight, mpCost = 15, power = 0, level = 5, buffId = 9, buffTurns = 3, learnCost = 300 },
+                [6009] = new SkillConfig { id = 6009, name = "急速术", desc = "提升速度10点，持续3回合", type = SkillType.Buff, profession = Profession.Mage, mpCost = 20, power = 0, level = 7, buffId = 10, buffTurns = 3, learnCost = 400 },
+                // Debuff类（减益技能，不造成伤害）
+                [6010] = new SkillConfig { id = 6010, name = "弱化术", desc = "降低敌人攻击力25%，持续3回合", type = SkillType.Debuff, profession = Profession.Mage, mpCost = 15, power = 0, level = 5, debuffAttack = 25, debuffTurns = 3, learnCost = 300 },
+                [6011] = new SkillConfig { id = 6011, name = "碎甲击", desc = "击碎敌人护甲，降低防御30%", type = SkillType.Active, profession = Profession.Warrior, mpCost = 12, power = 90, level = 4, debuffDefense = 30, debuffTurns = 3, learnCost = 250 },
+                [6012] = new SkillConfig { id = 6012, name = "迟缓术", desc = "降低敌人速度8点，持续3回合", type = SkillType.Debuff, profession = Profession.Mage, mpCost = 15, power = 0, level = 5, debuffSpeed = 8, debuffTurns = 3, learnCost = 300 },
+                // DoT类（持续伤害技能）
+                [6013] = new SkillConfig { id = 6013, name = "燃烧", desc = "点燃敌人，每回合造成火焰伤害，持续3回合", type = SkillType.DoT, profession = Profession.Mage, mpCost = 18, power = 80, level = 6, statusEffect = EffectType.Burn, statusDuration = 3, statusPowerRate = 0.3f, learnCost = 350 },
+                [6014] = new SkillConfig { id = 6014, name = "剧毒云", desc = "释放剧毒云雾，每回合造成中毒伤害，持续4回合", type = SkillType.DoT, profession = Profession.Ranger, mpCost = 22, power = 70, level = 7, statusEffect = EffectType.Poison, statusDuration = 4, statusPowerRate = 0.2f, learnCost = 400 },
+                // 控制类
+                [6015] = new SkillConfig { id = 6015, name = "冰冻术", desc = "冰冻敌人2回合，并造成伤害", type = SkillType.Control, profession = Profession.Mage, mpCost = 25, power = 60, level = 8, statusEffect = EffectType.Stun, statusDuration = 2, learnCost = 500 },
+                [6016] = new SkillConfig { id = 6016, name = "恐惧术", desc = "恐惧敌人，使其沉默2回合", type = SkillType.Control, profession = Profession.Mage, mpCost = 20, power = 50, level = 7, statusEffect = EffectType.Silence, statusDuration = 2, learnCost = 400 },
+                // 被动类
+                [6017] = new SkillConfig { id = 6017, name = "法力汲取", desc = "技能造成伤害时回复伤害值10%的法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 10, learnCost = 500 },
+                [6018] = new SkillConfig { id = 6018, name = "击杀回蓝", desc = "击杀怪物时回复20点法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 8, learnCost = 400 },
+
                 // ==================== Boss专属技能（不可学习） ====================
                 [9001] = new SkillConfig { id = 9001, name = "暗影斩", desc = "暗影领主的强力攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 5, power = 180 },
                 [9002] = new SkillConfig { id = 9002, name = "暗影撕裂", desc = "撕裂目标，附加流血4回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 8, power = 100, statusEffect = EffectType.Bleed, statusDuration = 4, statusPowerRate = 0.3f },
@@ -313,7 +343,10 @@ namespace Game.Config
                 [4] = new BuffConfig { id = 4, name = "祝福强化", desc = "攻防提升20%", effectType = 2, effectValue = 20 },
                 [5] = new BuffConfig { id = 5, name = "冰甲强化", desc = "防御力提升40%", effectType = 1, effectValue = 40 },
                 [6] = new BuffConfig { id = 6, name = "加速", desc = "速度+10", effectType = 3, effectValue = 10 },
-                [7] = new BuffConfig { id = 7, name = "减速", desc = "敌人速度-10", effectType = 4, effectValue = 10 }
+                [7] = new BuffConfig { id = 7, name = "减速", desc = "敌人速度-10", effectType = 4, effectValue = 10 },
+                [8] = new BuffConfig { id = 8, name = "战斗怒吼", desc = "攻击力提升20%", effectType = 0, effectValue = 20 },
+                [9] = new BuffConfig { id = 9, name = "铁壁防御", desc = "防御力提升25%", effectType = 1, effectValue = 25 },
+                [10] = new BuffConfig { id = 10, name = "急速", desc = "速度+10", effectType = 3, effectValue = 10 }
             };
         }
     }

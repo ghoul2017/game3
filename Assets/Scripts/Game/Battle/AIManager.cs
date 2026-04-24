@@ -274,14 +274,17 @@ namespace Game.Battle
         private bool IsDebuffSkill(SkillConfig skill)
         {
             return skill.debuffAttack > 0 || skill.debuffDefense > 0 || skill.debuffSpeed > 0
-                || skill.type == SkillType.StatusAttack;
+                || skill.type == SkillType.StatusAttack
+                || skill.type == SkillType.Debuff
+                || skill.type == SkillType.DoT
+                || skill.type == SkillType.Control;
         }
 
         /// <summary>检查玩家是否已有同类debuff（避免重复施加）</summary>
         private bool IsDuplicateDebuff(SkillConfig skill, BattleData battle)
         {
-            // 状态攻击技能：检查玩家是否已有该状态效果
-            if (skill.type == SkillType.StatusAttack && skill.statusDuration > 0)
+            // 状态攻击/DoT/控制技能：检查玩家是否已有该状态效果
+            if ((skill.type == SkillType.StatusAttack || skill.type == SkillType.DoT || skill.type == SkillType.Control) && skill.statusDuration > 0)
             {
                 bool hasEffect = battle.playerEffects.Exists(e => e.type == skill.statusEffect);
                 return hasEffect;

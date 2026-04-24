@@ -24,7 +24,10 @@ namespace Game.Config
         Passive,       // 被动技能
         Buff,          // 增益技能
         StatusAttack,  // 带状态效果的攻击技能（控制类）
-        Heal           // 治疗技能
+        Heal,          // 治疗技能
+        Debuff,        // 减益技能（降攻/降防/减速）
+        DoT,           // 持续伤害技能（流血/中毒/燃烧）
+        Control        // 控制技能（眩晕/冰冻/恐惧）
     }
 
     /// <summary>

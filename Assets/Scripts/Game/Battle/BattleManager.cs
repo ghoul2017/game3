@@ -385,7 +385,39 @@ namespace Game.Battle
                 return msg;
             }
 
-            // 主动攻击技能 / 状态攻击技能
+            // 纯减益技能：不造成伤害，只施加减益效果
+            if (skill.type == SkillType.Debuff)
+            {
+                msg = $"你使用了 {skill.name}";
+                if (skill.debuffAttack > 0 || skill.debuffDefense > 0 || skill.debuffSpeed > 0)
+                {
+                    var m = b.monster;
+                    if (skill.debuffAttack > 0)
+                    {
+                        int reduce = m.attack * skill.debuffAttack / 100;
+                        m.buffAttack -= reduce;
+                        m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
+                        msg += $"，敌人攻击-{reduce}";
+                    }
+                    if (skill.debuffDefense > 0)
+                    {
+                        int reduce = m.defense * skill.debuffDefense / 100;
+                        m.buffDefense -= reduce;
+                        m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
+                        msg += $"，敌人防御-{reduce}";
+                    }
+                    if (skill.debuffSpeed > 0)
+                    {
+                        m.buffSpeed -= skill.debuffSpeed;
+                        m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
+                        msg += $"，敌人速度-{skill.debuffSpeed}";
+                    }
+                }
+                b.log.Add(msg);
+                return msg;
+            }
+
+            // 主动攻击技能 / 状态攻击技能 / DoT技能 / 控制技能
             int totalAtk = GetEffectiveATK(true);
             int skillRawDmg = CalcDamage((int)(totalAtk * skill.power / 100f), GetEffectiveDEF(false));
             float skillVuln = GetVulnerableMultiplier(false);
@@ -419,8 +451,8 @@ namespace Game.Battle
                 }
             }
 
-            // 状态攻击技能：附加状态效果
-            if (skill.type == SkillType.StatusAttack && skill.statusDuration > 0)
+            // 状态攻击/DoT/控制技能：附加状态效果
+            if ((skill.type == SkillType.StatusAttack || skill.type == SkillType.DoT || skill.type == SkillType.Control) && skill.statusDuration > 0)
             {
                 int effectValue = CalcStatusEffectValue(skill, totalAtk);
                 ApplyEffect(false, skill.statusEffect, effectValue, skill.statusDuration, skill.id);
@@ -436,6 +468,18 @@ namespace Game.Battle
                     int lifesteal = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(dmg * tc.effectValue / 100f));
                     p.hp = Mathf.Min(p.hp + lifesteal, p.maxHp);
                     msg += $"，吸血恢复 {lifesteal} 生命";
+                }
+            }
+
+            // 被动技能：法力汲取（技能造成伤害时回复伤害值10%的MP）
+            if (HasPassive(6017) && dmg > 0)
+            {
+                int mpRestore = Mathf.Max(1, dmg / 10);
+                int actualMpRestore = Mathf.Min(mpRestore, p.maxMp - p.mp);
+                if (actualMpRestore > 0)
+                {
+                    p.mp += actualMpRestore;
+                    msg += $"，汲取 {actualMpRestore} 法力";
                 }
             }
 
@@ -567,8 +611,8 @@ namespace Game.Battle
                     if (dmgMultiplier < 1f) msg += "（坚守减伤）";
                     if (decision.damageBonus > 1f) msg += "（狂暴加成）";
 
-                    // 状态攻击技能：怪物对玩家附加状态效果
-                    if (skill.type == SkillType.StatusAttack && skill.statusDuration > 0)
+                    // 状态攻击/DoT/控制技能：怪物对玩家附加状态效果
+                    if ((skill.type == SkillType.StatusAttack || skill.type == SkillType.DoT || skill.type == SkillType.Control) && skill.statusDuration > 0)
                     {
                         int effectValue = CalcStatusEffectValue(skill, monsterAtk);
                         ApplyEffect(true, skill.statusEffect, effectValue, skill.statusDuration, skill.id);
@@ -716,6 +760,17 @@ namespace Game.Battle
             b.isFinished = true;
             b.isVictory = true;
             if (b.room != null) b.room.cleared = true;
+
+            // 被动技能：击杀回蓝（击杀怪物时回复20MP）
+            if (HasPassive(6018))
+            {
+                int mpRestore = Mathf.Min(20, p.maxMp - p.mp);
+                if (mpRestore > 0)
+                {
+                    p.mp += mpRestore;
+                    b.log.Add($"【击杀回蓝】回复 {mpRestore} 法力");
+                }
+            }
 
             // 宝物加成：幸运硬币(id=5)金币+30%，经验宝石(id=6)经验+20%
             int goldReward = m.goldReward;
@@ -889,8 +944,8 @@ namespace Game.Battle
             {
                 var effect = effects[i];
 
-                // DoT效果：流血和中毒
-                if (effect.type == EffectType.Bleed || effect.type == EffectType.Poison)
+                // DoT效果：流血、中毒和燃烧
+                if (effect.type == EffectType.Bleed || effect.type == EffectType.Poison || effect.type == EffectType.Burn)
                 {
                     int dotDmg = Mathf.Max(GameConstants.MIN_DAMAGE, effect.value);
                     if (isPlayer)
@@ -902,7 +957,7 @@ namespace Game.Battle
                     {
                         CurrentBattle.monster.hp = Mathf.Max(0, CurrentBattle.monster.hp - dotDmg);
                     }
-                    string dotName = effect.type == EffectType.Bleed ? "流血" : "中毒";
+                    string dotName = effect.type == EffectType.Bleed ? "流血" : effect.type == EffectType.Burn ? "燃烧" : "中毒";
                     CurrentBattle.log.Add($"{targetName}因{dotName}损失{dotDmg}HP");
                 }
 
@@ -998,7 +1053,7 @@ namespace Game.Battle
         /// </summary>
         private int CalcStatusEffectValue(SkillConfig skill, int attackerAtk)
         {
-            if (skill.statusEffect == EffectType.Bleed || skill.statusEffect == EffectType.Poison)
+            if (skill.statusEffect == EffectType.Bleed || skill.statusEffect == EffectType.Poison || skill.statusEffect == EffectType.Burn)
             {
                 // DoT效果：每回合伤害 = 攻击力 * 倍率
                 return Mathf.Max(GameConstants.MIN_DAMAGE, (int)(attackerAtk * skill.statusPowerRate));

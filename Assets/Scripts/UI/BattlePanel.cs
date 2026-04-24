@@ -863,6 +863,7 @@ namespace Game.UI
             {
                 EffectType.Bleed => new Color(0.906f, 0.298f, 0.235f),     // 流血红 #e74c3c
                 EffectType.Poison => new Color(0.345f, 0.839f, 0.553f),    // 中毒绿 #58d68d
+                EffectType.Burn => new Color(1f, 0.498f, 0.153f),          // 燃烧橙红 #ff8027
                 EffectType.Stun => new Color(0.941f, 0.753f, 0.251f),      // 眩晕黄 #f0c040
                 EffectType.Silence => new Color(0.588f, 0.529f, 0.475f),   // 沉默灰 #958678
                 EffectType.Vulnerable => new Color(0.941f, 0.596f, 0.157f),// 易伤橙 #f09828
@@ -880,6 +881,7 @@ namespace Game.UI
             {
                 EffectType.Bleed => "流血",
                 EffectType.Poison => "中毒",
+                EffectType.Burn => "燃烧",
                 EffectType.Stun => "眩晕",
                 EffectType.Silence => "沉默",
                 EffectType.Vulnerable => "易伤",
