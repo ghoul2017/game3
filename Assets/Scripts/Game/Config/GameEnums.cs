@@ -34,6 +34,16 @@ namespace Game.Config
         Treasure,
         Spring,
         Merchant,
-        Exit
+        Exit,
+        Shrine
+    }
+
+    /// <summary>
+    /// 地牢网格瓦片类型
+    /// </summary>
+    public enum TileType
+    {
+        Room,  // 可通行房间
+        Wall   // 不可通行墙壁
     }
 }
