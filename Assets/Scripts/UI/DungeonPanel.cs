@@ -564,18 +564,34 @@ namespace Game.UI
                         : monsters.Count > 0 ? monsters[Random.Range(0, monsters.Count)] : null;
                     if (monsterCfg != null)
                     {
+                        // 楼层缩放：每层+15%属性
+                        float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
+                        // 精英怪1.5倍属性
+                        float eliteScale = room.type == DungeonEventType.Elite ? 1.5f : 1f;
+                        float totalScale = floorScale * eliteScale;
+
+                        int scaledHp = Mathf.RoundToInt(monsterCfg.hp * totalScale);
+                        int scaledAtk = Mathf.RoundToInt(monsterCfg.attack * totalScale);
+                        int scaledDef = Mathf.RoundToInt(monsterCfg.defense * totalScale);
+                        // 精英怪2倍奖励
+                        int rewardMul = room.type == DungeonEventType.Elite ? 2 : 1;
+
+                        string displayName = room.type == DungeonEventType.Elite
+                            ? $"精英{monsterCfg.name}" : monsterCfg.name;
+
                         var battleData = new BattleData
                         {
                             monster = new BattleMonster
                             {
-                                id = monsterCfg.id, name = monsterCfg.name,
-                                hp = monsterCfg.hp, maxHp = monsterCfg.hp,
-                                attack = monsterCfg.attack, defense = monsterCfg.defense,
+                                id = monsterCfg.id, name = displayName,
+                                hp = scaledHp, maxHp = scaledHp,
+                                attack = scaledAtk, defense = scaledDef,
                                 speed = monsterCfg.speed, skillIds = monsterCfg.skillIds,
-                                expReward = monsterCfg.expReward, goldReward = monsterCfg.goldReward,
+                                expReward = monsterCfg.expReward * rewardMul,
+                                goldReward = monsterCfg.goldReward * rewardMul,
                                 drops = monsterCfg.drops,
                                 isBoss = monsterCfg.isBoss,
-                                level = monsterCfg.minFloor * 2 + 1
+                                level = Mathf.RoundToInt(monsterCfg.minFloor * 2 * totalScale) + 1
                             },
                             room = room
                         };
