@@ -229,7 +229,7 @@
     "4. Boss战特殊规则：逃跑按钮不可用(interactable=false+文字'Boss战无法逃跑')、战前警告弹窗'⚠警告！强大的敌人出现了！'、专属BGM切换",
     "5. Boss掉落：100%掉落1件稀有装备+1个宝物+floor*100金币+大量经验(floor*50)，奖励面板显示特殊Boss击杀标识",
     "6. 每击败Boss记录到PlayerData.defeatedBosses列表(用于成就/统计)"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F144","category":"skill","priority":17,"desc":"技能全职业通用：取消职业限制，任何职业可学任何技能，技能按类型分标签页展示","steps":[
     "1. 移除SkillData.classId字段和所有职业限制检查(SkillLearnPanel/ConfigManager/BattleManager中)",
