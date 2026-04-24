@@ -805,9 +805,18 @@ namespace Game.UI
 
         // ==================== 战斗日志颜色标记 ====================
 
+        /// <summary>将 Color 转换为富文本用的 hex 字符串 "#rrggbb"</summary>
+        private static string ColorToHex(Color c)
+        {
+            int r = Mathf.RoundToInt(c.r * 255f);
+            int g = Mathf.RoundToInt(c.g * 255f);
+            int b = Mathf.RoundToInt(c.b * 255f);
+            return $"#{r:x2}{g:x2}{b:x2}";
+        }
+
         /// <summary>
         /// 将战斗日志文本标记为富文本颜色。
-        /// 规则：伤害→红色，治疗→绿色，状态施加→黄色，闪避→蓝色，普通→白色
+        /// 规则：伤害→红色，治疗→绿色，状态施加→橙色，闪避→蓝色，普通→白色
         /// </summary>
         private string ColorizeLog(string raw)
         {
@@ -815,42 +824,42 @@ namespace Game.UI
 
             // 闪避（优先级高）
             if (raw.Contains("闪避"))
-                return $"<color=#3498db>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Blue)}>{raw}</color>";
 
             // 伤害类
             if (raw.Contains("造成") && raw.Contains("伤害"))
-                return $"<color=#e74c3c>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Red)}>{raw}</color>";
 
             // DoT伤害（流血/中毒损失HP）
             if (raw.Contains("损失") && raw.Contains("HP"))
-                return $"<color=#e74c3c>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Red)}>{raw}</color>";
 
             // 治疗类
             if (raw.Contains("恢复") && (raw.Contains("生命") || raw.Contains("法力") || raw.Contains("HP")))
-                return $"<color=#2ecc71>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Green)}>{raw}</color>";
 
             // 状态施加/效果
             if (raw.Contains("受到") && raw.Contains("效果"))
-                return $"<color=#f39c12>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Orange)}>{raw}</color>";
             if (raw.Contains("效果消失"))
-                return $"<color=#f39c12>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Orange)}>{raw}</color>";
             if (raw.Contains("眩晕") || raw.Contains("沉默") || raw.Contains("无法行动"))
-                return $"<color=#f39c12>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Orange)}>{raw}</color>";
 
             // 增益/Buff
             if (raw.Contains("增益") || raw.Contains("攻击+") || raw.Contains("防御+"))
-                return $"<color=#3498db>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Blue)}>{raw}</color>";
 
             // 速度判定
             if (raw.Contains("[速度]"))
-                return $"<color=#e0d8c0>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.TextWhite)}>{raw}</color>";
 
             // 复活
             if (raw.Contains("复活"))
-                return $"<color=#2ecc71>{raw}</color>";
+                return $"<color={ColorToHex(UIBuilder.Green)}>{raw}</color>";
 
             // 默认：普通信息白色
-            return $"<color=#e0d8c0>{raw}</color>";
+            return $"<color={ColorToHex(UIBuilder.TextWhite)}>{raw}</color>";
         }
 
         // ==================== HP/MP条平滑动画 ====================
@@ -916,10 +925,8 @@ namespace Game.UI
         /// </summary>
         private Color GetHpBarColor(float ratio)
         {
-            // 正常：绿色
-            Color normalColor = new Color(0.345f, 0.839f, 0.553f); // #58d68d
-            // 危险：红色
-            Color dangerColor = new Color(0.906f, 0.298f, 0.235f); // #e74c3c
+            Color normalColor = UIBuilder.Green;
+            Color dangerColor = UIBuilder.Red;
 
             if (ratio >= 0.3f) return normalColor;
             // 0~0.3之间线性插值
@@ -941,15 +948,15 @@ namespace Game.UI
         {
             return type switch
             {
-                EffectType.Bleed => new Color(0.906f, 0.298f, 0.235f),     // 流血红 #e74c3c
-                EffectType.Poison => new Color(0.345f, 0.839f, 0.553f),    // 中毒绿 #58d68d
+                EffectType.Bleed => UIBuilder.Red,
+                EffectType.Poison => UIBuilder.Green,
                 EffectType.Burn => new Color(1f, 0.498f, 0.153f),          // 燃烧橙红 #ff8027
-                EffectType.Stun => new Color(0.941f, 0.753f, 0.251f),      // 眩晕黄 #f0c040
-                EffectType.Silence => new Color(0.588f, 0.529f, 0.475f),   // 沉默灰 #958678
+                EffectType.Stun => UIBuilder.Orange,
+                EffectType.Silence => UIBuilder.TextDim,
                 EffectType.Vulnerable => new Color(0.941f, 0.596f, 0.157f),// 易伤橙 #f09828
-                EffectType.BuffATK => new Color(0.365f, 0.678f, 0.886f),   // Buff蓝 #5dade2
-                EffectType.BuffDEF => new Color(0.365f, 0.678f, 0.886f),   // Buff蓝 #5dade2
-                EffectType.BuffSpeed => new Color(0.365f, 0.678f, 0.886f), // Buff蓝 #5dade2
+                EffectType.BuffATK => UIBuilder.Blue,
+                EffectType.BuffDEF => UIBuilder.Blue,
+                EffectType.BuffSpeed => UIBuilder.Blue,
                 _ => Color.gray
             };
         }

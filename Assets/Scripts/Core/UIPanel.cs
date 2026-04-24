@@ -67,6 +67,25 @@ namespace Game.Core
             transitionCoroutine = null;
         }
 
+        /// <summary>淡出协程：alpha 1→0，持续0.15s，完成后调用 OnHide()</summary>
+        private IEnumerator FadeOutCoroutine()
+        {
+            float duration = 0.15f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                canvasGroup.alpha = 1f - t;
+                yield return null;
+            }
+            canvasGroup.alpha = 0f;
+            transitionCoroutine = null;
+
+            // 淡出结束后调用 OnHide 回调
+            OnHide();
+        }
+
         /// <summary>停止面板过渡动画（供子类调用）</summary>
         protected void StopTransition()
         {
@@ -153,13 +172,11 @@ namespace Game.Core
                 transitionCoroutine = null;
             }
 
-            // 面板过渡动画：alpha 1→0 淡出
-            canvasGroup.alpha = 0f;
+            // 面板过渡动画：alpha 1→0 淡出（OnHide 在协程结束后调用）
+            transitionCoroutine = StartCoroutine(FadeOutCoroutine());
 
             // 播放面板关闭音效
             AudioManager.Instance?.PlaySFX(AudioClipType.UI_PanelClose);
-
-            OnHide();
         }
 
         // ---- 内部辅助 ----
