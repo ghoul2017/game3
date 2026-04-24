@@ -245,7 +245,7 @@
     "3. 每个技能配置：id/name/type(Attack/Heal/Buff/Debuff/DoT/Control/Passive)/mpCost/power(伤害/治疗倍率)/effectType(对应StatusEffect)/effectValue/effectDuration/goldCost(学习价格)/description",
     "4. 技能命名和描述：中文命名，贴合RPG风格(如'烈焰斩''暗影步''龙息术')",
     "5. 技能图标：纯代码生成小色块+缩写文字作为图标(16x16或24x24)，颜色按类型区分"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F146","category":"skill","priority":19,"desc":"技能装备UI自由化+地牢技能神龛：4装备槽自由搭配+神龛房间免费学技能","steps":[
     "1. SkillLearnPanel底部装备槽改为4个独立下拉按钮：点击弹出已学技能列表小弹窗→选择技能→装备到该槽位，同一技能不可重复装备",
