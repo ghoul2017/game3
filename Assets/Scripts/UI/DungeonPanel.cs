@@ -668,7 +668,7 @@ namespace Game.UI
             mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0;
             mpText.text = $"MP  {player.mp}/{player.maxMp}";
 
-            int expNeeded = player.level * 100;
+            int expNeeded = player.GetExpToNextLevel();
             expSlider.value = expNeeded > 0 ? (float)player.exp / expNeeded : 0;
             expText.text = $"Lv.{player.level}  {player.exp}/{expNeeded}";
 
