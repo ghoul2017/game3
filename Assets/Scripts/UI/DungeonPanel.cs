@@ -1084,6 +1084,7 @@ namespace Game.UI
                         goldReward = monsterCfg.goldReward * rewardMul,
                         drops = monsterCfg.drops,
                         isBoss = monsterCfg.isBoss,
+                        aiPattern = monsterCfg.aiPattern,
                         level = Mathf.RoundToInt(monsterCfg.minFloor * 2 * totalScale) + 1
                     },
                     room = room

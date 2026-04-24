@@ -48,6 +48,7 @@ namespace Game.Data
         public int goldReward;
         public List<ItemDropConfig> drops = new List<ItemDropConfig>();
         public bool isBoss;
+        public MonsterAIPattern aiPattern = MonsterAIPattern.Balanced;
         public int level;
         public int buffAttack;   // 攻击buff加成
         public int buffDefense;  // 防御buff加成

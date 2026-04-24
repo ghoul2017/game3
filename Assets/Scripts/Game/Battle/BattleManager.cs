@@ -528,19 +528,25 @@ namespace Game.Battle
                 return dodgeMsg;
             }
 
-            // 怪物有技能时，根据概率使用
-            if (m.skillIds.Count > 0 && Random.value < GameConstants.MONSTER_SKILL_CHANCE)
+            // 使用AI系统决策怪物行动
+            var decision = AIManager.Instance.DecideAction(m, b, m.mp > 0);
+
+            // AI提示（可选战斗日志）
+            if (!string.IsNullOrEmpty(decision.hint))
+                b.log.Add(decision.hint);
+
+            if (decision.action == AIMonsterAction.UseSkill)
             {
-                int sid = m.skillIds[Random.Range(0, m.skillIds.Count)];
-                var skill = ConfigManager.Instance.GetSkill(sid);
+                var skill = ConfigManager.Instance.GetSkill(decision.skillId);
                 if (skill != null)
                 {
                     int rawDmg = CalcDamage((int)(monsterAtk * skill.power / 100f), playerDef);
-                    int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * dmgMultiplier));
+                    int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * dmgMultiplier * decision.damageBonus));
                     p.hp -= dmg;
                     if (p.hp < 0) p.hp = 0;
                     string msg = $"{m.name} 使用 {skill.name}，对你造成 {dmg} 点伤害";
                     if (dmgMultiplier < 1f) msg += "（坚守减伤）";
+                    if (decision.damageBonus > 1f) msg += "（狂暴加成）";
 
                     // 状态攻击技能：怪物对玩家附加状态效果
                     if (skill.type == SkillType.StatusAttack && skill.statusDuration > 0)
@@ -563,11 +569,12 @@ namespace Game.Battle
 
             // 普通攻击
             int rawNormalDmg = CalcDamage(monsterAtk, playerDef);
-            int normalDmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawNormalDmg * dmgMultiplier));
+            int normalDmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawNormalDmg * dmgMultiplier * decision.damageBonus));
             p.hp -= normalDmg;
             if (p.hp < 0) p.hp = 0;
             string normalMsg = $"{m.name} 攻击了你，造成 {normalDmg} 点伤害";
             if (dmgMultiplier < 1f) normalMsg += "（坚守减伤）";
+            if (decision.damageBonus > 1f) normalMsg += "（狂暴加成）";
             b.log.Add(normalMsg);
 
             if (p.hp <= 0)

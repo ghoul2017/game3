@@ -80,6 +80,7 @@ namespace Game.Config
         public List<int> skillIds = new List<int>();
         public List<ItemDropConfig> drops = new List<ItemDropConfig>();
         public bool isBoss;
+        public MonsterAIPattern aiPattern = MonsterAIPattern.Balanced;
     }
 
     [System.Serializable]
