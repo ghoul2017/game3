@@ -85,7 +85,7 @@ namespace Game.UI
                 new Vector2(0, 50 - gap * 3), new Vector2(btnW, btnH));
 
             // 底部版本号
-            var ver = UIBuilder.CreateText(parent, "v1.2.0", 13, new Color(0.4f, 0.4f, 0.45f), TextAnchor.MiddleCenter, false, "Version");
+            var ver = UIBuilder.CreateText(parent, "v1.2.0", 13, UIBuilder.TextDim, TextAnchor.MiddleCenter, false, "Version");
             UIBuilder.SetAnchored(ver.gameObject,
                 new Vector2(0.5f, 0), new Vector2(0.5f, 0),
                 new Vector2(0, 28), new Vector2(180, 22));
@@ -146,7 +146,7 @@ namespace Game.UI
             if (!GameManager.Instance.HasSave())
             {
                 btnContinue.interactable = false;
-                btnContinueBg.color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+                btnContinueBg.color = UIBuilder.ButtonDisable;
             }
             else
             {

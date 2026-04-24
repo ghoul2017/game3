@@ -88,7 +88,7 @@ namespace Game.UI
             msgOverlay.transform.SetParent(inner, false);
             UIBuilder.SetStretch(msgOverlay);
             var oImg = msgOverlay.AddComponent<Image>();
-            oImg.color = new Color(0, 0, 0, 0.75f);
+            oImg.color = new Color(UIBuilder.DarkBg.r, UIBuilder.DarkBg.g, UIBuilder.DarkBg.b, 0.88f);
             msgOverlay.AddComponent<CanvasGroup>();
             msgOverlay.SetActive(false);
 
@@ -283,7 +283,7 @@ namespace Game.UI
             labelRt.offsetMax = Vector2.zero;
             var typeLabel = labelObj.AddComponent<Text>();
             typeLabel.fontSize = 11;
-            typeLabel.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
+            typeLabel.color = UIBuilder.TextWhite;
             typeLabel.alignment = TextAnchor.MiddleCenter;
             typeLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             typeLabel.raycastTarget = false;
@@ -493,18 +493,18 @@ namespace Game.UI
 
         private Color GetRoomColor(DungeonRoom room, bool isCurrent)
         {
-            if (isCurrent) return new Color(0.3f, 0.6f, 0.9f, 0.9f);
-            if (room.cleared) return new Color(0.2f, 0.2f, 0.2f, 0.6f);
+            if (isCurrent) return UIBuilder.RoomCurrent;
+            if (room.cleared) return UIBuilder.RoomCleared;
             return room.type switch
             {
-                DungeonEventType.Monster => new Color(0.7f, 0.2f, 0.2f, 0.8f),
-                DungeonEventType.Elite => new Color(0.8f, 0.1f, 0.5f, 0.8f),
-                DungeonEventType.Boss => new Color(0.9f, 0.1f, 0.1f, 0.9f),
-                DungeonEventType.Treasure => new Color(0.8f, 0.7f, 0.1f, 0.8f),
-                DungeonEventType.Spring => new Color(0.1f, 0.6f, 0.3f, 0.8f),
-                DungeonEventType.Merchant => new Color(0.6f, 0.4f, 0.1f, 0.8f),
-                DungeonEventType.Exit => new Color(0.2f, 0.4f, 0.8f, 0.9f),
-                _ => new Color(0.3f, 0.3f, 0.4f, 0.7f)
+                DungeonEventType.Monster => UIBuilder.RoomMonster,
+                DungeonEventType.Elite => UIBuilder.RoomElite,
+                DungeonEventType.Boss => UIBuilder.RoomBoss,
+                DungeonEventType.Treasure => UIBuilder.RoomTreasure,
+                DungeonEventType.Spring => UIBuilder.RoomSpring,
+                DungeonEventType.Merchant => UIBuilder.RoomMerchant,
+                DungeonEventType.Exit => UIBuilder.RoomExit,
+                _ => UIBuilder.RoomCleared
             };
         }
 

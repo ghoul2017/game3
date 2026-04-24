@@ -149,7 +149,7 @@ namespace Game.UI
                         row.actionBtn.gameObject.SetActive(true);
                         row.actionBtn.interactable = !isEquipped && levelOk;
                         row.actionBtn.image.color = isEquipped
-                            ? new Color(0.08f, 0.2f, 0.1f, 0.5f)
+                            ? new Color(UIBuilder.Green.r * 0.35f, UIBuilder.Green.g * 0.35f, UIBuilder.Green.b * 0.35f, 0.5f)
                             : UIBuilder.ButtonNormal;
                         if (!isEquipped)
                         {

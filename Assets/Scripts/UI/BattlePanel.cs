@@ -236,7 +236,7 @@ namespace Game.UI
             var rewardOverlayRt = rewardOverlayObj.AddComponent<RectTransform>();
             UIBuilder.SetStretch(rewardOverlayObj);
             var rewardBg = rewardOverlayObj.AddComponent<Image>();
-            rewardBg.color = new Color(0, 0, 0, 0.8f);
+            rewardBg.color = new Color(UIBuilder.DarkBg.r, UIBuilder.DarkBg.g, UIBuilder.DarkBg.b, 0.92f);
             rewardOverlayObj.AddComponent<CanvasGroup>();
             rewardOverlayObj.SetActive(false);
 
