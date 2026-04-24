@@ -173,6 +173,18 @@ namespace Game.Battle
                 return msg;
             }
 
+            // 治疗技能：恢复自身HP
+            if (skill.isHeal)
+            {
+                int healAmount = (int)(p.attack * skill.power / 100f) + p.level * 5;
+                int actualHeal = Mathf.Min(healAmount, p.maxHp - p.hp);
+                p.hp += actualHeal;
+                msg = $"你使用 {skill.name}，恢复 {actualHeal} 点生命";
+                b.log.Add(msg);
+                // 治疗也触发怪物回合
+                return msg;
+            }
+
             // 主动攻击技能
             int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
             int dmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);

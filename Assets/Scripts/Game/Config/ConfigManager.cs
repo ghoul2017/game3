@@ -140,7 +140,7 @@ namespace Game.Config
                 [3004] = new SkillConfig { id = 3004, name = "坚守", desc = "生命低于30%时自动减伤", type = SkillType.Passive, profession = Profession.Knight, mpCost = 0, power = 0, level = 5, prereqSkillId = 3002 },
 
                 // 牧师技能
-                [4001] = new SkillConfig { id = 4001, name = "治疗术", desc = "恢复自身生命值", type = SkillType.Active, profession = Profession.Priest, mpCost = 8, power = 100, level = 1 },
+                [4001] = new SkillConfig { id = 4001, name = "治疗术", desc = "恢复自身生命值", type = SkillType.Active, profession = Profession.Priest, mpCost = 8, power = 100, level = 1, isHeal = true },
                 [4002] = new SkillConfig { id = 4002, name = "祝福", desc = "提升全属性", type = SkillType.Buff, profession = Profession.Priest, mpCost = 10, power = 0, level = 1, buffId = 4, buffTurns = 3 },
                 [4003] = new SkillConfig { id = 4003, name = "圣光", desc = "神圣伤害攻击", type = SkillType.Active, profession = Profession.Priest, mpCost = 12, power = 160, level = 3, prereqSkillId = 4001 },
                 [4004] = new SkillConfig { id = 4004, name = "复活", desc = "战斗中自动复活一次", type = SkillType.Passive, profession = Profession.Priest, mpCost = 0, power = 0, level = 5, prereqSkillId = 4002 },

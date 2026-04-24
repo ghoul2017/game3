@@ -33,6 +33,7 @@ namespace Game.Config
         public int prereqSkillId; // 前置技能ID，0=无
         public int learnCost;   // 学习金币花费
         public bool isAoE;
+        public bool isHeal;     // 是否为治疗技能（恢复自身HP）
         public int buffId;      // Buff效果ID，0=无
         public int buffTurns;   // Buff持续回合
     }
