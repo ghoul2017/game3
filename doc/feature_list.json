@@ -80,14 +80,14 @@
   {"id":"F112","category":"refactor","desc":"封装 Logger 日志系统：日志等级 + 条件编译 + 格式化输出，替换所有 Debug.Log","passes":false},
   {"id":"F113","category":"refactor","desc":"迁移 ConfigManager 到 JSON：配置外置到 Resources/Config/*.json，支持热更新","passes":false},
 
-  {"id":"F114","category":"battle","desc":"修复被动技能效果：狂战之怒(血量越低攻击越高)、坚守(HP<30%减伤)、复活(战斗中复活一次)、魔力涌动(每回合回蓝)","passes":false},
-  {"id":"F115","category":"battle","desc":"修复治疗术(4001)：添加 Heal 技能类型，治疗术恢复自身HP而非攻击怪物","passes":false},
-  {"id":"F116","category":"battle","desc":"实现 Debuff 技能效果：盾击降敌人攻击、嘲讽降敌人攻击+自身减伤","passes":false},
-  {"id":"F117","category":"battle","desc":"自动战斗按钮：自动执行攻击直到战斗结束，可随时取消","passes":false},
-  {"id":"F118","category":"battle","desc":"战斗胜利奖励面板：胜利后弹出奖励面板显示获得的经验/金币/物品","passes":false},
-  {"id":"F119","category":"dungeon","desc":"怪物楼层缩放：怪物属性随楼层按比例增强(每层+15%HP/攻击/防御)","passes":false},
-  {"id":"F120","category":"dungeon","desc":"精英怪差异化：精英房间怪物获得1.5倍属性加成+2倍经验金币奖励","passes":false},
-  {"id":"F121","category":"dungeon","desc":"地牢通关条件：击败第10层Boss后显示胜利画面+可选择继续无尽模式","passes":false},
-  {"id":"F122","category":"dungeon","desc":"修复返回城镇重置：Elite房间也应重置(和Monster/Spring一样)","passes":false},
-  {"id":"F123","category":"item","desc":"装备等级限制：购买和装备时检查reqLevel，商店/背包显示等级要求","passes":false}
+  {"id":"F114","category":"battle","desc":"修复被动技能效果：狂战之怒(血量越低攻击越高)、坚守(HP<30%减伤)、复活(战斗中复活一次)、魔力涌动(每回合回蓝)","passes":true},
+  {"id":"F115","category":"battle","desc":"修复治疗术(4001)：添加 Heal 技能类型，治疗术恢复自身HP而非攻击怪物","passes":true},
+  {"id":"F116","category":"battle","desc":"实现 Debuff 技能效果：盾击降敌人攻击、嘲讽降敌人攻击+自身减伤","passes":true},
+  {"id":"F117","category":"battle","desc":"自动战斗按钮：自动执行攻击直到战斗结束，可随时取消","passes":true},
+  {"id":"F118","category":"battle","desc":"战斗胜利奖励面板：胜利后弹出奖励面板显示获得的经验/金币/物品","passes":true},
+  {"id":"F119","category":"dungeon","desc":"怪物楼层缩放：怪物属性随楼层按比例增强(每层+15%HP/攻击/防御)","passes":true},
+  {"id":"F120","category":"dungeon","desc":"精英怪差异化：精英房间怪物获得1.5倍属性加成+2倍经验金币奖励","passes":true},
+  {"id":"F121","category":"dungeon","desc":"地牢通关条件：击败第10层Boss后显示胜利画面+可选择继续无尽模式","passes":true},
+  {"id":"F122","category":"dungeon","desc":"修复返回城镇重置：Elite房间也应重置(和Monster/Spring一样)","passes":true},
+  {"id":"F123","category":"item","desc":"装备等级限制：购买和装备时检查reqLevel，商店/背包显示等级要求","passes":true}
 ]
