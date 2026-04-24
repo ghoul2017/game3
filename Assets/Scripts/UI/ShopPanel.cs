@@ -39,32 +39,40 @@ namespace Game.UI
             var gold = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
             UIBuilder.SetStretch(gold.gameObject);
 
-            // 商品列表
-            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 480, "ItemList");
-            var listRt = listPanel.GetComponent<RectTransform>();
-            listRt.anchorMin = new Vector2(0, 1);
-            listRt.anchorMax = new Vector2(1, 1);
-            listRt.pivot = new Vector2(0.5f, 1);
-            listRt.anchoredPosition = new Vector2(0, -115);
-            listRt.sizeDelta = new Vector2(0, 480);
-
-            var inner = listPanel.transform.Find("Inner");
-            UIBuilder.CreatePoolRows(inner, PoolSize, 50, 210, 800);
-
-            // 翻页按钮
-            UIBuilder.CreateButton(parent, "上一页", 130, 38, null, 16, "BtnPrev")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(-160, -275);
-
-            UIBuilder.CreateButton(parent, "下一页", 130, 38, null, 16, "BtnNext")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(160, -275);
-
-            // 底部按钮（底部锚定，确保始终在屏幕内）
+            // 返回按钮（底部锚定）
             var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 45, null, 20, "BtnBack");
             var btnBackRt = btnBack.GetComponent<RectTransform>();
             btnBackRt.anchorMin = new Vector2(0.5f, 0);
             btnBackRt.anchorMax = new Vector2(0.5f, 0);
             btnBackRt.pivot = new Vector2(0.5f, 0);
             btnBackRt.anchoredPosition = new Vector2(0, 30);
+
+            // 翻页按钮（底部锚定，BtnBack 上方 10px）
+            var prevBtn = UIBuilder.CreateButton(parent, "上一页", 130, 38, null, 16, "BtnPrev");
+            var prevRt = prevBtn.GetComponent<RectTransform>();
+            prevRt.anchorMin = new Vector2(0.5f, 0);
+            prevRt.anchorMax = new Vector2(0.5f, 0);
+            prevRt.pivot = new Vector2(0.5f, 0);
+            prevRt.anchoredPosition = new Vector2(-100, 85);
+
+            var nextBtn = UIBuilder.CreateButton(parent, "下一页", 130, 38, null, 16, "BtnNext");
+            var nextRt = nextBtn.GetComponent<RectTransform>();
+            nextRt.anchorMin = new Vector2(0.5f, 0);
+            nextRt.anchorMax = new Vector2(0.5f, 0);
+            nextRt.pivot = new Vector2(0.5f, 0);
+            nextRt.anchoredPosition = new Vector2(100, 85);
+
+            // 商品列表（拉伸填充 GoldBar 和 BtnPrev 之间）
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 480, "ItemList");
+            var listRt = listPanel.GetComponent<RectTransform>();
+            listRt.anchorMin = new Vector2(0, 0);
+            listRt.anchorMax = new Vector2(1, 1);
+            listRt.pivot = new Vector2(0.5f, 0.5f);
+            listRt.offsetMin = new Vector2(10, 133);
+            listRt.offsetMax = new Vector2(-10, -120);
+
+            var inner = listPanel.transform.Find("Inner");
+            UIBuilder.CreatePoolRows(inner, PoolSize, 50, 210, 800);
         }
 
         protected override void BindReferences()

@@ -38,26 +38,22 @@ namespace Game.UI
             var gold = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
             UIBuilder.SetStretch(gold.gameObject);
 
-            // 技能列表
-            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 420, "SkillList");
-            var listRt = listPanel.GetComponent<RectTransform>();
-            listRt.anchorMin = new Vector2(0, 1);
-            listRt.anchorMax = new Vector2(1, 1);
-            listRt.pivot = new Vector2(0.5f, 1);
-            listRt.anchoredPosition = new Vector2(0, -115);
-            listRt.sizeDelta = new Vector2(0, 420);
+            // 返回按钮（底部锚定）
+            var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack");
+            var btnBackRt = btnBack.GetComponent<RectTransform>();
+            btnBackRt.anchorMin = new Vector2(0.5f, 0);
+            btnBackRt.anchorMax = new Vector2(0.5f, 0);
+            btnBackRt.pivot = new Vector2(0.5f, 0);
+            btnBackRt.anchoredPosition = new Vector2(0, 30);
 
-            var inner = listPanel.transform.Find("Inner");
-            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 48, 185, 800);
-
-            // 已装备技能区
+            // 已装备技能区（底部锚定，BtnBack 上方 10px）
             var eqPanel = UIBuilder.CreateBorderedPanel(parent, 900, 70, "EquippedSkills");
             var eqPanelRt = eqPanel.GetComponent<RectTransform>();
-            eqPanelRt.anchorMin = new Vector2(0, 1);
-            eqPanelRt.anchorMax = new Vector2(1, 1);
-            eqPanelRt.pivot = new Vector2(0.5f, 1);
-            eqPanelRt.anchoredPosition = new Vector2(0, -545);
-            eqPanelRt.sizeDelta = new Vector2(0, 70);
+            eqPanelRt.anchorMin = new Vector2(0, 0);
+            eqPanelRt.anchorMax = new Vector2(1, 0);
+            eqPanelRt.pivot = new Vector2(0.5f, 0);
+            eqPanelRt.anchoredPosition = new Vector2(0, 82);
+            eqPanelRt.sizeDelta = new Vector2(-20, 70);
 
             var eqInner = eqPanel.transform.Find("Inner");
 
@@ -73,13 +69,17 @@ namespace Game.UI
                 btn.gameObject.SetActive(false);
             }
 
-            // 返回按钮（底部锚定，确保始终在屏幕内）
-            var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack");
-            var btnBackRt = btnBack.GetComponent<RectTransform>();
-            btnBackRt.anchorMin = new Vector2(0.5f, 0);
-            btnBackRt.anchorMax = new Vector2(0.5f, 0);
-            btnBackRt.pivot = new Vector2(0.5f, 0);
-            btnBackRt.anchoredPosition = new Vector2(0, 30);
+            // 技能列表（拉伸填充 GoldBar 和 EquippedSkills 之间）
+            var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 420, "SkillList");
+            var listRt = listPanel.GetComponent<RectTransform>();
+            listRt.anchorMin = new Vector2(0, 0);
+            listRt.anchorMax = new Vector2(1, 1);
+            listRt.pivot = new Vector2(0.5f, 0.5f);
+            listRt.offsetMin = new Vector2(10, 162);
+            listRt.offsetMax = new Vector2(-10, -120);
+
+            var inner = listPanel.transform.Find("Inner");
+            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 48, 185, 800);
         }
 
         protected override void BindReferences()

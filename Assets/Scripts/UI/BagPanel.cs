@@ -21,13 +21,34 @@ namespace Game.UI
             UIBuilder.CreateFullScreenBg(parent);
             UIBuilder.CreateTitleBar(parent, "背       包");
 
+            // 返回按钮（底部锚定）
+            var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack");
+            var btnBackRt = btnBack.GetComponent<RectTransform>();
+            btnBackRt.anchorMin = new Vector2(0.5f, 0);
+            btnBackRt.anchorMax = new Vector2(0.5f, 0);
+            btnBackRt.pivot = new Vector2(0.5f, 0);
+            btnBackRt.anchoredPosition = new Vector2(0, 30);
+
+            // 信息栏（底部锚定，BtnBack 上方 10px）
+            var infoBar = UIBuilder.CreatePanel(parent, 900, 42, "InfoBar");
+            var infoBarRt = infoBar.GetComponent<RectTransform>();
+            infoBarRt.anchorMin = new Vector2(0, 0);
+            infoBarRt.anchorMax = new Vector2(1, 0);
+            infoBarRt.pivot = new Vector2(0.5f, 0);
+            infoBarRt.anchoredPosition = new Vector2(0, 82);
+            infoBarRt.sizeDelta = new Vector2(-20, 42);
+
+            var info = UIBuilder.CreateText(infoBar.transform, "", 15, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
+            UIBuilder.SetStretch(info.gameObject);
+
+            // 物品列表（拉伸填充 TitleBar 和 InfoBar 之间）
             var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 460, "ItemList");
             var listRt = listPanel.GetComponent<RectTransform>();
-            listRt.anchorMin = new Vector2(0, 1);
+            listRt.anchorMin = new Vector2(0, 0);
             listRt.anchorMax = new Vector2(1, 1);
-            listRt.pivot = new Vector2(0.5f, 1);
-            listRt.anchoredPosition = new Vector2(0, -80);
-            listRt.sizeDelta = new Vector2(0, 460);
+            listRt.pivot = new Vector2(0.5f, 0.5f);
+            listRt.offsetMin = new Vector2(10, 134);
+            listRt.offsetMax = new Vector2(-10, -70);
 
             var inner = listPanel.transform.Find("Inner");
             var empty = UIBuilder.CreateText(inner, "背包是空的", 18, UIBuilder.TextDim, TextAnchor.MiddleCenter, name: "EmptyText");
@@ -35,25 +56,6 @@ namespace Game.UI
             empty.gameObject.SetActive(false);
 
             UIBuilder.CreatePoolRows(inner, PoolSize, 42, 195, 800);
-
-            var infoBar = UIBuilder.CreatePanel(parent, 900, 42, "InfoBar");
-            var infoBarRt = infoBar.GetComponent<RectTransform>();
-            infoBarRt.anchorMin = new Vector2(0, 1);
-            infoBarRt.anchorMax = new Vector2(1, 1);
-            infoBarRt.pivot = new Vector2(0.5f, 1);
-            infoBarRt.anchoredPosition = new Vector2(0, -555);
-            infoBarRt.sizeDelta = new Vector2(0, 42);
-
-            var info = UIBuilder.CreateText(infoBar.transform, "", 15, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "InfoText");
-            UIBuilder.SetStretch(info.gameObject);
-
-            // 返回按钮（底部锚定，确保始终在屏幕内）
-            var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack");
-            var btnBackRt = btnBack.GetComponent<RectTransform>();
-            btnBackRt.anchorMin = new Vector2(0.5f, 0);
-            btnBackRt.anchorMax = new Vector2(0.5f, 0);
-            btnBackRt.pivot = new Vector2(0.5f, 0);
-            btnBackRt.anchoredPosition = new Vector2(0, 30);
         }
 
         protected override void BindReferences()

@@ -112,14 +112,23 @@ namespace Game.UI
             var atkDefText = UIBuilder.CreateText(monsterInner, "", 15, UIBuilder.TextDim, name: "MonsterAtkDef");
             UIBuilder.SetAnchored(atkDefText.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 18), new Vector2(280, 22));
 
-            // === 战斗日志区（对象池 6 行） ===
+            // === 玩家信息条（底部锚定，按钮上方 10px）===
+            var playerBar = UIBuilder.CreatePanel(parent, 900, 45, "PlayerBar");
+            var playerBarRt = playerBar.GetComponent<RectTransform>();
+            playerBarRt.anchorMin = new Vector2(0, 0);
+            playerBarRt.anchorMax = new Vector2(1, 0);
+            playerBarRt.pivot = new Vector2(0.5f, 0);
+            playerBarRt.anchoredPosition = new Vector2(0, 88);
+            playerBarRt.sizeDelta = new Vector2(-20, 45);
+
+            // === 战斗日志区（拉伸填充 MonsterPanel 和 PlayerBar 之间）===
             var logPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 220, "LogPanel");
             var logRt = logPanelObj.GetComponent<RectTransform>();
-            logRt.anchorMin = new Vector2(0, 1);
+            logRt.anchorMin = new Vector2(0, 0);
             logRt.anchorMax = new Vector2(1, 1);
-            logRt.pivot = new Vector2(0.5f, 1);
-            logRt.anchoredPosition = new Vector2(0, -250);
-            logRt.sizeDelta = new Vector2(0, 220);
+            logRt.pivot = new Vector2(0.5f, 0.5f);
+            logRt.offsetMin = new Vector2(10, 143);
+            logRt.offsetMax = new Vector2(-10, -250);
 
             var logInner = logPanelObj.transform.Find("Inner");
 
@@ -130,39 +139,30 @@ namespace Game.UI
                     new Vector2(0, -12 - i * 30), new Vector2(800, 28));
             }
 
-            // === 玩家信息条 ===
-            var playerBar = UIBuilder.CreatePanel(parent, 900, 45, "PlayerBar");
-            var playerBarRt = playerBar.GetComponent<RectTransform>();
-            playerBarRt.anchorMin = new Vector2(0, 1);
-            playerBarRt.anchorMax = new Vector2(1, 1);
-            playerBarRt.pivot = new Vector2(0.5f, 1);
-            playerBarRt.anchoredPosition = new Vector2(0, -485);
-            playerBarRt.sizeDelta = new Vector2(0, 45);
-
             var playerInfoObj = UIBuilder.CreateText(playerBar.transform, "", 15, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "PlayerInfo");
             UIBuilder.SetStretch(playerInfoObj.gameObject);
 
-            // === 操作按钮 ===
-            float btnY = -480;
+            // === 操作按钮（底部锚定，确保始终在屏幕内）===
+            float btnBottomY = 30;
             float btnW = 180;
             float btnH = 48;
             float gap = 40;
 
             var (atkBtn, _) = UIBuilder.CreateButtonWithRef(parent, "攻  击", btnW, btnH, null, 22, "BtnAttack");
-            UIBuilder.SetAnchored(atkBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-gap * 3 - btnW * 1.5f, btnY), new Vector2(btnW, btnH));
+            UIBuilder.SetAnchored(atkBtn.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(-gap * 3 - btnW * 1.5f, btnBottomY), new Vector2(btnW, btnH));
 
             var (skBtn, _) = UIBuilder.CreateButtonWithRef(parent, "技  能", btnW, btnH, null, 22, "BtnSkill");
-            UIBuilder.SetAnchored(skBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-gap, btnY), new Vector2(btnW, btnH));
+            UIBuilder.SetAnchored(skBtn.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(-gap, btnBottomY), new Vector2(btnW, btnH));
 
             var (itBtn, _) = UIBuilder.CreateButtonWithRef(parent, "物  品", btnW, btnH, null, 22, "BtnItem");
-            UIBuilder.SetAnchored(itBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(gap, btnY), new Vector2(btnW, btnH));
+            UIBuilder.SetAnchored(itBtn.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(gap, btnBottomY), new Vector2(btnW, btnH));
 
             var (esBtn, _) = UIBuilder.CreateButtonWithRef(parent, "逃  跑", btnW, btnH, null, 22, "BtnEscape");
-            UIBuilder.SetAnchored(esBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(gap * 3 + btnW * 1.5f, btnY), new Vector2(btnW, btnH));
+            UIBuilder.SetAnchored(esBtn.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(gap * 3 + btnW * 1.5f, btnBottomY), new Vector2(btnW, btnH));
 
             // 自动战斗按钮（右上角）
             var (autoBtn, _) = UIBuilder.CreateButtonWithRef(parent, "Auto", 80, 36, null, 16, "BtnAuto");
