@@ -972,10 +972,15 @@ namespace Game.UI
             var tile = dungeon.GetTileAt(targetX, targetY);
             if (tile == null || tile.tileType != TileType.Room) return;
 
+            // 检查是否为新发现的房间（迷雾揭开）
+            bool wasHidden = !tile.isExplored;
+
             // 更新战争迷雾 + 移动数据
             dungeon.OnMoveTo(new GridPos(targetX, targetY));
             dungeon.currentRoomIndex = FindRoomIndex(dungeon, targetX, targetY);
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);
+            if (wasHidden)
+                AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
 
             // 平滑移动指示器动画
             StartCoroutine(SmoothMoveIndicator(targetX, targetY, () =>
