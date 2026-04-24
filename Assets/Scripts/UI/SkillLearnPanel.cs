@@ -162,6 +162,7 @@ namespace Game.UI
                     SkillType.Active => "主动",
                     SkillType.Passive => "被动",
                     SkillType.Buff => "增益",
+                    SkillType.StatusAttack => "状态",
                     _ => ""
                 };
                 string statStr = skill.power > 0 ? $"威力:{skill.power}%" : "";

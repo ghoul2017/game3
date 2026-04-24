@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Game.Battle;
 using UnityEngine;
 
 namespace Game.Config
@@ -159,7 +160,19 @@ namespace Game.Config
                 [2005] = new SkillConfig { id = 2005, name = "加速术", desc = "提升自身速度10点，持续3回合", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 2, buffId = 6, buffTurns = 3 },
 
                 // 法师额外技能
-                [5005] = new SkillConfig { id = 5005, name = "减速术", desc = "降低敌人速度10点，持续3回合", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 80, level = 2, debuffSpeed = 10, debuffTurns = 3 }
+                [5005] = new SkillConfig { id = 5005, name = "减速术", desc = "降低敌人速度10点，持续3回合", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 80, level = 2, debuffSpeed = 10, debuffTurns = 3 },
+
+                // ==================== 状态效果技能 ====================
+                // 战士-割裂：流血
+                [1005] = new SkillConfig { id = 1005, name = "割裂", desc = "撕裂伤口，附加流血3回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 80, level = 2, statusEffect = EffectType.Bleed, statusDuration = 3, statusPowerRate = 0.25f },
+                // 游侠-毒刃：中毒
+                [2006] = new SkillConfig { id = 2006, name = "毒刃", desc = "淬毒一击，附加中毒3回合", type = SkillType.StatusAttack, profession = Profession.Ranger, mpCost = 25, power = 70, level = 2, statusEffect = EffectType.Poison, statusDuration = 3, statusPowerRate = 0.15f },
+                // 骑士-重击：眩晕
+                [3005] = new SkillConfig { id = 3005, name = "重击", desc = "沉重一击，附加眩晕2回合", type = SkillType.StatusAttack, profession = Profession.Knight, mpCost = 30, power = 60, level = 2, statusEffect = EffectType.Stun, statusDuration = 3 },
+                // 法师-封印：沉默
+                [5006] = new SkillConfig { id = 5006, name = "封印", desc = "封印敌人技能，附加沉默2回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 25, power = 50, level = 2, statusEffect = EffectType.Silence, statusDuration = 3 },
+                // 战士-破甲：易伤
+                [1006] = new SkillConfig { id = 1006, name = "破甲", desc = "破坏敌人护甲，附加易伤2回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 90, level = 3, prereqSkillId = 1005, statusEffect = EffectType.Vulnerable, statusDuration = 2, statusPowerRate = 0.3f }
             };
         }
 
@@ -207,6 +220,11 @@ namespace Game.Config
                 [1005] = new MonsterConfig { id = 1005, name = "暗影狼", hp = 80, attack = 14, defense = 6, speed = 12, expReward = 35, goldReward = 20, minFloor = 3, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
                 [1006] = new MonsterConfig { id = 1006, name = "石像鬼", hp = 120, attack = 12, defense = 15, speed = 3, expReward = 40, goldReward = 25, minFloor = 4, drops = { new ItemDropConfig { itemId = 2002, chance = 0.05f } } },
                 [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", hp = 70, attack = 18, defense = 4, speed = 8, expReward = 45, goldReward = 30, minFloor = 5, skillIds = { 5001 }, drops = { new ItemDropConfig { itemId = 1007, chance = 0.05f } } },
+
+                // 带状态效果的怪物
+                [1008] = new MonsterConfig { id = 1008, name = "毒蛇", hp = 55, attack = 11, defense = 3, speed = 14, expReward = 30, goldReward = 18, minFloor = 2, skillIds = { 2006 }, drops = { new ItemDropConfig { itemId = 4001, chance = 0.25f } } },
+                [1009] = new MonsterConfig { id = 1009, name = "暗影法师", hp = 65, attack = 16, defense = 3, speed = 9, expReward = 50, goldReward = 35, minFloor = 5, skillIds = { 5006 }, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
+                [1010] = new MonsterConfig { id = 1010, name = "重甲兵", hp = 100, attack = 13, defense = 12, speed = 4, expReward = 38, goldReward = 28, minFloor = 3, skillIds = { 3005 }, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
 
                 // Boss
                 [2001] = new MonsterConfig { id = 2001, name = "地牢守卫", hp = 200, attack = 15, defense = 10, speed = 6, expReward = 100, goldReward = 80, minFloor = 5, isBoss = true, drops = { new ItemDropConfig { itemId = 1003, chance = 0.3f }, new ItemDropConfig { itemId = 3001, chance = 0.2f } } },

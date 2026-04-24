@@ -22,7 +22,8 @@ namespace Game.Config
     {
         Active,
         Passive,
-        Buff
+        Buff,
+        StatusAttack  // 带状态效果的攻击技能
     }
 
     public enum DungeonEventType

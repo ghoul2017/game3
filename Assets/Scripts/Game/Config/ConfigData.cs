@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Game.Battle;
 using UnityEngine;
 
 namespace Game.Config
@@ -41,6 +42,11 @@ namespace Game.Config
         public int debuffDefense; // 降低敌人防御力（百分比）
         public int debuffSpeed;   // 降低敌人速度（固定值）
         public int debuffTurns;   // Debuff持续回合
+
+        // 状态效果技能字段（StatusAttack类型使用）
+        public EffectType statusEffect;  // 附加的状态效果类型
+        public int statusDuration;       // 状态持续回合
+        public float statusPowerRate;    // 状态效果威力倍率（如流血=ATK*0.25中的0.25）
     }
 
     [System.Serializable]

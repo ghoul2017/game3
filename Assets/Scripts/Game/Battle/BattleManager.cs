@@ -147,11 +147,10 @@ namespace Game.Battle
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：跳过行动
+            // 检查眩晕：跳过行动（TickEffects自然管理duration，不手动移除）
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
-                RemoveEffect(true, EffectType.Stun);
                 return "你因眩晕无法行动！";
             }
 
@@ -216,11 +215,10 @@ namespace Game.Battle
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：跳过行动
+            // 检查眩晕：跳过行动（TickEffects自然管理duration，不手动移除）
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
-                RemoveEffect(true, EffectType.Stun);
                 return "你因眩晕无法行动！";
             }
 
@@ -304,7 +302,7 @@ namespace Game.Battle
                 return msg;
             }
 
-            // 主动攻击技能
+            // 主动攻击技能 / 状态攻击技能
             int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
             int skillRawDmg = CalcDamage((int)(totalAtk * skill.power / 100f), b.monster.defense + b.monster.buffDefense);
             float skillVuln = GetVulnerableMultiplier(false); // 怪物易伤加成
@@ -338,6 +336,14 @@ namespace Game.Battle
                     // 速度debuff后立即重新判定回合顺序
                     DetermineTurnOrder();
                 }
+            }
+
+            // 状态攻击技能：附加状态效果
+            if (skill.type == SkillType.StatusAttack && skill.statusDuration > 0)
+            {
+                int effectValue = CalcStatusEffectValue(skill, totalAtk);
+                ApplyEffect(false, skill.statusEffect, effectValue, skill.statusDuration, skill.id);
+                msg += $"，附加{new StatusEffect(skill.statusEffect, effectValue, skill.statusDuration).GetName()}效果";
             }
 
             // 吸血之牙宝物效果
@@ -379,11 +385,10 @@ namespace Game.Battle
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：跳过行动（物品也不能使用）
+            // 检查眩晕：跳过行动（TickEffects自然管理duration，不手动移除）
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
-                RemoveEffect(true, EffectType.Stun);
                 return "你因眩晕无法行动！";
             }
 
@@ -430,7 +435,7 @@ namespace Game.Battle
             {
                 string stunMsg = $"{b.monster.name}因眩晕无法行动！";
                 b.log.Add(stunMsg);
-                RemoveEffect(false, EffectType.Stun);
+                // TickEffects自然管理duration，不手动RemoveEffect
                 DecayBuffs(b);
                 return stunMsg;
             }
@@ -467,6 +472,15 @@ namespace Game.Battle
                     if (p.hp < 0) p.hp = 0;
                     string msg = $"{m.name} 使用 {skill.name}，对你造成 {dmg} 点伤害";
                     if (dmgMultiplier < 1f) msg += "（坚守减伤）";
+
+                    // 状态攻击技能：怪物对玩家附加状态效果
+                    if (skill.type == SkillType.StatusAttack && skill.statusDuration > 0)
+                    {
+                        int effectValue = CalcStatusEffectValue(skill, monsterAtk);
+                        ApplyEffect(true, skill.statusEffect, effectValue, skill.statusDuration, skill.id);
+                        msg += $"，附加{new StatusEffect(skill.statusEffect, effectValue, skill.statusDuration).GetName()}效果";
+                    }
+
                     b.log.Add(msg);
 
                     DecayBuffs(b);
@@ -545,11 +559,10 @@ namespace Game.Battle
                 else { return OnDefeat(); }
             }
 
-            // 检查眩晕：无法逃跑
+            // 检查眩晕：无法逃跑（TickEffects自然管理duration，不手动移除）
             if (HasEffect(true, EffectType.Stun))
             {
                 b.log.Add("你因眩晕无法行动！");
-                RemoveEffect(true, EffectType.Stun);
                 return "你因眩晕无法行动！";
             }
 
@@ -831,6 +844,28 @@ namespace Game.Battle
                 return 1f + vulnValue / 100f;
             }
             return 1f;
+        }
+
+        /// <summary>
+        /// 根据技能配置计算状态效果的数值
+        /// 流血/中毒：value = ATK * statusPowerRate
+        /// 易伤：value = (int)(statusPowerRate * 100)，即30表示受伤+30%
+        /// 眩晕/沉默：value = 0（无数值，只需duration）
+        /// </summary>
+        private int CalcStatusEffectValue(SkillConfig skill, int attackerAtk)
+        {
+            if (skill.statusEffect == EffectType.Bleed || skill.statusEffect == EffectType.Poison)
+            {
+                // DoT效果：每回合伤害 = 攻击力 * 倍率
+                return Mathf.Max(GameConstants.MIN_DAMAGE, (int)(attackerAtk * skill.statusPowerRate));
+            }
+            if (skill.statusEffect == EffectType.Vulnerable)
+            {
+                // 易伤：statusPowerRate 0.3 = 30%受伤增加
+                return (int)(skill.statusPowerRate * 100);
+            }
+            // 眩晕/沉默等无数值效果
+            return 0;
         }
     }
 }
