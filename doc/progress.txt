@@ -69,4 +69,5 @@
 2026-04-25 F132 COMPLETED - 网格地牢生成算法：随机游走扩张+多尺寸房间(2x1/1x2/2x2)+BFS连通性保证+房间内容概率分配+特殊房间放置(Boss/Exit/Shrine)+旧接口同步
 2026-04-25 F133 COMPLETED - DungeonPanel网格地图渲染：ScrollRect可滚动缩放+对象池100色块渲染+10种房间类型着色+当前房间金色边框高亮+已清房间灰色叠加+鼠标滚轮缩放
 2026-04-25 F134 COMPLETED - 战争迷雾系统：TileVisibility三态(Hidden/Explored/Visible)+FogOverlay渲染+OnMoveTo移动更新+起点初始化
-2026-04-25 F135 COMPLETED - 玩家网格移动：点击连通房间移动+WASD/方向键+平滑过渡动画+isMoving防连击
+2026-04-25 F135 COMPLETED - 玩家网格移动：点击连通房间移动+WASD/方向键+平滑过渡动画
+2026-04-25 F136 COMPLETED - 网格房间内容触发：Monster/Elite/Boss战斗+宝箱+泉水+商人+技能神殿+出口确认+Empty直接清理+isMoving防连击

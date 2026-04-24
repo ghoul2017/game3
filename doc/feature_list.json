@@ -172,7 +172,7 @@
     "3. 技能神龛(SkillShrine)逻辑：遍历全技能池，筛选玩家未学技能，随机选一个免费学习(PlayerData.LearnSkill(skillId))，弹窗显示'技能神龛：习得{技能名}！'",
     "4. 房间清空后标记IsCleared=true，tile视觉变灰(覆盖灰色半透明层)，未来经过可直接穿行",
     "5. 复用现有BattlePanel/ShopPanel等面板逻辑，只改变触发入口(从线性点击→网格移动触发)"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F137","category":"dungeon","priority":10,"desc":"随机房间事件：空房间概率触发文字选择事件，增加探索不确定性和趣味","steps":[
     "1. 空房间事件触发率：16%空房间中有50%触发事件(即总房间约8%概率遇到事件)",
