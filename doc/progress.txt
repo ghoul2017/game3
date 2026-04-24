@@ -68,3 +68,4 @@
 2026-04-25 F131 COMPLETED - 网格地牢数据模型：TileType枚举+DungeonTile/GridPos/ContentData数据类+DungeonData网格系统+GenerateGrid()+旧字段保守共存
 2026-04-25 F132 COMPLETED - 网格地牢生成算法：随机游走扩张+多尺寸房间(2x1/1x2/2x2)+BFS连通性保证+房间内容概率分配+特殊房间放置(Boss/Exit/Shrine)+旧接口同步
 2026-04-25 F133 COMPLETED - DungeonPanel网格地图渲染：ScrollRect可滚动缩放+对象池100色块渲染+10种房间类型着色+当前房间金色边框高亮+已清房间灰色叠加+鼠标滚轮缩放
+2026-04-25 F134 COMPLETED - 战争迷雾系统：TileVisibility三态(Hidden/Explored/Visible)+FogOverlay渲染+OnMoveTo移动更新+起点初始化

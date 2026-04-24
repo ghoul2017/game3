@@ -155,7 +155,7 @@
     "5. Explored tile渲染：显示房间颜色但alpha=0.4，已清房间再加灰色叠加层(alpha=0.3的灰色Image)",
     "6. Visible tile渲染：完全正常着色，当前房间金色边框高亮",
     "7. 雾层实现：每个tile上叠一个fogOverlay Image，根据TileVisibility切换color/alpha(对象池管理overlay)"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F135","category":"dungeon","priority":8,"desc":"玩家网格移动：点击相邻连通房间移动+WASD/方向键+平滑过渡动画","steps":[
     "1. 点击事件：在Grid tile上注册Button.onClick，检查是否Connections[dir]为true(相邻且连通)，是则调用MoveTo(targetTile)",
