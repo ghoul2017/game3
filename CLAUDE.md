@@ -121,14 +121,45 @@ devloop.cmd [N]  # 循环开发，默认 8 轮
 | `Assets/Scripts/Game/Battle/**` | `battle.code.md` | 回合制流程、Buff 处理、伤害计算 |
 | `Assets/Scripts/Game/**` | `game.code.md` | 配置加载、数据模型、命名空间规范 |
 
-## Hooks 自动化守卫
 
-通过 `.claude/settings.json` 配置的自动化检查：
+## 用户偏好
 
-| Hook | 触发时机 | 作用 |
-|---|---|---|
-| SessionStart | 会话开始 | 检查核心文件、输出进度摘要 |
-| PreToolUse/Bash | 执行 bash 前 | 验证 commit message 格式（feat:/fix:/progress:/plan: 前缀） |
-| PostToolUse/Write,Edit | 写入文件后 | 验证 C# 文件命名空间、类名与文件名匹配 |
-| PreCompact | 上下文压缩前 | 保存工作快照到 `.claude/compact-snapshot.md` |
-| Stop | 会话结束 | 构建检查（dotnet build），失败则提示修复 |
+- 保持专业性，不要迎合用户
+- 回复使用中文
+- 代码注释使用中文
+- 提交前确认编译通过
+- 允许在分析阶段提问，实现阶段全自动
+- 实现代码后自动 commit，无需额外确认
+- 记忆文件必须实际写入文件，口头答应不算数
+- 记忆文件写在项目目录 `.claude/memory/` 下，便于 Git 管理
+- 编码和 Git 规则见 `.claude/rules/`
+
+## 自动化流水线
+
+```
+/pp        → 需求拆解（交互式，产品经理角色）
+/dev       → 单功能开发（协调流程：准备→开发→验证→记录→提交→报告）
+/devloop   → 循环开发（配额守卫：8轮/session，3连失败停止）
+/qdev      → 临时任务（交互式分析 + 自动流水线）
+/status    → 进度报告
+/init      → 首次初始化
+/agent     → 创建/优化 agent 或 command
+```
+
+### 流水线架构
+
+```
+Commands（主会话中运行，可使用 Agent 工具委托子 agent）
+  /dev, /qdev, /devloop ──┬── dev-worker      (代码实现，tools: 读写+搜索+Bash)
+                          ├── verify-feature  (功能验证，tools: 只读)  ─┐
+                          ├── verify-quality  (质量验证，tools: 只读)  ─┤ 并行
+                          └── mem-writer      (知识归档，tools: 读写+搜索)
+
+Agents 位于 .claude/agents/，带 YAML frontmatter（name, description, tools, model）
+Commands 位于 .claude/commands/，包含完整工作流逻辑
+```
+
+## 记忆系统
+
+项目知识存储在 `.claude/memory/` 目录（Git 管理，团队共享）。通过下方索引按需查阅。
+详细规则见 `.claude/memory/memory-rules.md`。

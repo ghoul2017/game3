@@ -38,3 +38,4 @@
 2026-04-13 F108 COMPLETED - DungeonPanel预制体迁移：CreateVisuals静态方法 + BindReferences绑定地图池+状态面板+技能栏引用
 2026-04-13 F109 COMPLETED - BattlePanel预制体迁移：CreateVisuals静态方法 + BindReferences绑定技能池+物品池+怪物区+日志区引用
 2026-04-13 F110 COMPLETED - UIBuilder瘦身：移除CreateSection/RepositionPoolRows/HideAllRows，CreatePoolRow改private
+2026-04-16 PLAN ADDED - 规划重构任务：F111(拆分UIBuilder) + F112(封装Logger) + F113(配置JSON化)
