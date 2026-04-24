@@ -93,10 +93,13 @@ namespace Game.Config
     {
         public int id;
         public string name;
+        public string desc;         // 怪物描述
+        public string icon;         // 图标（首字缩写）
         public int hp; public int mp;
         public int attack; public int defense; public int speed;
         public int expReward; public int goldReward;
         public int minFloor;
+        public int maxFloor;        // 最大出现楼层，0=无上限
         public List<int> skillIds = new List<int>();
         public List<ItemDropConfig> drops = new List<ItemDropConfig>();
         public bool isBoss;

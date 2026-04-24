@@ -82,7 +82,7 @@ namespace Game.Config
             => monsters.TryGetValue(id, out var c) ? c : null;
 
         public List<MonsterConfig> GetMonstersByFloor(int floor)
-            => monsters.Values.Where(m => m.minFloor <= floor && !m.isBoss).ToList();
+            => monsters.Values.Where(m => m.minFloor <= floor && (m.maxFloor == 0 || m.maxFloor >= floor) && !m.isBoss).ToList();
 
         public MonsterConfig GetBossByFloor(int floor)
         {
@@ -293,30 +293,73 @@ namespace Game.Config
         {
             monsters = new Dictionary<int, MonsterConfig>
             {
-                [1001] = new MonsterConfig { id = 1001, name = "史莱姆", hp = 30, attack = 5, defense = 2, speed = 3, expReward = 10, goldReward = 5, minFloor = 1, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
-                [1002] = new MonsterConfig { id = 1002, name = "骷髅兵", hp = 50, attack = 8, defense = 4, speed = 5, expReward = 20, goldReward = 10, minFloor = 1, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4001, chance = 0.2f }, new ItemDropConfig { itemId = 1001, chance = 0.1f } } },
-                [1003] = new MonsterConfig { id = 1003, name = "蝙蝠", hp = 25, attack = 6, defense = 1, speed = 10, expReward = 12, goldReward = 6, minFloor = 1, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 3002, chance = 0.05f } } },
-                [1004] = new MonsterConfig { id = 1004, name = "哥布林", hp = 60, attack = 10, defense = 5, speed = 6, expReward = 25, goldReward = 15, minFloor = 2, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f }, new ItemDropConfig { itemId = 1002, chance = 0.08f } } },
-                [1005] = new MonsterConfig { id = 1005, name = "暗影狼", hp = 80, attack = 14, defense = 6, speed = 12, expReward = 35, goldReward = 20, minFloor = 3, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
-                [1006] = new MonsterConfig { id = 1006, name = "石像鬼", hp = 120, attack = 12, defense = 15, speed = 3, expReward = 40, goldReward = 25, minFloor = 4, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 2002, chance = 0.05f } } },
-                [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", hp = 70, attack = 18, defense = 4, speed = 8, expReward = 45, goldReward = 30, minFloor = 5, skillIds = { 5001 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 1007, chance = 0.05f } } },
+                // ==================== 1-4层：基础入门区 ====================
+                // 史莱姆：最弱怪物，均衡AI
+                [1001] = new MonsterConfig { id = 1001, name = "史莱姆", desc = "软绵绵的粘液生物，地牢中最常见的弱小怪物", icon = "史", hp = 30, attack = 5, defense = 2, speed = 3, expReward = 10, goldReward = 5, minFloor = 1, maxFloor = 6, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
+                // 骷髅兵：攻高血厚，狂暴AI
+                [1002] = new MonsterConfig { id = 1002, name = "骷髅兵", desc = "被黑暗力量唤醒的亡灵战士，挥舞着锈蚀的武器", icon = "骷", hp = 50, attack = 8, defense = 4, speed = 5, expReward = 20, goldReward = 10, minFloor = 1, maxFloor = 8, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4001, chance = 0.2f }, new ItemDropConfig { itemId = 1001, chance = 0.1f } } },
+                // 巨型蝙蝠：高速低防，狂暴AI
+                [1003] = new MonsterConfig { id = 1003, name = "巨型蝙蝠", desc = "洞穴中变异的巨大蝙蝠，速度极快但防御脆弱", icon = "蝠", hp = 25, attack = 6, defense = 1, speed = 10, expReward = 12, goldReward = 6, minFloor = 1, maxFloor = 7, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 3002, chance = 0.05f } } },
+                // 哥布林：血厚均衡，入门区小Boss级
+                [1004] = new MonsterConfig { id = 1004, name = "哥布林", desc = "狡猾的绿色小恶魔，喜欢偷袭冒险者", icon = "哥", hp = 60, attack = 10, defense = 5, speed = 6, expReward = 25, goldReward = 15, minFloor = 2, maxFloor = 9, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f }, new ItemDropConfig { itemId = 1002, chance = 0.08f } } },
+                // 暗影狼：高攻高速，过渡怪物
+                [1005] = new MonsterConfig { id = 1005, name = "暗影狼", desc = "被暗影侵蚀的野狼，凶猛而敏捷", icon = "狼", hp = 80, attack = 14, defense = 6, speed = 12, expReward = 35, goldReward = 20, minFloor = 3, maxFloor = 10, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
+                // 重甲兵：高防+眩晕技能
+                [1010] = new MonsterConfig { id = 1010, name = "重甲兵", desc = "穿着厚重铠甲的守卫，攻击虽慢但能造成眩晕", icon = "重", hp = 100, attack = 13, defense = 12, speed = 4, mp = 25, expReward = 38, goldReward = 28, minFloor = 3, maxFloor = 11, skillIds = { 3005 }, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
+                // 毒蛇：高速度+中毒技能
+                [1008] = new MonsterConfig { id = 1008, name = "毒蛇", desc = "剧毒蛇类，咬击附带强烈毒素", icon = "蛇", hp = 55, attack = 11, defense = 3, speed = 14, mp = 20, expReward = 30, goldReward = 18, minFloor = 2, maxFloor = 9, skillIds = { 2006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4001, chance = 0.25f } } },
 
-                // 带状态效果的怪物
-                [1008] = new MonsterConfig { id = 1008, name = "毒蛇", hp = 55, attack = 11, defense = 3, speed = 14, expReward = 30, goldReward = 18, minFloor = 2, skillIds = { 2006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4001, chance = 0.25f } } },
-                [1009] = new MonsterConfig { id = 1009, name = "暗影法师", hp = 65, attack = 16, defense = 3, speed = 9, expReward = 50, goldReward = 35, minFloor = 5, skillIds = { 5006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
-                [1010] = new MonsterConfig { id = 1010, name = "重甲兵", hp = 100, attack = 13, defense = 12, speed = 4, expReward = 38, goldReward = 28, minFloor = 3, skillIds = { 3005 }, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
+                // ==================== 5-9层：法术/DoT引入区 ====================
+                // 石像鬼：高防，防御AI
+                [1006] = new MonsterConfig { id = 1006, name = "石像鬼", desc = "石化守护者，坚硬如岩石的外壳使其极难被击倒", icon = "石", hp = 120, attack = 12, defense = 15, speed = 3, expReward = 40, goldReward = 25, minFloor = 4, maxFloor = 12, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 2002, chance = 0.05f } } },
+                // 暗黑法师：火球术，狂暴AI
+                [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", desc = "掌握黑暗魔法的法师，擅长火系攻击", icon = "暗", hp = 70, attack = 18, defense = 4, speed = 8, mp = 35, expReward = 45, goldReward = 30, minFloor = 5, maxFloor = 13, skillIds = { 5001 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 1007, chance = 0.05f } } },
+                // 暗影法师：沉默技能，控制AI
+                [1009] = new MonsterConfig { id = 1009, name = "暗影法师", desc = "操控暗影之力的法师，能封印敌人的技能", icon = "影", hp = 65, attack = 16, defense = 3, speed = 9, mp = 35, expReward = 50, goldReward = 35, minFloor = 5, maxFloor = 14, skillIds = { 5006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
+                // 丧尸：高血+流血，均衡AI
+                [1011] = new MonsterConfig { id = 1011, name = "丧尸", desc = "腐烂的不死生物，力大无穷且不知疲倦", icon = "丧", hp = 130, attack = 15, defense = 8, speed = 3, mp = 30, expReward = 45, goldReward = 22, minFloor = 5, maxFloor = 14, skillIds = { 1005 }, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 4001, chance = 0.3f } } },
+
+                // ==================== 10-14层：高伤/控制区 ====================
+                // 亡灵骑士：高攻+破甲+降攻，狂暴AI
+                [1012] = new MonsterConfig { id = 1012, name = "亡灵骑士", desc = "堕落的骑士灵魂，身披黑色铠甲挥舞诅咒之剑", icon = "亡", hp = 150, attack = 22, defense = 12, speed = 7, mp = 40, expReward = 65, goldReward = 40, minFloor = 10, maxFloor = 19, skillIds = { 3001, 6011 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4002, chance = 0.2f } } },
+                // 火元素：高攻+燃烧DoT
+                [1013] = new MonsterConfig { id = 1013, name = "火元素", desc = "由纯粹火焰凝聚而成的元素生物，触碰即焚", icon = "火", hp = 110, attack = 25, defense = 6, speed = 9, mp = 30, expReward = 70, goldReward = 45, minFloor = 10, maxFloor = 19, skillIds = { 6013, 5001 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4003, chance = 0.25f } } },
+                // 食人魔：超高血+碎甲击
+                [1014] = new MonsterConfig { id = 1014, name = "食人魔", desc = "体型庞大的食人巨怪，皮糙肉厚力量惊人", icon = "食", hp = 200, attack = 20, defense = 14, speed = 4, mp = 30, expReward = 75, goldReward = 50, minFloor = 10, maxFloor = 19, skillIds = { 6011 }, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 4002, chance = 0.25f } } },
+                // 暗影刺客：高攻高速+弱化术+冰冻
+                [1015] = new MonsterConfig { id = 1015, name = "暗影刺客", desc = "潜伏在黑暗中的致命杀手，先发制人一击致命", icon = "刺", hp = 90, attack = 28, defense = 5, speed = 15, mp = 30, expReward = 80, goldReward = 55, minFloor = 10, maxFloor = 19, skillIds = { 6010, 6015 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 3001, chance = 0.08f } } },
+
+                // ==================== 15-19层：强力debuff/高属性区 ====================
+                // 冰霜巨人：高防高血+迟缓术+冰冻
+                [1016] = new MonsterConfig { id = 1016, name = "冰霜巨人", desc = "远古冰封的巨人，寒气逼人能冻结一切", icon = "冰", hp = 280, attack = 26, defense = 20, speed = 5, mp = 40, expReward = 110, goldReward = 80, minFloor = 15, maxFloor = 24, skillIds = { 6012, 6015 }, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 4004, chance = 0.15f } } },
+                // 恶魔猎犬：高攻高速+燃烧+流血
+                [1017] = new MonsterConfig { id = 1017, name = "恶魔猎犬", desc = "来自地狱的猎犬，灼热的獠牙能撕裂灵魂", icon = "犬", hp = 180, attack = 32, defense = 10, speed = 14, mp = 30, expReward = 120, goldReward = 85, minFloor = 15, maxFloor = 24, skillIds = { 6013, 1005 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4005, chance = 0.05f } } },
+                // 魅魔：Debuffer AI+恐惧+弱化+封印
+                [1018] = new MonsterConfig { id = 1018, name = "魅魔", desc = "以幻魅惑人心的恶魔，擅长削弱敌人再给予致命一击", icon = "魅", hp = 160, attack = 24, defense = 8, speed = 12, mp = 50, expReward = 130, goldReward = 90, minFloor = 15, maxFloor = 24, skillIds = { 6016, 6010, 5006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4004, chance = 0.2f } } },
+                // 深渊之眼：均衡AI+迟缓+封印+剧毒云
+                [1019] = new MonsterConfig { id = 1019, name = "深渊之眼", desc = "悬浮在空中的巨大眼球，凝视它的人会陷入疯狂", icon = "眼", hp = 200, attack = 30, defense = 12, speed = 10, mp = 60, expReward = 140, goldReward = 95, minFloor = 15, maxFloor = 24, skillIds = { 6012, 6014, 5006 }, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 3003, chance = 0.1f } } },
+
+                // ==================== 20-25层：终局挑战区 ====================
+                // 远古龙裔：Boss级AI+烈焰斩+燃烧+龙息术
+                [1020] = new MonsterConfig { id = 1020, name = "远古龙裔", desc = "远古巨龙的后裔，血液中流淌着毁灭的火焰", icon = "龙", hp = 350, attack = 38, defense = 18, speed = 10, mp = 60, expReward = 200, goldReward = 150, minFloor = 20, maxFloor = 0, skillIds = { 6001, 6013, 6003 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4005, chance = 0.1f } } },
+                // 虚空行者：高速+恐惧+封印+弱化
+                [1021] = new MonsterConfig { id = 1021, name = "虚空行者", desc = "穿梭于虚空维度的神秘存在，能扭曲现实法则", icon = "虚", hp = 250, attack = 35, defense = 14, speed = 18, mp = 80, expReward = 220, goldReward = 160, minFloor = 20, maxFloor = 0, skillIds = { 6016, 5006, 6010 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4005, chance = 0.1f } } },
+                // 堕落天使：均衡AI+治疗+祝福+神圣祝福
+                [1022] = new MonsterConfig { id = 1022, name = "堕落天使", desc = "背叛天界的堕天使，拥有强大的治愈和攻击力量", icon = "堕", hp = 320, attack = 36, defense = 16, speed = 13, mp = 100, expReward = 240, goldReward = 170, minFloor = 20, maxFloor = 0, skillIds = { 6006, 6008, 6001 }, aiPattern = MonsterAIPattern.Balanced, drops = { new ItemDropConfig { itemId = 3003, chance = 0.12f } } },
+                // 暗黑龙王精英版：高攻高防+连击+弱化+冰冻
+                [1023] = new MonsterConfig { id = 1023, name = "暗黑龙将", desc = "暗黑龙王麾下最强的龙人将军，身披黑曜石铠甲", icon = "将", hp = 400, attack = 42, defense = 22, speed = 11, mp = 70, expReward = 280, goldReward = 200, minFloor = 23, maxFloor = 0, skillIds = { 6004, 6010, 6015 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 2003, chance = 0.08f } } },
 
                 // ==================== Boss（每5层一个，属性约为同层普通怪2.5倍）====================
                 // L5 暗影领主：高攻+流血技
-                [2001] = new MonsterConfig { id = 2001, name = "暗影领主", hp = 300, attack = 22, defense = 10, speed = 8, mp = 50, expReward = 250, goldReward = 500, minFloor = 5, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9001, 9002 }, drops = { new ItemDropConfig { itemId = 1008, chance = 1f } } },
+                [2001] = new MonsterConfig { id = 2001, name = "暗影领主", desc = "统治地牢上层的暗影之王", icon = "主", hp = 300, attack = 22, defense = 10, speed = 8, mp = 50, expReward = 250, goldReward = 500, minFloor = 5, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9001, 9002 }, drops = { new ItemDropConfig { itemId = 1008, chance = 1f } } },
                 // L10 堕落骑士：高防+眩晕+防御AI
-                [2002] = new MonsterConfig { id = 2002, name = "堕落骑士", hp = 550, attack = 28, defense = 28, speed = 6, mp = 60, expReward = 500, goldReward = 1000, minFloor = 10, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9003, 9004 }, drops = { new ItemDropConfig { itemId = 1009, chance = 1f } } },
+                [2002] = new MonsterConfig { id = 2002, name = "堕落骑士", desc = "背弃誓言的圣骑士，以堕落之力守护地牢中层", icon = "骑", hp = 550, attack = 28, defense = 28, speed = 6, mp = 60, expReward = 500, goldReward = 1000, minFloor = 10, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9003, 9004 }, drops = { new ItemDropConfig { itemId = 1009, chance = 1f } } },
                 // L15 深渊法师：debuff为主+沉默+易伤
-                [2003] = new MonsterConfig { id = 2003, name = "深渊法师", hp = 700, attack = 35, defense = 15, speed = 10, mp = 100, expReward = 750, goldReward = 1500, minFloor = 15, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9005, 9006 }, drops = { new ItemDropConfig { itemId = 2005, chance = 1f } } },
+                [2003] = new MonsterConfig { id = 2003, name = "深渊法师", desc = "钻研深渊禁术的魔导师，擅长诅咒和封印", icon = "渊", hp = 700, attack = 35, defense = 15, speed = 10, mp = 100, expReward = 750, goldReward = 1500, minFloor = 15, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9005, 9006 }, drops = { new ItemDropConfig { itemId = 2005, chance = 1f } } },
                 // L20 混沌巨兽：高血量+高伤害+多阶段
-                [2004] = new MonsterConfig { id = 2004, name = "混沌巨兽", hp = 1000, attack = 42, defense = 25, speed = 7, mp = 80, expReward = 1000, goldReward = 2000, minFloor = 20, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9007, 9008 }, drops = { new ItemDropConfig { itemId = 2006, chance = 1f } } },
+                [2004] = new MonsterConfig { id = 2004, name = "混沌巨兽", desc = "由混沌之力孕育的巨兽，毁灭是它的本能", icon = "兽", hp = 1000, attack = 42, defense = 25, speed = 7, mp = 80, expReward = 1000, goldReward = 2000, minFloor = 20, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9007, 9008 }, drops = { new ItemDropConfig { itemId = 2006, chance = 1f } } },
                 // L25 最终Boss暗黑龙王：三阶段+全技能类型
-                [2005] = new MonsterConfig { id = 2005, name = "暗黑龙王", hp = 1500, attack = 50, defense = 30, speed = 12, mp = 120, expReward = 1500, goldReward = 2500, minFloor = 25, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9009, 9010, 9011 }, drops = { new ItemDropConfig { itemId = 3004, chance = 1f } } }
+                [2005] = new MonsterConfig { id = 2005, name = "暗黑龙王", desc = "地牢最深处的终极统治者，暗黑力量的化身", icon = "王", hp = 1500, attack = 50, defense = 30, speed = 12, mp = 120, expReward = 1500, goldReward = 2500, minFloor = 25, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9009, 9010, 9011 }, drops = { new ItemDropConfig { itemId = 3004, chance = 1f } } }
             };
         }
 
