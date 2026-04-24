@@ -196,7 +196,7 @@
     "3. BattleManager.ExecuteSkill()扩展：处理StatusAttack类型→先计算伤害→再ApplyEffect",
     "4. 怪物配置：部分怪物拥有状态技能(如毒蛇-毒刃、暗影法师-沉默)，由AI(F141)决定使用时机",
     "5. Stun/Silence的约束检查：Stun跳过整个行动阶段(不能攻击/技能/物品)，Silence禁用技能(仍可普攻/物品)"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F140","category":"battle","priority":13,"desc":"速度回合制集成：F130速度属性+F138状态框架在此完全集成，统一回合流程","steps":[
     "1. BattleManager统一回合流程：RoundStart→TickEffects(双方)→DetermineTurnOrder(比较effectiveSpeed)→先手方Action→后手方Action→RoundEnd",
