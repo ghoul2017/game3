@@ -180,7 +180,7 @@
     "3. UI实现：DungeonPanel中显示事件弹窗(深色半透明背景+居中白色卡片)，事件描述文字+1-2个选项按钮",
     "4. 事件弹窗关闭后标记IsCleared=true",
     "5. 事件全部通过UI文字呈现，不需要额外资源"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F138","category":"battle","priority":11,"desc":"状态效果框架：StatusEffect数据类+BattleData管理列表+每回合Tick/衰减/过期","steps":[
     "1. 新增StatusEffect类(Assets/Scripts/Game/Battle/)：EffectType枚举(Bleed/Poison/Stun/Silence/Vulnerable/BuffATK/BuffDEF/BuffSpeed)、Value(效果数值)、Duration(剩余回合)、SourceId(来源技能id)",
