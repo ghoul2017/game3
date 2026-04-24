@@ -76,3 +76,4 @@
 2026-04-25 F139 COMPLETED - 状态效果技能：5种状态攻击(割裂/毒刃/重击/封印/破甲)+StatusAttack类型+3个状态怪物+Stun/Silence约束检查
 2026-04-25 F140 COMPLETED - 速度回合制集成：统一回合流程RoundStart→TickEffects→DetermineTurnOrder→先手Action→后手Action→RoundEnd+Stun/Silence约束+自动战斗适配
 2026-04-25 F141 COMPLETED - 怪物AI模式系统：5种AI模式(Aggressive/Defensive/Debuffer/Balanced/Boss)+AIManager决策器+Boss三阶段+MP/debuff约束+12种怪物配置
+2026-04-25 F142 COMPLETED - 战斗UI增强：状态图标4+4槽位+日志颜色标记+HP/MP条平滑动画+修正值标签+状态弹入淡出动画
