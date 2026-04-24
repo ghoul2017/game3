@@ -204,7 +204,7 @@
     "3. 沉默检测：在技能选择阶段检查是否有Silence效果，有则禁用技能按钮(灰色+solid文字)但保留攻击/物品可用",
     "4. 战斗状态栏(BattlePanel)显示当前回合归属('⚔你的回合'/'敌人回合')，回合切换0.2s过渡",
     "5. 自动战斗适配：AutoBattleCoroutine遵循新回合流程，使用普攻(不受沉默影响)"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F141","category":"battle","priority":14,"desc":"怪物AI模式系统：5种行为模式+模式专属决策逻辑，每种怪物有独特战斗风格","steps":[
     "1. MonsterAIPattern枚举：Aggressive(狂暴-偏好高伤)、Defensive(防御-HP<50%治疗/防御)、Debuffer(控制-优先上debuff)、Balanced(均衡-随机合理决策)、Boss(多阶段)",
