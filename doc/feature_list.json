@@ -164,7 +164,7 @@
     "4. 玩家位置指示器：圆形高亮标记(Image+金色边框)，移动时Lerp平滑过渡0.2s",
     "5. 边界/墙壁处理：不可移动方向不响应点击，无连通方向的键盘输入忽略",
     "6. 更新FogOfWar(F134)：移动后立即刷新迷雾状态"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F136","category":"dungeon","priority":9,"desc":"网格房间内容触发：进入房间根据类型触发战斗/宝箱/泉水/商人/神龛/事件/出口/Boss","steps":[
     "1. DungeonTile.ContentData：RoomType、monsterId、goldAmount、treasureId(宝箱)、skillId(神龛)、itemIds(商人)",
