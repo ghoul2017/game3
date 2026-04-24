@@ -16,6 +16,102 @@ namespace Game.Battle
         // 被动技能：复活已使用标记
         private bool reviveUsed;
 
+        // 装备特殊效果：凤凰羽毛复活已使用标记
+        private bool equipReviveUsed;
+
+        // ---- 装备特殊效果辅助方法 ----
+
+        /// <summary>获取所有装备中指定效果类型的总数值</summary>
+        private int GetEquipEffectTotal(EquipEffectType effectType)
+        {
+            var p = GameManager.Instance.Player;
+            int total = 0;
+            var weapon = ConfigManager.Instance.GetItem(p.weaponId);
+            var armor = ConfigManager.Instance.GetItem(p.armorId);
+            var accessory = ConfigManager.Instance.GetItem(p.accessoryId);
+            if (weapon != null && weapon.equipEffectType == effectType) total += weapon.equipEffectValue;
+            if (armor != null && armor.equipEffectType == effectType) total += armor.equipEffectValue;
+            if (accessory != null && accessory.equipEffectType == effectType) total += accessory.equipEffectValue;
+            return total;
+        }
+
+        /// <summary>装备吸血效果：造成伤害时恢复 effectValue% 的生命</summary>
+        private void ApplyEquipLifesteal(int dmg)
+        {
+            int lifestealRate = GetEquipEffectTotal(EquipEffectType.Lifesteal);
+            if (lifestealRate <= 0 || dmg <= 0) return;
+            var p = GameManager.Instance.Player;
+            int heal = Mathf.Max(1, dmg * lifestealRate / 100);
+            p.hp = Mathf.Min(p.hp + heal, p.maxHp);
+            CurrentBattle.log.Add($"【吸血】装备效果恢复 {heal} 生命");
+        }
+
+        /// <summary>装备Boss增伤倍率</summary>
+        private float GetEquipBossDamageBonus()
+        {
+            if (CurrentBattle == null || !CurrentBattle.isBossBattle) return 1f;
+            int bonus = GetEquipEffectTotal(EquipEffectType.BossDamageBonus);
+            return bonus > 0 ? 1f + bonus / 100f : 1f;
+        }
+
+        /// <summary>装备伤害波动倍率（替换基础伤害浮动）</summary>
+        private float GetEquipDamageVarianceRate()
+        {
+            int variance = GetEquipEffectTotal(EquipEffectType.DamageVariance);
+            return variance > 0 ? variance / 100f : 0f;
+        }
+
+        /// <summary>装备反伤效果：受到攻击时反弹 effectValue% 受到的伤害</summary>
+        private void ApplyEquipThorns(int dmgReceived)
+        {
+            int thornsRate = GetEquipEffectTotal(EquipEffectType.Thorns);
+            if (thornsRate <= 0 || dmgReceived <= 0) return;
+            var m = CurrentBattle?.monster;
+            if (m == null || m.hp <= 0) return;
+            int thornsDmg = Mathf.Max(1, dmgReceived * thornsRate / 100);
+            m.hp = Mathf.Max(0, m.hp - thornsDmg);
+            CurrentBattle.log.Add($"【反伤】装备效果反弹 {thornsDmg} 伤害");
+        }
+
+        /// <summary>装备技能减耗比例（返回 0-100 的百分比）</summary>
+        private int GetEquipSkillCostReduce()
+        {
+            return GetEquipEffectTotal(EquipEffectType.SkillCostReduce);
+        }
+
+        /// <summary>装备自动复活：凤凰羽毛效果，死亡时复活一次恢复 effectValue% HP</summary>
+        private bool TryEquipRevive()
+        {
+            if (equipReviveUsed) return false;
+            int revivePercent = GetEquipEffectTotal(EquipEffectType.AutoRevive);
+            if (revivePercent <= 0) return false;
+            equipReviveUsed = true;
+            var p = GameManager.Instance.Player;
+            int reviveHp = Mathf.Max(1, p.maxHp * revivePercent / 100);
+            p.hp = reviveHp;
+            CurrentBattle.log.Add($"【凤凰羽毛】装备效果触发！复活并恢复 {reviveHp} 生命");
+            // 复活后销毁装备
+            if (p.accessoryId != 0)
+            {
+                var acc = ConfigManager.Instance.GetItem(p.accessoryId);
+                if (acc != null && acc.equipEffectType == EquipEffectType.AutoRevive)
+                {
+                    CurrentBattle.log.Add($"【凤凰羽毛】{acc.name} 已消耗销毁");
+                    p.accessoryId = 0;
+                    p.RecalcStats();
+                }
+            }
+            return true;
+        }
+
+        /// <summary>计算装备减耗后的实际技能消耗</summary>
+        public int GetActualSkillCost(int baseCost)
+        {
+            int reduce = GetEquipSkillCostReduce();
+            if (reduce <= 0) return baseCost;
+            return Mathf.Max(1, baseCost * (100 - reduce) / 100);
+        }
+
         // ---- 被动技能辅助方法 ----
 
         private bool HasPassive(int skillId)
@@ -53,16 +149,21 @@ namespace Game.Battle
             p.mp = Mathf.Min(p.mp + restore, p.maxMp);
         }
 
-        /// <summary>复活：死亡时复活一次，恢复30%HP</summary>
+        /// <summary>复活：被动技能或装备凤凰羽毛，优先被动技能</summary>
         private bool TryRevive()
         {
-            if (!HasPassive(4004) || reviveUsed) return false;
-            var p = GameManager.Instance.Player;
-            reviveUsed = true;
-            int reviveHp = Mathf.Max(1, p.maxHp * 30 / 100);
-            p.hp = reviveHp;
-            CurrentBattle.log.Add($"【复活】被动技能触发！恢复 {reviveHp} 生命");
-            return true;
+            // 优先被动技能复活
+            if (HasPassive(4004) && !reviveUsed)
+            {
+                reviveUsed = true;
+                var p = GameManager.Instance.Player;
+                int reviveHp = Mathf.Max(1, p.maxHp * 30 / 100);
+                p.hp = reviveHp;
+                CurrentBattle.log.Add($"【复活】被动技能触发！恢复 {reviveHp} 生命");
+                return true;
+            }
+            // 其次装备复活（凤凰羽毛）
+            return TryEquipRevive();
         }
 
         /// <summary>
@@ -98,6 +199,7 @@ namespace Game.Battle
             CurrentBattle.monsterEffects.Clear();
             CurrentBattle.log.Clear();
             reviveUsed = false;
+            equipReviveUsed = false;
 
             // Boss战特殊处理
             bool isBoss = battleData.monster.isBoss;
@@ -251,9 +353,10 @@ namespace Game.Battle
 
             // 狂战之怒：HP越低攻击越高
             int totalAtk = GetEffectiveATK(true);
-            int rawDmg = CalcDamage(totalAtk, GetEffectiveDEF(false));
+            int rawDmg = CalcPlayerDamage(totalAtk, GetEffectiveDEF(false));
             float monsterVuln = GetVulnerableMultiplier(false);
-            int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * monsterVuln));
+            float bossBonus = GetEquipBossDamageBonus();
+            int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(rawDmg * monsterVuln * bossBonus));
             b.monster.hp -= dmg;
             string msg = $"你攻击了 {b.monster.name}，造成 {dmg} 点伤害";
 
@@ -268,6 +371,9 @@ namespace Game.Battle
                     msg += $"，吸血恢复 {lifesteal} 生命";
                 }
             }
+
+            // 装备吸血效果
+            ApplyEquipLifesteal(dmg);
 
             b.log.Add(msg);
 
@@ -321,14 +427,14 @@ namespace Game.Battle
                 return silenceMsg;
             }
 
-            if (p.mp < skill.mpCost)
+            if (p.mp < GetActualSkillCost(skill.mpCost))
             {
                 string errMsg = "法力不足！";
                 b.log.Add(errMsg);
                 return errMsg;
             }
 
-            p.mp -= skill.mpCost;
+            p.mp -= GetActualSkillCost(skill.mpCost);
             string msg;
 
             if (skill.type == SkillType.Passive)
@@ -419,9 +525,10 @@ namespace Game.Battle
 
             // 主动攻击技能 / 状态攻击技能 / DoT技能 / 控制技能
             int totalAtk = GetEffectiveATK(true);
-            int skillRawDmg = CalcDamage((int)(totalAtk * skill.power / 100f), GetEffectiveDEF(false));
+            int skillRawDmg = CalcPlayerDamage((int)(totalAtk * skill.power / 100f), GetEffectiveDEF(false));
             float skillVuln = GetVulnerableMultiplier(false);
-            int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(skillRawDmg * skillVuln));
+            float skillBossBonus = GetEquipBossDamageBonus();
+            int dmg = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(skillRawDmg * skillVuln * skillBossBonus));
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
@@ -470,6 +577,9 @@ namespace Game.Battle
                     msg += $"，吸血恢复 {lifesteal} 生命";
                 }
             }
+
+            // 装备吸血效果
+            ApplyEquipLifesteal(dmg);
 
             // 被动技能：法力汲取（技能造成伤害时回复伤害值10%的MP）
             if (HasPassive(6017) && dmg > 0)
@@ -621,10 +731,19 @@ namespace Game.Battle
 
                     b.log.Add(msg);
 
+                    // 装备反伤效果
+                    ApplyEquipThorns(dmg);
+
                     if (p.hp <= 0)
                     {
                         if (TryRevive()) return msg;
                         return msg + "\n" + OnDefeat();
+                    }
+                    // 反伤可能导致怪物死亡
+                    if (m.hp <= 0)
+                    {
+                        m.hp = 0;
+                        return msg + "\n" + OnVictory();
                     }
                     return msg;
                 }
@@ -640,10 +759,19 @@ namespace Game.Battle
             if (decision.damageBonus > 1f) normalMsg += "（狂暴加成）";
             b.log.Add(normalMsg);
 
+            // 装备反伤效果
+            ApplyEquipThorns(normalDmg);
+
             if (p.hp <= 0)
             {
                 if (TryRevive()) return normalMsg;
                 return normalMsg + "\n" + OnDefeat();
+            }
+            // 反伤可能导致怪物死亡
+            if (m.hp <= 0)
+            {
+                m.hp = 0;
+                return normalMsg + "\n" + OnVictory();
             }
             return normalMsg;
         }
@@ -888,6 +1016,20 @@ namespace Game.Battle
             int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - def / GameConstants.DEFENSE_DIVISOR);
             int variance = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(baseDmg * GameConstants.DAMAGE_VARIANCE_RATE));
             return Mathf.Max(GameConstants.MIN_DAMAGE, baseDmg + Random.Range(-variance, variance + 1));
+        }
+
+        /// <summary>计算玩家伤害（含装备伤害波动效果）</summary>
+        private int CalcPlayerDamage(int atk, int def)
+        {
+            int baseDmg = Mathf.Max(GameConstants.MIN_DAMAGE, atk - def / GameConstants.DEFENSE_DIVISOR);
+            float varianceRate = GetEquipDamageVarianceRate();
+            if (varianceRate > 0f)
+            {
+                int variance = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(baseDmg * varianceRate));
+                return Mathf.Max(GameConstants.MIN_DAMAGE, baseDmg + Random.Range(-variance, variance + 1));
+            }
+            int normalVariance = Mathf.Max(GameConstants.MIN_DAMAGE, (int)(baseDmg * GameConstants.DAMAGE_VARIANCE_RATE));
+            return Mathf.Max(GameConstants.MIN_DAMAGE, baseDmg + Random.Range(-normalVariance, normalVariance + 1));
         }
 
         // ==================== 状态效果系统 ====================

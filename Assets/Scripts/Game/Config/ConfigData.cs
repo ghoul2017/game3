@@ -86,6 +86,10 @@ namespace Game.Config
         public int restoreHp;
         public int restoreMp;
         public int reqLevel;
+        public int speed;              // 速度加成
+        public int sellPrice;          // 售价（=购买价*50%，0时按 price/2 计算）
+        public EquipEffectType equipEffectType = EquipEffectType.None;   // 装备特殊效果类型
+        public int equipEffectValue;   // 装备特殊效果数值
     }
 
     [System.Serializable]

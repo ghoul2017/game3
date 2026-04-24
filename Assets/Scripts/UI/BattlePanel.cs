@@ -1138,8 +1138,9 @@ namespace Game.UI
 
                 var row = skillRows[idx];
                 if (row.obj == null || row.btn == null || row.label == null) { idx++; continue; }
-                bool canUse = player.mp >= skill.mpCost;
-                row.label.text = $"{skill.name}  (MP:{skill.mpCost})";
+                int actualCost = BattleManager.Instance.GetActualSkillCost(skill.mpCost);
+                bool canUse = player.mp >= actualCost;
+                row.label.text = $"{skill.name}  (MP:{actualCost})";
                 row.label.color = canUse ? UIBuilder.Gold : UIBuilder.TextDim;
                 row.btn.interactable = canUse;
                 row.btn.onClick.RemoveAllListeners();

@@ -253,39 +253,39 @@ namespace Game.Config
         {
             items = new Dictionary<int, ItemConfig>
             {
-                // 武器
-                [1001] = new ItemConfig { id = 1001, name = "铁剑", desc = "普通的铁剑", type = ItemType.Weapon, price = 50, atk = 5, reqLevel = 1 },
-                [1002] = new ItemConfig { id = 1002, name = "钢剑", desc = "精钢打造的长剑", type = ItemType.Weapon, price = 150, atk = 10, reqLevel = 3 },
-                [1003] = new ItemConfig { id = 1003, name = "秘银剑", desc = "秘银打造的利剑", type = ItemType.Weapon, price = 400, atk = 18, reqLevel = 6 },
-                [1004] = new ItemConfig { id = 1004, name = "短弓", desc = "猎人使用的短弓", type = ItemType.Weapon, price = 50, atk = 4, crit = 3, reqLevel = 1 },
-                [1005] = new ItemConfig { id = 1005, name = "长弓", desc = "精制的长弓", type = ItemType.Weapon, price = 160, atk = 9, crit = 5, reqLevel = 3 },
-                [1006] = new ItemConfig { id = 1006, name = "法杖", desc = "基础法杖", type = ItemType.Weapon, price = 60, atk = 3, mp = 10, reqLevel = 1 },
-                [1007] = new ItemConfig { id = 1007, name = "秘法之杖", desc = "蕴含魔力的法杖", type = ItemType.Weapon, price = 200, atk = 7, mp = 25, reqLevel = 4 },
+                // ==================== 武器（8件，L1-L18）====================
+                [1001] = new ItemConfig { id = 1001, name = "短剑", desc = "普通的短剑", type = ItemType.Weapon, price = 50, sellPrice = 25, atk = 5, reqLevel = 1 },
+                [1002] = new ItemConfig { id = 1002, name = "长剑", desc = "精钢打造的长剑", type = ItemType.Weapon, price = 150, sellPrice = 75, atk = 10, reqLevel = 3 },
+                [1003] = new ItemConfig { id = 1003, name = "战斧", desc = "沉重但威力强大的战斧", type = ItemType.Weapon, price = 300, sellPrice = 150, atk = 15, hp = 20, reqLevel = 5 },
+                [1004] = new ItemConfig { id = 1004, name = "秘银剑", desc = "秘银打造的轻盈利剑", type = ItemType.Weapon, price = 500, sellPrice = 250, atk = 20, speed = 3, reqLevel = 7 },
+                [1005] = new ItemConfig { id = 1005, name = "暗影之刃", desc = "暗影力量笼罩的利刃", type = ItemType.Weapon, price = 800, sellPrice = 400, atk = 25, reqLevel = 9, equipEffectType = EquipEffectType.CritChance, equipEffectValue = 8 },
+                [1006] = new ItemConfig { id = 1006, name = "龙牙剑", desc = "龙牙锻造的嗜血之剑", type = ItemType.Weapon, price = 1200, sellPrice = 600, atk = 35, reqLevel = 12, equipEffectType = EquipEffectType.Lifesteal, equipEffectValue = 10 },
+                [1007] = new ItemConfig { id = 1007, name = "圣剑", desc = "神圣力量加持的圣洁之剑", type = ItemType.Weapon, price = 1800, sellPrice = 900, atk = 45, reqLevel = 15, equipEffectType = EquipEffectType.BossDamageBonus, equipEffectValue = 20 },
+                [1008] = new ItemConfig { id = 1008, name = "混沌之刃", desc = "混沌之力孕育的不确定性之刃", type = ItemType.Weapon, price = 2500, sellPrice = 1250, atk = 55, reqLevel = 18, equipEffectType = EquipEffectType.DamageVariance, equipEffectValue = 30 },
 
-                // 防具
-                [2001] = new ItemConfig { id = 2001, name = "皮甲", desc = "轻便的皮甲", type = ItemType.Armor, price = 40, def = 3, hp = 10, reqLevel = 1 },
-                [2002] = new ItemConfig { id = 2002, name = "锁子甲", desc = "环环相扣的锁甲", type = ItemType.Armor, price = 120, def = 7, hp = 25, reqLevel = 3 },
-                [2003] = new ItemConfig { id = 2003, name = "板甲", desc = "重型板甲", type = ItemType.Armor, price = 350, def = 14, hp = 50, reqLevel = 6 },
-                [2004] = new ItemConfig { id = 2004, name = "法师长袍", desc = "附魔的长袍", type = ItemType.Armor, price = 80, def = 2, mp = 15, reqLevel = 1 },
+                // ==================== 防具（7件，L1-L18）====================
+                [2001] = new ItemConfig { id = 2001, name = "布甲", desc = "基础的布质护甲", type = ItemType.Armor, price = 30, sellPrice = 15, def = 3, reqLevel = 1 },
+                [2002] = new ItemConfig { id = 2002, name = "皮甲", desc = "轻便坚韧的皮甲", type = ItemType.Armor, price = 100, sellPrice = 50, def = 6, reqLevel = 3 },
+                [2003] = new ItemConfig { id = 2003, name = "锁子甲", desc = "环环相扣的锁甲", type = ItemType.Armor, price = 250, sellPrice = 125, def = 10, hp = 30, reqLevel = 5 },
+                [2004] = new ItemConfig { id = 2004, name = "板甲", desc = "重型板甲，防御坚固", type = ItemType.Armor, price = 450, sellPrice = 225, def = 15, reqLevel = 7 },
+                [2005] = new ItemConfig { id = 2005, name = "秘银甲", desc = "秘银编织的轻盈铠甲", type = ItemType.Armor, price = 800, sellPrice = 400, def = 20, reqLevel = 10, equipEffectType = EquipEffectType.Dodge, equipEffectValue = 5 },
+                [2006] = new ItemConfig { id = 2006, name = "龙鳞甲", desc = "龙鳞锻造的重甲", type = ItemType.Armor, price = 1400, sellPrice = 700, def = 28, hp = 80, reqLevel = 13 },
+                [2007] = new ItemConfig { id = 2007, name = "暗金甲", desc = "暗金铸造的诅咒铠甲", type = ItemType.Armor, price = 2200, sellPrice = 1100, def = 35, reqLevel = 16, equipEffectType = EquipEffectType.Thorns, equipEffectValue = 15 },
 
-                // 饰品
-                [3001] = new ItemConfig { id = 3001, name = "力量戒指", desc = "增加暴击率", type = ItemType.Accessory, price = 80, crit = 5, reqLevel = 1 },
-                [3002] = new ItemConfig { id = 3002, name = "敏捷护符", desc = "增加闪避率", type = ItemType.Accessory, price = 80, dodge = 5, reqLevel = 1 },
-                [3003] = new ItemConfig { id = 3003, name = "生命项链", desc = "增加生命值", type = ItemType.Accessory, price = 100, hp = 30, reqLevel = 2 },
+                // ==================== 饰品（6件，L1-L18）====================
+                [3001] = new ItemConfig { id = 3001, name = "力量戒指", desc = "蕴含力量的戒指", type = ItemType.Accessory, price = 120, sellPrice = 60, atk = 8, reqLevel = 1 },
+                [3002] = new ItemConfig { id = 3002, name = "敏捷护符", desc = "提升速度和闪避的护符", type = ItemType.Accessory, price = 120, sellPrice = 60, speed = 5, dodge = 5, reqLevel = 1 },
+                [3003] = new ItemConfig { id = 3003, name = "生命护符", desc = "蕴含生命力的护符", type = ItemType.Accessory, price = 150, sellPrice = 75, hp = 100, reqLevel = 3 },
+                [3004] = new ItemConfig { id = 3004, name = "勇气勋章", desc = "勇气加持的荣誉勋章", type = ItemType.Accessory, price = 300, sellPrice = 150, atk = 12, def = 8, reqLevel = 6 },
+                [3005] = new ItemConfig { id = 3005, name = "贤者之石", desc = "蕴含魔力的贤者遗物", type = ItemType.Accessory, price = 600, sellPrice = 300, mp = 50, reqLevel = 10, equipEffectType = EquipEffectType.SkillCostReduce, equipEffectValue = 15 },
+                [3006] = new ItemConfig { id = 3006, name = "凤凰羽毛", desc = "凤凰尾羽，死亡时复活一次", type = ItemType.Accessory, price = 1000, sellPrice = 500, reqLevel = 14, equipEffectType = EquipEffectType.AutoRevive, equipEffectValue = 50 },
 
-                // 消耗品
+                // ==================== 消耗品 ====================
                 [4001] = new ItemConfig { id = 4001, name = "生命药水", desc = "恢复50点生命", type = ItemType.Consumable, price = 15, restoreHp = 50 },
                 [4002] = new ItemConfig { id = 4002, name = "大生命药水", desc = "恢复120点生命", type = ItemType.Consumable, price = 40, restoreHp = 120 },
                 [4003] = new ItemConfig { id = 4003, name = "法力药水", desc = "恢复30点法力", type = ItemType.Consumable, price = 15, restoreMp = 30 },
                 [4004] = new ItemConfig { id = 4004, name = "大法力药水", desc = "恢复80点法力", type = ItemType.Consumable, price = 40, restoreMp = 80 },
-                [4005] = new ItemConfig { id = 4005, name = "全恢复药水", desc = "恢复全部生命和法力", type = ItemType.Consumable, price = 100, restoreHp = 9999, restoreMp = 9999 },
-
-                // Boss专属稀有装备（必掉）
-                [1008] = new ItemConfig { id = 1008, name = "暗影之刃", desc = "暗影领主的佩刀，攻击+22", type = ItemType.Weapon, price = 500, atk = 22, reqLevel = 3 },
-                [1009] = new ItemConfig { id = 1009, name = "堕落圣剑", desc = "堕落骑士的圣剑，攻击+30", type = ItemType.Weapon, price = 800, atk = 30, reqLevel = 5 },
-                [2005] = new ItemConfig { id = 2005, name = "深渊法袍", desc = "深渊法师的法袍，防御+20 生命+80", type = ItemType.Armor, price = 900, def = 20, hp = 80, reqLevel = 7 },
-                [2006] = new ItemConfig { id = 2006, name = "混沌铠甲", desc = "混沌巨兽的甲壳制成，防御+28 生命+120", type = ItemType.Armor, price = 1200, def = 28, hp = 120, reqLevel = 9 },
-                [3004] = new ItemConfig { id = 3004, name = "龙牙项链", desc = "暗黑龙王的牙齿制成的项链，暴击+15 闪避+10", type = ItemType.Accessory, price = 1500, crit = 15, dodge = 10, reqLevel = 10 }
+                [4005] = new ItemConfig { id = 4005, name = "全恢复药水", desc = "恢复全部生命和法力", type = ItemType.Consumable, price = 100, restoreHp = 9999, restoreMp = 9999 }
             };
         }
 
@@ -313,7 +313,7 @@ namespace Game.Config
                 // 石像鬼：高防，防御AI
                 [1006] = new MonsterConfig { id = 1006, name = "石像鬼", desc = "石化守护者，坚硬如岩石的外壳使其极难被击倒", icon = "石", hp = 120, attack = 12, defense = 15, speed = 3, expReward = 40, goldReward = 25, minFloor = 4, maxFloor = 12, aiPattern = MonsterAIPattern.Defensive, drops = { new ItemDropConfig { itemId = 2002, chance = 0.05f } } },
                 // 暗黑法师：火球术，狂暴AI
-                [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", desc = "掌握黑暗魔法的法师，擅长火系攻击", icon = "暗", hp = 70, attack = 18, defense = 4, speed = 8, mp = 35, expReward = 45, goldReward = 30, minFloor = 5, maxFloor = 13, skillIds = { 5001 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 1007, chance = 0.05f } } },
+                [1007] = new MonsterConfig { id = 1007, name = "暗黑法师", desc = "掌握黑暗魔法的法师，擅长火系攻击", icon = "暗", hp = 70, attack = 18, defense = 4, speed = 8, mp = 35, expReward = 45, goldReward = 30, minFloor = 5, maxFloor = 13, skillIds = { 5001 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
                 // 暗影法师：沉默技能，控制AI
                 [1009] = new MonsterConfig { id = 1009, name = "暗影法师", desc = "操控暗影之力的法师，能封印敌人的技能", icon = "影", hp = 65, attack = 16, defense = 3, speed = 9, mp = 35, expReward = 50, goldReward = 35, minFloor = 5, maxFloor = 14, skillIds = { 5006 }, aiPattern = MonsterAIPattern.Debuffer, drops = { new ItemDropConfig { itemId = 4003, chance = 0.2f } } },
                 // 丧尸：高血+流血，均衡AI
@@ -350,16 +350,16 @@ namespace Game.Config
                 [1023] = new MonsterConfig { id = 1023, name = "暗黑龙将", desc = "暗黑龙王麾下最强的龙人将军，身披黑曜石铠甲", icon = "将", hp = 400, attack = 42, defense = 22, speed = 11, mp = 70, expReward = 280, goldReward = 200, minFloor = 23, maxFloor = 0, skillIds = { 6004, 6010, 6015 }, aiPattern = MonsterAIPattern.Aggressive, drops = { new ItemDropConfig { itemId = 2003, chance = 0.08f } } },
 
                 // ==================== Boss（每5层一个，属性约为同层普通怪2.5倍）====================
-                // L5 暗影领主：高攻+流血技
-                [2001] = new MonsterConfig { id = 2001, name = "暗影领主", desc = "统治地牢上层的暗影之王", icon = "主", hp = 300, attack = 22, defense = 10, speed = 8, mp = 50, expReward = 250, goldReward = 500, minFloor = 5, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9001, 9002 }, drops = { new ItemDropConfig { itemId = 1008, chance = 1f } } },
-                // L10 堕落骑士：高防+眩晕+防御AI
-                [2002] = new MonsterConfig { id = 2002, name = "堕落骑士", desc = "背弃誓言的圣骑士，以堕落之力守护地牢中层", icon = "骑", hp = 550, attack = 28, defense = 28, speed = 6, mp = 60, expReward = 500, goldReward = 1000, minFloor = 10, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9003, 9004 }, drops = { new ItemDropConfig { itemId = 1009, chance = 1f } } },
-                // L15 深渊法师：debuff为主+沉默+易伤
+                // L5 暗影领主：高攻+流血技，必掉暗影之刃(L9)
+                [2001] = new MonsterConfig { id = 2001, name = "暗影领主", desc = "统治地牢上层的暗影之王", icon = "主", hp = 300, attack = 22, defense = 10, speed = 8, mp = 50, expReward = 250, goldReward = 500, minFloor = 5, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9001, 9002 }, drops = { new ItemDropConfig { itemId = 1005, chance = 1f } } },
+                // L10 堕落骑士：高防+眩晕+防御AI，必掉龙牙剑(L12)
+                [2002] = new MonsterConfig { id = 2002, name = "堕落骑士", desc = "背弃誓言的圣骑士，以堕落之力守护地牢中层", icon = "骑", hp = 550, attack = 28, defense = 28, speed = 6, mp = 60, expReward = 500, goldReward = 1000, minFloor = 10, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9003, 9004 }, drops = { new ItemDropConfig { itemId = 1006, chance = 1f } } },
+                // L15 深渊法师：debuff为主+沉默+易伤，必掉秘银甲(L10)
                 [2003] = new MonsterConfig { id = 2003, name = "深渊法师", desc = "钻研深渊禁术的魔导师，擅长诅咒和封印", icon = "渊", hp = 700, attack = 35, defense = 15, speed = 10, mp = 100, expReward = 750, goldReward = 1500, minFloor = 15, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9005, 9006 }, drops = { new ItemDropConfig { itemId = 2005, chance = 1f } } },
-                // L20 混沌巨兽：高血量+高伤害+多阶段
+                // L20 混沌巨兽：高血量+高伤害+多阶段，必掉龙鳞甲(L13)
                 [2004] = new MonsterConfig { id = 2004, name = "混沌巨兽", desc = "由混沌之力孕育的巨兽，毁灭是它的本能", icon = "兽", hp = 1000, attack = 42, defense = 25, speed = 7, mp = 80, expReward = 1000, goldReward = 2000, minFloor = 20, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9007, 9008 }, drops = { new ItemDropConfig { itemId = 2006, chance = 1f } } },
-                // L25 最终Boss暗黑龙王：三阶段+全技能类型
-                [2005] = new MonsterConfig { id = 2005, name = "暗黑龙王", desc = "地牢最深处的终极统治者，暗黑力量的化身", icon = "王", hp = 1500, attack = 50, defense = 30, speed = 12, mp = 120, expReward = 1500, goldReward = 2500, minFloor = 25, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9009, 9010, 9011 }, drops = { new ItemDropConfig { itemId = 3004, chance = 1f } } }
+                // L25 最终Boss暗黑龙王：三阶段+全技能类型，必掉凤凰羽毛(L14)
+                [2005] = new MonsterConfig { id = 2005, name = "暗黑龙王", desc = "地牢最深处的终极统治者，暗黑力量的化身", icon = "王", hp = 1500, attack = 50, defense = 30, speed = 12, mp = 120, expReward = 1500, goldReward = 2500, minFloor = 25, isBoss = true, aiPattern = MonsterAIPattern.Boss, skillIds = { 9009, 9010, 9011 }, drops = { new ItemDropConfig { itemId = 3006, chance = 1f } } }
             };
         }
 

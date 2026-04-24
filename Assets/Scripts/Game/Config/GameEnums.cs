@@ -70,6 +70,22 @@ namespace Game.Config
     }
 
     /// <summary>
+    /// 装备特殊效果类型
+    /// </summary>
+    public enum EquipEffectType
+    {
+        None,              // 无特殊效果
+        CritChance,        // 暴击率
+        Dodge,             // 闪避
+        Lifesteal,         // 吸血（造成伤害时恢复 effectValue% 的生命）
+        Thorns,            // 反伤（受到攻击时反弹 effectValue% 受到的伤害）
+        SkillCostReduce,   // 技能减耗（技能消耗减少 effectValue%）
+        BossDamageBonus,   // Boss增伤（对Boss伤害增加 effectValue%）
+        DamageVariance,    // 伤害波动（伤害在 effectValue% 范围内随机浮动）
+        AutoRevive         // 自动复活（死亡时复活一次，恢复 effectValue% HP，战斗中生效后销毁）
+    }
+
+    /// <summary>
     /// 地牢网格瓦片类型
     /// </summary>
     public enum TileType

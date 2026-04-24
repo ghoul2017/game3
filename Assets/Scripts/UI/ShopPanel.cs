@@ -154,6 +154,10 @@ namespace Game.UI
                 if (item.def > 0) statStr += $" 防+{item.def}";
                 if (item.hp > 0) statStr += $" HP+{item.hp}";
                 if (item.mp > 0) statStr += $" MP+{item.mp}";
+                if (item.speed > 0) statStr += $" 速+{item.speed}";
+                if (item.crit > 0) statStr += $" 暴+{item.crit}";
+                if (item.dodge > 0) statStr += $" 闪+{item.dodge}";
+                if (item.equipEffectType != EquipEffectType.None) statStr += $" [{GetEquipEffectName(item.equipEffectType, item.equipEffectValue)}]";
                 if (item.restoreHp > 0) statStr += $" 恢复HP {item.restoreHp}";
                 if (item.restoreMp > 0) statStr += $" 恢复MP {item.restoreMp}";
 
@@ -198,6 +202,23 @@ namespace Game.UI
             player.gold -= price;
             player.bagItems.Add(itemId);
             RefreshUI();
+        }
+
+        /// <summary>获取装备特殊效果的显示名称</summary>
+        private static string GetEquipEffectName(EquipEffectType type, int value)
+        {
+            return type switch
+            {
+                EquipEffectType.CritChance => $"暴击+{value}%",
+                EquipEffectType.Dodge => $"闪避+{value}%",
+                EquipEffectType.Lifesteal => $"吸血{value}%",
+                EquipEffectType.Thorns => $"反伤{value}%",
+                EquipEffectType.SkillCostReduce => $"技能耗-{value}%",
+                EquipEffectType.BossDamageBonus => $"Boss伤+{value}%",
+                EquipEffectType.DamageVariance => $"波动{value}%",
+                EquipEffectType.AutoRevive => $"复活({value}%HP)",
+                _ => ""
+            };
         }
     }
 }

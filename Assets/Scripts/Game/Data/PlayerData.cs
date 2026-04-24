@@ -74,9 +74,52 @@ namespace Game.Data
             var weapon = ConfigManager.Instance.GetItem(weaponId);
             var armor = ConfigManager.Instance.GetItem(armorId);
             var accessory = ConfigManager.Instance.GetItem(accessoryId);
-            if (weapon != null) { attack += weapon.atk; }
-            if (armor != null) { defense += armor.def; maxHp += armor.hp; }
-            if (accessory != null) { critRate += accessory.crit; dodgeRate += accessory.dodge; }
+            if (weapon != null)
+            {
+                attack += weapon.atk;
+                maxHp += weapon.hp;
+                maxMp += weapon.mp;
+                speed += weapon.speed;
+                critRate += weapon.crit;
+                dodgeRate += weapon.dodge;
+                // 装备特殊效果：暴击率
+                if (weapon.equipEffectType == EquipEffectType.CritChance)
+                    critRate += weapon.equipEffectValue;
+                // 装备特殊效果：闪避
+                if (weapon.equipEffectType == EquipEffectType.Dodge)
+                    dodgeRate += weapon.equipEffectValue;
+            }
+            if (armor != null)
+            {
+                defense += armor.def;
+                maxHp += armor.hp;
+                maxMp += armor.mp;
+                speed += armor.speed;
+                critRate += armor.crit;
+                dodgeRate += armor.dodge;
+                // 装备特殊效果：暴击率
+                if (armor.equipEffectType == EquipEffectType.CritChance)
+                    critRate += armor.equipEffectValue;
+                // 装备特殊效果：闪避
+                if (armor.equipEffectType == EquipEffectType.Dodge)
+                    dodgeRate += armor.equipEffectValue;
+            }
+            if (accessory != null)
+            {
+                attack += accessory.atk;
+                defense += accessory.def;
+                maxHp += accessory.hp;
+                maxMp += accessory.mp;
+                speed += accessory.speed;
+                critRate += accessory.crit;
+                dodgeRate += accessory.dodge;
+                // 装备特殊效果：暴击率
+                if (accessory.equipEffectType == EquipEffectType.CritChance)
+                    critRate += accessory.equipEffectValue;
+                // 装备特殊效果：闪避
+                if (accessory.equipEffectType == EquipEffectType.Dodge)
+                    dodgeRate += accessory.equipEffectValue;
+            }
 
             // 宝物加成（百分比）
             foreach (var tid in treasures)
