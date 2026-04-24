@@ -75,7 +75,7 @@ namespace Game.Config
                     strBase = 12, strGrow = 3, agiBase = 6, agiGrow = 1,
                     intBase = 4, intGrow = 1, vitBase = 10, vitGrow = 2,
                     hpBase = 50, mpBase = 20, atkBase = 8, defBase = 4,
-                    critBase = 5, dodgeBase = 3,
+                    critBase = 5, dodgeBase = 3, speedBase = 10,
                     defaultSkillIds = new List<int> { 1001 }
                 },
                 [Profession.Ranger] = new ProfessionConfig
@@ -84,7 +84,7 @@ namespace Game.Config
                     strBase = 8, strGrow = 2, agiBase = 12, agiGrow = 3,
                     intBase = 6, intGrow = 1, vitBase = 6, vitGrow = 1,
                     hpBase = 35, mpBase = 30, atkBase = 6, defBase = 2,
-                    critBase = 10, dodgeBase = 10,
+                    critBase = 10, dodgeBase = 10, speedBase = 12,
                     defaultSkillIds = new List<int> { 2001 }
                 },
                 [Profession.Knight] = new ProfessionConfig
@@ -93,7 +93,7 @@ namespace Game.Config
                     strBase = 8, strGrow = 2, agiBase = 4, agiGrow = 1,
                     intBase = 4, intGrow = 1, vitBase = 14, vitGrow = 3,
                     hpBase = 70, mpBase = 15, atkBase = 5, defBase = 10,
-                    critBase = 3, dodgeBase = 2,
+                    critBase = 3, dodgeBase = 2, speedBase = 10,
                     defaultSkillIds = new List<int> { 3001 }
                 },
                 [Profession.Priest] = new ProfessionConfig
@@ -102,7 +102,7 @@ namespace Game.Config
                     strBase = 4, strGrow = 1, agiBase = 6, agiGrow = 1,
                     intBase = 12, intGrow = 3, vitBase = 8, vitGrow = 2,
                     hpBase = 40, mpBase = 60, atkBase = 3, defBase = 3,
-                    critBase = 4, dodgeBase = 5,
+                    critBase = 4, dodgeBase = 5, speedBase = 10,
                     defaultSkillIds = new List<int> { 4001 }
                 },
                 [Profession.Mage] = new ProfessionConfig
@@ -111,7 +111,7 @@ namespace Game.Config
                     strBase = 4, strGrow = 1, agiBase = 6, agiGrow = 1,
                     intBase = 14, intGrow = 3, vitBase = 6, vitGrow = 1,
                     hpBase = 30, mpBase = 70, atkBase = 4, defBase = 2,
-                    critBase = 6, dodgeBase = 4,
+                    critBase = 6, dodgeBase = 4, speedBase = 10,
                     defaultSkillIds = new List<int> { 5001 }
                 }
             };
@@ -149,7 +149,13 @@ namespace Game.Config
                 [5001] = new SkillConfig { id = 5001, name = "火球术", desc = "基础火系魔法", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 160, level = 1 },
                 [5002] = new SkillConfig { id = 5002, name = "冰甲", desc = "提升防御和减伤", type = SkillType.Buff, profession = Profession.Mage, mpCost = 8, power = 0, level = 1, buffId = 5, buffTurns = 3 },
                 [5003] = new SkillConfig { id = 5003, name = "暴风雪", desc = "强力冰系范围攻击", type = SkillType.Active, profession = Profession.Mage, mpCost = 15, power = 220, level = 3, prereqSkillId = 5001, isAoE = true },
-                [5004] = new SkillConfig { id = 5004, name = "魔力涌动", desc = "每回合恢复法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 5, prereqSkillId = 5002 }
+                [5004] = new SkillConfig { id = 5004, name = "魔力涌动", desc = "每回合恢复法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 5, prereqSkillId = 5002 },
+
+                // 游侠额外技能
+                [2005] = new SkillConfig { id = 2005, name = "加速术", desc = "提升自身速度10点，持续3回合", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 2, buffId = 6, buffTurns = 3 },
+
+                // 法师额外技能
+                [5005] = new SkillConfig { id = 5005, name = "减速术", desc = "降低敌人速度10点，持续3回合", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 80, level = 2, debuffSpeed = 10, debuffTurns = 3 }
             };
         }
 
@@ -225,7 +231,9 @@ namespace Game.Config
                 [2] = new BuffConfig { id = 2, name = "闪避强化", desc = "防御力提升25%", effectType = 1, effectValue = 25 },
                 [3] = new BuffConfig { id = 3, name = "铁壁强化", desc = "防御力提升50%", effectType = 1, effectValue = 50 },
                 [4] = new BuffConfig { id = 4, name = "祝福强化", desc = "攻防提升20%", effectType = 2, effectValue = 20 },
-                [5] = new BuffConfig { id = 5, name = "冰甲强化", desc = "防御力提升40%", effectType = 1, effectValue = 40 }
+                [5] = new BuffConfig { id = 5, name = "冰甲强化", desc = "防御力提升40%", effectType = 1, effectValue = 40 },
+                [6] = new BuffConfig { id = 6, name = "加速", desc = "速度+10", effectType = 3, effectValue = 10 },
+                [7] = new BuffConfig { id = 7, name = "减速", desc = "敌人速度-10", effectType = 4, effectValue = 10 }
             };
         }
     }

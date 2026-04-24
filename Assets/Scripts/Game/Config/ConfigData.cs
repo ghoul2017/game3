@@ -16,6 +16,7 @@ namespace Game.Config
         public int hpBase;    public int mpBase;
         public int atkBase;   public int defBase;
         public int critBase;  public int dodgeBase;
+        public int speedBase;
         public List<int> defaultSkillIds = new List<int>();
     }
 
@@ -38,6 +39,7 @@ namespace Game.Config
         public int buffTurns;   // Buff持续回合
         public int debuffAttack;  // 降低敌人攻击力（百分比）
         public int debuffDefense; // 降低敌人防御力（百分比）
+        public int debuffSpeed;   // 降低敌人速度（固定值）
         public int debuffTurns;   // Debuff持续回合
     }
 

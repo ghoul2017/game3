@@ -17,6 +17,7 @@ namespace Game.Data
         // 玩家buff（与怪物buff对称）
         public int playerBuffAttack;   // 攻击buff加成
         public int playerBuffDefense;  // 防御buff加成
+        public int playerBuffSpeed;    // 速度buff加成
         public int playerBuffTurns;    // buff剩余回合
 
         // 战斗奖励
@@ -45,6 +46,7 @@ namespace Game.Data
         public int level;
         public int buffAttack;   // 攻击buff加成
         public int buffDefense;  // 防御buff加成
+        public int buffSpeed;    // 速度buff加成
         public int buffTurns;    // buff剩余回合
     }
 }

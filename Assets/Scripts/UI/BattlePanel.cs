@@ -22,6 +22,9 @@ namespace Game.UI
         private Text monsterAtkDefText;
         private Text monsterTypeText;
 
+        // ---- 缓存引用：回合/速度信息 ----
+        private Text turnInfoText;
+
         // ---- 缓存引用：战斗日志池 ----
         private Text[] logTexts;
 
@@ -79,14 +82,19 @@ namespace Game.UI
             // 标题
             UIBuilder.CreateTitleBar(parent, "战       斗");
 
+            // === 回合归属提示（标题下方）===
+            var turnInfoObj = UIBuilder.CreateText(parent, "", 18, UIBuilder.Orange, TextAnchor.MiddleCenter, true, "TurnInfo");
+            UIBuilder.SetAnchored(turnInfoObj.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0, -55), new Vector2(500, 22));
+
             // === 怪物信息区 ===
-            var monsterPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 160, "MonsterPanel");
+            var monsterPanelObj = UIBuilder.CreateBorderedPanel(parent, 900, 140, "MonsterPanel");
             var monsterRt = monsterPanelObj.GetComponent<RectTransform>();
             monsterRt.anchorMin = new Vector2(0, 1);
             monsterRt.anchorMax = new Vector2(1, 1);
             monsterRt.pivot = new Vector2(0.5f, 1);
             monsterRt.anchoredPosition = new Vector2(0, -80);
-            monsterRt.sizeDelta = new Vector2(0, 160);
+            monsterRt.sizeDelta = new Vector2(0, 140);
 
             var monsterInner = monsterPanelObj.transform.Find("Inner");
 
@@ -257,6 +265,7 @@ namespace Game.UI
         protected override void BindReferences()
         {
             // 怪物信息
+            turnInfoText = FindComponent<Text>("TurnInfo");
             monsterIconText = FindComponent<Text>("MonsterPanel/Inner/MonsterIcon");
             monsterTypeText = FindComponent<Text>("MonsterPanel/Inner/MonsterType");
             monsterNameText = FindComponent<Text>("MonsterPanel/Inner/MonsterName");
@@ -385,7 +394,21 @@ namespace Game.UI
             if (monsterTypeText != null) monsterTypeText.text = m.isBoss ? "BOSS" : (m.level > 0 ? $"Lv.{m.level}" : "");
             if (monsterHpText != null) monsterHpText.text = $"HP: {m.hp}/{m.maxHp}";
             if (monsterHpSlider != null) monsterHpSlider.value = m.maxHp > 0 ? (float)m.hp / m.maxHp : 0;
-            if (monsterAtkDefText != null) monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}";
+            if (monsterAtkDefText != null) monsterAtkDefText.text = $"攻击:{m.attack}  防御:{m.defense}  速度:{m.speed + m.buffSpeed}";
+
+            // 回合归属和双方速度
+            if (turnInfoText != null && !b.isFinished)
+            {
+                int playerSpeed = BattleManager.Instance.GetEffectivePlayerSpeed();
+                int monsterSpeed = BattleManager.Instance.GetEffectiveMonsterSpeed();
+                string turnLabel = b.isPlayerTurn ? "你的回合" : "敌人回合";
+                turnInfoText.text = $"{turnLabel}  (你 速度:{playerSpeed} | 敌方 速度:{monsterSpeed})";
+                turnInfoText.color = b.isPlayerTurn ? UIBuilder.Gold : UIBuilder.Red;
+            }
+            else if (turnInfoText != null && b.isFinished)
+            {
+                turnInfoText.text = "";
+            }
 
             // 战斗日志（池化 6 行）
             if (logTexts != null)
@@ -412,11 +435,13 @@ namespace Game.UI
             {
                 int buffAtk = b.playerBuffAttack;
                 int buffDef = b.playerBuffDefense;
+                int buffSpd = b.playerBuffSpeed;
                 int buffTurns = b.playerBuffTurns;
                 string atkStr = buffAtk > 0 ? $"{p.attack}+{buffAtk}" : $"{p.attack}";
                 string defStr = buffDef > 0 ? $"{p.defense}+{buffDef}" : $"{p.defense}";
+                string spdStr = buffSpd > 0 ? $"{p.speed}+{buffSpd}" : $"{p.speed}";
                 string buffInfo = buffTurns > 0 ? $"  [增益{buffTurns}回合]" : "";
-                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}{buffInfo}";
+                playerInfoText.text = $"HP:{p.hp}/{p.maxHp}  MP:{p.mp}/{p.maxMp}  攻击:{atkStr}  防御:{defStr}  速度:{spdStr}{buffInfo}";
             }
 
             // 战斗结束处理
@@ -463,8 +488,20 @@ namespace Game.UI
             StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
-            BattleManager.Instance.PlayerAttack();
-            if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+
+            if (!b.isPlayerTurn)
+            {
+                // 敌人先手：敌人行动 -> 玩家行动
+                BattleManager.Instance.MonsterTurn();
+                if (b.isFinished) { RefreshUI(); return; }
+                BattleManager.Instance.PlayerAttack();
+            }
+            else
+            {
+                // 玩家先手：玩家行动 -> 敌人行动
+                BattleManager.Instance.PlayerAttack();
+                if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+            }
             RefreshUI();
         }
 
@@ -518,8 +555,20 @@ namespace Game.UI
             StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
-            BattleManager.Instance.PlayerSkill(skillId);
-            if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+
+            if (!b.isPlayerTurn)
+            {
+                // 敌人先手：敌人行动 -> 玩家行动
+                BattleManager.Instance.MonsterTurn();
+                if (b.isFinished) { RefreshUI(); return; }
+                BattleManager.Instance.PlayerSkill(skillId);
+            }
+            else
+            {
+                // 玩家先手：玩家行动 -> 敌人行动
+                BattleManager.Instance.PlayerSkill(skillId);
+                if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+            }
             RefreshUI();
         }
 
@@ -592,8 +641,20 @@ namespace Game.UI
             StopAutoBattle();
             var b = BattleManager.Instance.CurrentBattle;
             if (b == null || b.isFinished) return;
-            BattleManager.Instance.PlayerUseItem(itemId);
-            if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+
+            if (!b.isPlayerTurn)
+            {
+                // 敌人先手：敌人行动 -> 玩家行动
+                BattleManager.Instance.MonsterTurn();
+                if (b.isFinished) { RefreshUI(); return; }
+                BattleManager.Instance.PlayerUseItem(itemId);
+            }
+            else
+            {
+                // 玩家先手：玩家行动 -> 敌人行动
+                BattleManager.Instance.PlayerUseItem(itemId);
+                if (!b.isFinished) BattleManager.Instance.MonsterTurn();
+            }
             RefreshUI();
         }
 
@@ -667,12 +728,20 @@ namespace Game.UI
                 var b = BattleManager.Instance.CurrentBattle;
                 if (b == null || b.isFinished) break;
 
-                // 玩家攻击
-                BattleManager.Instance.PlayerAttack();
-
-                // 如果怪物没死，怪物回合
-                if (!b.isFinished)
+                if (!b.isPlayerTurn)
+                {
+                    // 敌人先手：敌人行动 -> 玩家行动
                     BattleManager.Instance.MonsterTurn();
+                    if (b.isFinished) break;
+                    BattleManager.Instance.PlayerAttack();
+                }
+                else
+                {
+                    // 玩家先手：玩家行动 -> 敌人行动
+                    BattleManager.Instance.PlayerAttack();
+                    if (!b.isFinished)
+                        BattleManager.Instance.MonsterTurn();
+                }
 
                 RefreshUI();
 

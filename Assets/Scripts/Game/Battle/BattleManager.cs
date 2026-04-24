@@ -65,20 +65,68 @@ namespace Game.Battle
             return true;
         }
 
+        /// <summary>
+        /// 速度差闪避判定：速度差>=5时，高速度方获得(speedDiff*2)%闪避率
+        /// 返回 true 表示闪避成功
+        /// </summary>
+        private bool TrySpeedDodge(bool isPlayerAttacking)
+        {
+            int playerSpeed = GetEffectivePlayerSpeed();
+            int monsterSpeed = GetEffectiveMonsterSpeed();
+            int speedDiff = isPlayerAttacking
+                ? playerSpeed - monsterSpeed
+                : monsterSpeed - playerSpeed;
+
+            if (speedDiff < GameConstants.SPEED_DODGE_THRESHOLD) return false;
+
+            float dodgeChance = speedDiff * GameConstants.SPEED_DODGE_RATE_PER_POINT / 100f;
+            if (Random.value < dodgeChance) return true;
+            return false;
+        }
+
         public void StartBattle(BattleData battleData)
         {
             CurrentBattle = battleData;
             Debug.Log($"[战斗] 开始战斗 怪物={battleData.monster.name} HP={battleData.monster.hp}");
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
-            CurrentBattle.isPlayerTurn = true;
             CurrentBattle.isFinished = false;
             CurrentBattle.isVictory = false;
             CurrentBattle.playerBuffAttack = 0;
             CurrentBattle.playerBuffDefense = 0;
+            CurrentBattle.playerBuffSpeed = 0;
             CurrentBattle.playerBuffTurns = 0;
             CurrentBattle.log.Clear();
             CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
             reviveUsed = false;
+
+            // 根据速度判定先手
+            DetermineTurnOrder();
+        }
+
+        /// <summary>根据双方有效速度判定回合归属</summary>
+        public void DetermineTurnOrder()
+        {
+            var b = CurrentBattle;
+            if (b == null) return;
+            int playerSpeed = GetEffectivePlayerSpeed();
+            int monsterSpeed = GetEffectiveMonsterSpeed();
+            b.isPlayerTurn = playerSpeed >= monsterSpeed;
+            string turnMsg = b.isPlayerTurn ? "你的回合" : "敌人回合";
+            b.log.Add($"[速度] 你:{playerSpeed} 敌方:{monsterSpeed} — {turnMsg}");
+        }
+
+        /// <summary>获取玩家有效速度 = 基础速度 + 速度buff</summary>
+        public int GetEffectivePlayerSpeed()
+        {
+            var p = GameManager.Instance.Player;
+            return p.speed + (CurrentBattle?.playerBuffSpeed ?? 0);
+        }
+
+        /// <summary>获取怪物有效速度 = 基础速度 + 速度buff</summary>
+        public int GetEffectiveMonsterSpeed()
+        {
+            var m = CurrentBattle?.monster;
+            return m != null ? m.speed + m.buffSpeed : 0;
         }
 
         public string PlayerAttack()
@@ -92,6 +140,14 @@ namespace Game.Battle
 
             // 攻击音效
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
+
+            // 速度差闪避判定：怪物闪避
+            if (TrySpeedDodge(true))
+            {
+                string dodgeMsg = $"{b.monster.name}闪避了攻击！";
+                b.log.Add(dodgeMsg);
+                return dodgeMsg;
+            }
 
             // 狂战之怒：HP越低攻击越高
             int totalAtk = p.attack + b.playerBuffAttack + GetRageBonus(p.attack);
@@ -160,12 +216,19 @@ namespace Game.Battle
                     {
                         b.playerBuffAttack = 0;
                         b.playerBuffDefense = 0;
+                        b.playerBuffSpeed = 0;
                         if (buffCfg.effectType == 0 || buffCfg.effectType == 2)
                             b.playerBuffAttack = p.attack * buffCfg.effectValue / 100;
                         if (buffCfg.effectType == 1 || buffCfg.effectType == 2)
                             b.playerBuffDefense = p.defense * buffCfg.effectValue / 100;
+                        if (buffCfg.effectType == 3)
+                            b.playerBuffSpeed = buffCfg.effectValue;
                         b.playerBuffTurns = skill.buffTurns;
-                        msg = $"你使用了 {skill.name}！攻击+{b.playerBuffAttack} 防御+{b.playerBuffDefense}，持续{skill.buffTurns}回合";
+                        string speedInfo = b.playerBuffSpeed > 0 ? $" 速度+{b.playerBuffSpeed}" : "";
+                        msg = $"你使用了 {skill.name}！攻击+{b.playerBuffAttack} 防御+{b.playerBuffDefense}{speedInfo}，持续{skill.buffTurns}回合";
+                        // 速度buff改变后立即重新判定回合顺序
+                        if (b.playerBuffSpeed != 0)
+                            DetermineTurnOrder();
                     }
                     else
                     {
@@ -198,8 +261,8 @@ namespace Game.Battle
             b.monster.hp -= dmg;
             msg = $"你使用 {skill.name}，造成 {dmg} 点伤害";
 
-            // Debuff效果：降低敌人攻击/防御
-            if (skill.debuffAttack > 0 || skill.debuffDefense > 0)
+            // Debuff效果：降低敌人攻击/防御/速度
+            if (skill.debuffAttack > 0 || skill.debuffDefense > 0 || skill.debuffSpeed > 0)
             {
                 var m = b.monster;
                 if (skill.debuffAttack > 0)
@@ -215,6 +278,14 @@ namespace Game.Battle
                     m.buffDefense -= reduce;
                     m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
                     msg += $"，敌人防御-{reduce}";
+                }
+                if (skill.debuffSpeed > 0)
+                {
+                    m.buffSpeed -= skill.debuffSpeed;
+                    m.buffTurns = Mathf.Max(m.buffTurns, skill.debuffTurns);
+                    msg += $"，敌人速度-{skill.debuffSpeed}";
+                    // 速度debuff后立即重新判定回合顺序
+                    DetermineTurnOrder();
                 }
             }
 
@@ -283,6 +354,15 @@ namespace Game.Battle
             // 受击音效
             Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Hit);
 
+            // 速度差闪避判定：玩家闪避
+            if (TrySpeedDodge(false))
+            {
+                string dodgeMsg = "你闪避了攻击！";
+                b.log.Add(dodgeMsg);
+                DecayBuffs(b);
+                return dodgeMsg;
+            }
+
             // 怪物有技能时，根据概率使用
             if (m.skillIds.Count > 0 && Random.value < GameConstants.MONSTER_SKILL_CHANCE)
             {
@@ -339,6 +419,7 @@ namespace Game.Battle
                 {
                     m.buffAttack = 0;
                     m.buffDefense = 0;
+                    m.buffSpeed = 0;
                 }
             }
             // 玩家buff衰减
@@ -349,7 +430,10 @@ namespace Game.Battle
                 {
                     b.playerBuffAttack = 0;
                     b.playerBuffDefense = 0;
+                    b.playerBuffSpeed = 0;
                     b.log.Add("你的增益效果消失了");
+                    // buff消失后重新判定回合顺序
+                    DetermineTurnOrder();
                 }
             }
         }
@@ -456,6 +540,7 @@ namespace Game.Battle
             b.isVictory = false;
             b.playerBuffAttack = 0;
             b.playerBuffDefense = 0;
+            b.playerBuffSpeed = 0;
             b.playerBuffTurns = 0;
 
             // 失败惩罚：损失金币

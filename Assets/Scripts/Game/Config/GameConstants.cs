@@ -25,6 +25,12 @@ namespace Game.Config
         /// <summary>防御减伤系数 (除以2)</summary>
         public const int DEFENSE_DIVISOR = 2;
 
+        /// <summary>速度差闪避阈值：速度差>=此值时触发闪避</summary>
+        public const int SPEED_DODGE_THRESHOLD = 5;
+
+        /// <summary>速度差闪避率系数：闪避率 = (speedDiff * 此值)%</summary>
+        public const int SPEED_DODGE_RATE_PER_POINT = 2;
+
         // ==================== 地牢系统 ====================
         
         /// <summary>宝箱触发概率</summary>

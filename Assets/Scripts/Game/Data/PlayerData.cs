@@ -27,6 +27,7 @@ namespace Game.Data
         public int defense;
         public int critRate;
         public int dodgeRate;
+        public int speed;
 
         // 经济
         public int gold;
@@ -64,6 +65,7 @@ namespace Game.Data
             defense = (int)((vitality * 1.5f + profCfg.defBase) * (1 + lvl * 0.03f));
             critRate = agility * 1 + profCfg.critBase;
             dodgeRate = agility * 1 + profCfg.dodgeBase;
+            speed = agility + profCfg.speedBase;
 
             // 装备加成
             var weapon = ConfigManager.Instance.GetItem(weaponId);
