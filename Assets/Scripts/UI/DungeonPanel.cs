@@ -601,7 +601,8 @@ namespace Game.UI
         {
             for (int i = 0; i < MaxSkillSlots; i++)
             {
-                if (i < player.equippedSkills.Count)
+                bool hasSkill = i < player.equippedSkills.Count && player.equippedSkills[i] != 0;
+                if (hasSkill)
                 {
                     var skillCfg = ConfigManager.Instance.GetSkill(player.equippedSkills[i]);
                     if (skillCfg != null)
@@ -1202,23 +1203,25 @@ namespace Game.UI
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
 
-            // 遍历全技能池，筛选玩家未学的非被动技能
+            // 遍历全技能池，筛选玩家未学的技能（含被动）
             var allSkills = ConfigManager.Instance.GetAllSkills();
             var unlearned = new List<SkillConfig>();
             foreach (var skill in allSkills)
             {
-                if (skill.type == SkillType.Passive) continue;
                 if (player.learnedSkills.Contains(skill.id)) continue;
                 unlearned.Add(skill);
             }
 
             if (unlearned.Count > 0)
             {
-                // 随机选一个免费学习
+                // 随机选一个免费学习（0金币）
                 var chosen = unlearned[Random.Range(0, unlearned.Count)];
                 player.LearnSkill(chosen.id);
-                pendingMessage = $"技能神殿：习得 {chosen.name}！\n{chosen.desc}";
-                Debug.Log($"[神殿] 习得技能 {chosen.name}(id={chosen.id})");
+                pendingMessage = $"技能神殿：你领悟了 {chosen.name}！\n{chosen.desc}";
+                Debug.Log($"[神殿] 免费习得技能 {chosen.name}(id={chosen.id})");
+
+                // 如果SkillLearnPanel打开着，刷新显示
+                TryRefreshSkillLearnPanel();
             }
             else
             {
@@ -1232,6 +1235,16 @@ namespace Game.UI
 
             var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
             room.cleared = true;
+        }
+
+        /// <summary>尝试刷新SkillLearnPanel（如果当前打开）</summary>
+        private void TryRefreshSkillLearnPanel()
+        {
+            var skillPanel = UIManager.Instance.GetPanel<SkillLearnPanel>();
+            if (skillPanel != null)
+            {
+                skillPanel.RefreshFromOutside();
+            }
         }
 
         /// <summary>出口处理：显示确认弹窗，点击继续进入下一层</summary>

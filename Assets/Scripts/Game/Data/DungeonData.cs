@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Game.Config;
+using Game.Core;
 using UnityEngine;
 
 namespace Game.Data
@@ -253,9 +254,23 @@ namespace Game.Data
                 }
             }
 
-            // 随机放置1-2个Shrine
-            int shrineCount = Random.Range(1, 3);
-            PlaceRandomRooms(DungeonEventType.Shrine, shrineCount);
+            // 随机放置1-2个Shrine（仅当玩家还有未学技能时才放置，避免空神龛）
+            var allSkills = ConfigManager.Instance.GetAllSkills();
+            var player = GameManager.Instance.Player;
+            bool hasUnlearned = false;
+            foreach (var skill in allSkills)
+            {
+                if (!player.learnedSkills.Contains(skill.id))
+                {
+                    hasUnlearned = true;
+                    break;
+                }
+            }
+            if (hasUnlearned)
+            {
+                int shrineCount = Random.Range(1, 3);
+                PlaceRandomRooms(DungeonEventType.Shrine, shrineCount);
+            }
         }
 
         /// <summary>找到靠近中心的房间作为起点</summary>
