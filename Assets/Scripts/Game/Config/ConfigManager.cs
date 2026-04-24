@@ -40,9 +40,34 @@ namespace Game.Config
         public List<SkillConfig> GetSkillsByProfession(Profession prof)
             => skills.Values.Where(s => s.profession == prof).ToList();
 
-        /// <summary>获取所有技能配置</summary>
+        /// <summary>获取所有技能配置（不含Boss技能9000+）</summary>
         public List<SkillConfig> GetAllSkills()
-            => skills.Values.ToList();
+            => skills.Values.Where(s => s.id < 9000).ToList();
+
+        /// <summary>按标签页分类获取技能（不含Boss技能9000+）</summary>
+        public List<SkillConfig> GetSkillsByTab(SkillTab tab, List<int> learnedSkills)
+        {
+            var all = GetAllSkills();
+            switch (tab)
+            {
+                case SkillTab.All:
+                    return all;
+                case SkillTab.Attack:
+                    return all.Where(s => !s.isHeal && s.type == SkillType.Active).ToList();
+                case SkillTab.Heal:
+                    return all.Where(s => s.isHeal).ToList();
+                case SkillTab.Buff:
+                    return all.Where(s => s.type == SkillType.Buff).ToList();
+                case SkillTab.Control:
+                    return all.Where(s => s.type == SkillType.StatusAttack).ToList();
+                case SkillTab.Passive:
+                    return all.Where(s => s.type == SkillType.Passive).ToList();
+                case SkillTab.Learned:
+                    return all.Where(s => learnedSkills.Contains(s.id)).ToList();
+                default:
+                    return all;
+            }
+        }
 
         public ItemConfig GetItem(int id)
             => items.TryGetValue(id, out var c) ? c : null;
@@ -139,68 +164,55 @@ namespace Game.Config
         {
             skills = new Dictionary<int, SkillConfig>
             {
-                // 战士技能
-                [1001] = new SkillConfig { id = 1001, name = "猛击", desc = "强力的物理攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 5, power = 150, level = 1 },
-                [1002] = new SkillConfig { id = 1002, name = "战吼", desc = "提升自身攻击力", type = SkillType.Buff, profession = Profession.Warrior, mpCost = 8, power = 0, level = 1, buffId = 1, buffTurns = 3 },
-                [1003] = new SkillConfig { id = 1003, name = "旋风斩", desc = "强力横扫攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 12, power = 200, level = 3, prereqSkillId = 1001, isAoE = true },
-                [1004] = new SkillConfig { id = 1004, name = "狂战之怒", desc = "血量越低攻击越高", type = SkillType.Passive, profession = Profession.Warrior, mpCost = 0, power = 0, level = 5, prereqSkillId = 1002 },
+                // ==================== 战士技能 ====================
+                // 低级(level=1): learnCost=100-200
+                [1001] = new SkillConfig { id = 1001, name = "猛击", desc = "强力的物理攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 5, power = 150, level = 1, learnCost = 100 },
+                [1002] = new SkillConfig { id = 1002, name = "战吼", desc = "提升自身攻击力", type = SkillType.Buff, profession = Profession.Warrior, mpCost = 8, power = 0, level = 1, buffId = 1, buffTurns = 3, learnCost = 150 },
+                // 中级(level=2-3): learnCost=300-500
+                [1003] = new SkillConfig { id = 1003, name = "旋风斩", desc = "强力横扫攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 12, power = 200, level = 3, prereqSkillId = 1001, isAoE = true, learnCost = 400 },
+                [1005] = new SkillConfig { id = 1005, name = "割裂", desc = "撕裂伤口，附加流血3回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 80, level = 2, statusEffect = EffectType.Bleed, statusDuration = 3, statusPowerRate = 0.25f, learnCost = 300 },
+                [1006] = new SkillConfig { id = 1006, name = "破甲", desc = "破坏敌人护甲，附加易伤2回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 90, level = 3, prereqSkillId = 1005, statusEffect = EffectType.Vulnerable, statusDuration = 2, statusPowerRate = 0.3f, learnCost = 450 },
+                // 高级(level>=4): learnCost=600-1000
+                [1004] = new SkillConfig { id = 1004, name = "狂战之怒", desc = "血量越低攻击越高", type = SkillType.Passive, profession = Profession.Warrior, mpCost = 0, power = 0, level = 5, prereqSkillId = 1002, learnCost = 800 },
 
-                // 游侠技能
-                [2001] = new SkillConfig { id = 2001, name = "精准射击", desc = "高暴击的远程攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 5, power = 140, level = 1 },
-                [2002] = new SkillConfig { id = 2002, name = "闪避姿态", desc = "提升闪避率", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 1, buffId = 2, buffTurns = 3 },
-                [2003] = new SkillConfig { id = 2003, name = "连射", desc = "连续两次攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 10, power = 120, level = 3, prereqSkillId = 2001 },
-                [2004] = new SkillConfig { id = 2004, name = "致命一击", desc = "必定暴击的一击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 15, power = 250, level = 5, prereqSkillId = 2003 },
+                // ==================== 游侠技能 ====================
+                [2001] = new SkillConfig { id = 2001, name = "精准射击", desc = "高暴击的远程攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 5, power = 140, level = 1, learnCost = 100 },
+                [2002] = new SkillConfig { id = 2002, name = "闪避姿态", desc = "提升闪避率", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 1, buffId = 2, buffTurns = 3, learnCost = 150 },
+                [2005] = new SkillConfig { id = 2005, name = "加速术", desc = "提升自身速度10点，持续3回合", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 2, buffId = 6, buffTurns = 3, learnCost = 300 },
+                [2003] = new SkillConfig { id = 2003, name = "连射", desc = "连续两次攻击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 10, power = 120, level = 3, prereqSkillId = 2001, learnCost = 400 },
+                [2006] = new SkillConfig { id = 2006, name = "毒刃", desc = "淬毒一击，附加中毒3回合", type = SkillType.StatusAttack, profession = Profession.Ranger, mpCost = 25, power = 70, level = 2, statusEffect = EffectType.Poison, statusDuration = 3, statusPowerRate = 0.15f, learnCost = 350 },
+                [2004] = new SkillConfig { id = 2004, name = "致命一击", desc = "必定暴击的一击", type = SkillType.Active, profession = Profession.Ranger, mpCost = 15, power = 250, level = 5, prereqSkillId = 2003, learnCost = 900 },
 
-                // 骑士技能
-                [3001] = new SkillConfig { id = 3001, name = "盾击", desc = "用盾牌攻击并降低敌人攻击", type = SkillType.Active, profession = Profession.Knight, mpCost = 5, power = 100, level = 1, debuffAttack = 30, debuffTurns = 2 },
-                [3002] = new SkillConfig { id = 3002, name = "铁壁", desc = "大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 8, power = 0, level = 1, buffId = 3, buffTurns = 3 },
-                [3003] = new SkillConfig { id = 3003, name = "嘲讽", desc = "吸引敌人攻击并减伤", type = SkillType.Active, profession = Profession.Knight, mpCost = 6, power = 80, level = 3, prereqSkillId = 3001, debuffAttack = 20, debuffTurns = 3 },
-                [3004] = new SkillConfig { id = 3004, name = "坚守", desc = "生命低于30%时自动减伤", type = SkillType.Passive, profession = Profession.Knight, mpCost = 0, power = 0, level = 5, prereqSkillId = 3002 },
+                // ==================== 骑士技能 ====================
+                [3001] = new SkillConfig { id = 3001, name = "盾击", desc = "用盾牌攻击并降低敌人攻击", type = SkillType.Active, profession = Profession.Knight, mpCost = 5, power = 100, level = 1, debuffAttack = 30, debuffTurns = 2, learnCost = 120 },
+                [3002] = new SkillConfig { id = 3002, name = "铁壁", desc = "大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 8, power = 0, level = 1, buffId = 3, buffTurns = 3, learnCost = 150 },
+                [3005] = new SkillConfig { id = 3005, name = "重击", desc = "沉重一击，附加眩晕2回合", type = SkillType.StatusAttack, profession = Profession.Knight, mpCost = 30, power = 60, level = 2, statusEffect = EffectType.Stun, statusDuration = 3, learnCost = 350 },
+                [3003] = new SkillConfig { id = 3003, name = "嘲讽", desc = "吸引敌人攻击并减伤", type = SkillType.Active, profession = Profession.Knight, mpCost = 6, power = 80, level = 3, prereqSkillId = 3001, debuffAttack = 20, debuffTurns = 3, learnCost = 450 },
+                [3004] = new SkillConfig { id = 3004, name = "坚守", desc = "生命低于30%时自动减伤", type = SkillType.Passive, profession = Profession.Knight, mpCost = 0, power = 0, level = 5, prereqSkillId = 3002, learnCost = 700 },
 
-                // 牧师技能
-                [4001] = new SkillConfig { id = 4001, name = "治疗术", desc = "恢复自身生命值", type = SkillType.Active, profession = Profession.Priest, mpCost = 8, power = 100, level = 1, isHeal = true },
-                [4002] = new SkillConfig { id = 4002, name = "祝福", desc = "提升全属性", type = SkillType.Buff, profession = Profession.Priest, mpCost = 10, power = 0, level = 1, buffId = 4, buffTurns = 3 },
-                [4003] = new SkillConfig { id = 4003, name = "圣光", desc = "神圣伤害攻击", type = SkillType.Active, profession = Profession.Priest, mpCost = 12, power = 160, level = 3, prereqSkillId = 4001 },
-                [4004] = new SkillConfig { id = 4004, name = "复活", desc = "战斗中自动复活一次", type = SkillType.Passive, profession = Profession.Priest, mpCost = 0, power = 0, level = 5, prereqSkillId = 4002 },
+                // ==================== 牧师技能 ====================
+                [4001] = new SkillConfig { id = 4001, name = "治疗术", desc = "恢复自身生命值", type = SkillType.Active, profession = Profession.Priest, mpCost = 8, power = 100, level = 1, isHeal = true, learnCost = 120 },
+                [4002] = new SkillConfig { id = 4002, name = "祝福", desc = "提升全属性", type = SkillType.Buff, profession = Profession.Priest, mpCost = 10, power = 0, level = 1, buffId = 4, buffTurns = 3, learnCost = 180 },
+                [4003] = new SkillConfig { id = 4003, name = "圣光", desc = "神圣伤害攻击", type = SkillType.Active, profession = Profession.Priest, mpCost = 12, power = 160, level = 3, prereqSkillId = 4001, learnCost = 400 },
+                [4004] = new SkillConfig { id = 4004, name = "复活", desc = "战斗中自动复活一次", type = SkillType.Passive, profession = Profession.Priest, mpCost = 0, power = 0, level = 5, prereqSkillId = 4002, learnCost = 1000 },
 
-                // 法师技能
-                [5001] = new SkillConfig { id = 5001, name = "火球术", desc = "基础火系魔法", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 160, level = 1 },
-                [5002] = new SkillConfig { id = 5002, name = "冰甲", desc = "提升防御和减伤", type = SkillType.Buff, profession = Profession.Mage, mpCost = 8, power = 0, level = 1, buffId = 5, buffTurns = 3 },
-                [5003] = new SkillConfig { id = 5003, name = "暴风雪", desc = "强力冰系范围攻击", type = SkillType.Active, profession = Profession.Mage, mpCost = 15, power = 220, level = 3, prereqSkillId = 5001, isAoE = true },
-                [5004] = new SkillConfig { id = 5004, name = "魔力涌动", desc = "每回合恢复法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 5, prereqSkillId = 5002 },
+                // ==================== 法师技能 ====================
+                [5001] = new SkillConfig { id = 5001, name = "火球术", desc = "基础火系魔法", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 160, level = 1, learnCost = 100 },
+                [5002] = new SkillConfig { id = 5002, name = "冰甲", desc = "提升防御和减伤", type = SkillType.Buff, profession = Profession.Mage, mpCost = 8, power = 0, level = 1, buffId = 5, buffTurns = 3, learnCost = 160 },
+                [5005] = new SkillConfig { id = 5005, name = "减速术", desc = "降低敌人速度10点，持续3回合", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 80, level = 2, debuffSpeed = 10, debuffTurns = 3, learnCost = 300 },
+                [5006] = new SkillConfig { id = 5006, name = "封印", desc = "封印敌人技能，附加沉默2回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 25, power = 50, level = 2, statusEffect = EffectType.Silence, statusDuration = 3, learnCost = 350 },
+                [5003] = new SkillConfig { id = 5003, name = "暴风雪", desc = "强力冰系范围攻击", type = SkillType.Active, profession = Profession.Mage, mpCost = 15, power = 220, level = 3, prereqSkillId = 5001, isAoE = true, learnCost = 500 },
+                [5004] = new SkillConfig { id = 5004, name = "魔力涌动", desc = "每回合恢复法力", type = SkillType.Passive, profession = Profession.Mage, mpCost = 0, power = 0, level = 5, prereqSkillId = 5002, learnCost = 750 },
 
-                // 游侠额外技能
-                [2005] = new SkillConfig { id = 2005, name = "加速术", desc = "提升自身速度10点，持续3回合", type = SkillType.Buff, profession = Profession.Ranger, mpCost = 6, power = 0, level = 2, buffId = 6, buffTurns = 3 },
-
-                // 法师额外技能
-                [5005] = new SkillConfig { id = 5005, name = "减速术", desc = "降低敌人速度10点，持续3回合", type = SkillType.Active, profession = Profession.Mage, mpCost = 6, power = 80, level = 2, debuffSpeed = 10, debuffTurns = 3 },
-
-                // ==================== 状态效果技能 ====================
-                // 战士-割裂：流血
-                [1005] = new SkillConfig { id = 1005, name = "割裂", desc = "撕裂伤口，附加流血3回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 80, level = 2, statusEffect = EffectType.Bleed, statusDuration = 3, statusPowerRate = 0.25f },
-                // 游侠-毒刃：中毒
-                [2006] = new SkillConfig { id = 2006, name = "毒刃", desc = "淬毒一击，附加中毒3回合", type = SkillType.StatusAttack, profession = Profession.Ranger, mpCost = 25, power = 70, level = 2, statusEffect = EffectType.Poison, statusDuration = 3, statusPowerRate = 0.15f },
-                // 骑士-重击：眩晕
-                [3005] = new SkillConfig { id = 3005, name = "重击", desc = "沉重一击，附加眩晕2回合", type = SkillType.StatusAttack, profession = Profession.Knight, mpCost = 30, power = 60, level = 2, statusEffect = EffectType.Stun, statusDuration = 3 },
-                // 法师-封印：沉默
-                [5006] = new SkillConfig { id = 5006, name = "封印", desc = "封印敌人技能，附加沉默2回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 25, power = 50, level = 2, statusEffect = EffectType.Silence, statusDuration = 3 },
-                // 战士-破甲：易伤
-                [1006] = new SkillConfig { id = 1006, name = "破甲", desc = "破坏敌人护甲，附加易伤2回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 20, power = 90, level = 3, prereqSkillId = 1005, statusEffect = EffectType.Vulnerable, statusDuration = 2, statusPowerRate = 0.3f },
-
-                // ==================== Boss专属技能 ====================
-                // 暗影领主(L5)：暗影斩+暗影撕裂
+                // ==================== Boss专属技能（不可学习） ====================
                 [9001] = new SkillConfig { id = 9001, name = "暗影斩", desc = "暗影领主的强力攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 5, power = 180 },
                 [9002] = new SkillConfig { id = 9002, name = "暗影撕裂", desc = "撕裂目标，附加流血4回合", type = SkillType.StatusAttack, profession = Profession.Warrior, mpCost = 8, power = 100, statusEffect = EffectType.Bleed, statusDuration = 4, statusPowerRate = 0.3f },
-                // 堕落骑士(L10)：堕落冲击+铁壁
                 [9003] = new SkillConfig { id = 9003, name = "堕落冲击", desc = "堕落骑士的沉重打击，附加眩晕", type = SkillType.StatusAttack, profession = Profession.Knight, mpCost = 8, power = 140, statusEffect = EffectType.Stun, statusDuration = 2 },
                 [9004] = new SkillConfig { id = 9004, name = "铁壁", desc = "大幅提升自身防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 10, power = 0, buffId = 3, buffTurns = 3 },
-                // 深渊法师(L15)：暗影诅咒+深渊禁锢
                 [9005] = new SkillConfig { id = 9005, name = "暗影诅咒", desc = "施加暗影诅咒，附加易伤3回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 8, power = 80, statusEffect = EffectType.Vulnerable, statusDuration = 3, statusPowerRate = 0.35f },
                 [9006] = new SkillConfig { id = 9006, name = "深渊禁锢", desc = "深渊之力封印目标，附加沉默3回合", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 10, power = 90, statusEffect = EffectType.Silence, statusDuration = 3 },
-                // 混沌巨兽(L20)：混沌猛击+混沌毒雾
                 [9007] = new SkillConfig { id = 9007, name = "混沌猛击", desc = "混沌巨兽的毁灭性攻击", type = SkillType.Active, profession = Profession.Warrior, mpCost = 8, power = 220 },
                 [9008] = new SkillConfig { id = 9008, name = "混沌毒雾", desc = "释放毒雾，附加中毒4回合", type = SkillType.StatusAttack, profession = Profession.Ranger, mpCost = 10, power = 100, statusEffect = EffectType.Poison, statusDuration = 4, statusPowerRate = 0.2f },
-                // 暗黑龙王(L25)：龙息+暗黑领域+龙鳞护甲
                 [9009] = new SkillConfig { id = 9009, name = "龙息", desc = "暗黑龙王的灼热龙息", type = SkillType.Active, profession = Profession.Mage, mpCost = 10, power = 250 },
                 [9010] = new SkillConfig { id = 9010, name = "暗黑领域", desc = "暗黑领域笼罩，附加易伤+沉默", type = SkillType.StatusAttack, profession = Profession.Mage, mpCost = 15, power = 120, statusEffect = EffectType.Vulnerable, statusDuration = 3, statusPowerRate = 0.4f },
                 [9011] = new SkillConfig { id = 9011, name = "龙鳞护甲", desc = "龙鳞硬化，大幅提升防御", type = SkillType.Buff, profession = Profession.Knight, mpCost = 12, power = 0, buffId = 3, buffTurns = 4 }

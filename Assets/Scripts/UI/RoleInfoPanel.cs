@@ -166,7 +166,7 @@ namespace Game.UI
                 if (sIdx >= 4) break;
                 var skill = ConfigManager.Instance.GetSkill(skillId);
                 if (skill == null) continue;
-                string typeStr = skill.type switch { SkillType.Active => "主", SkillType.Passive => "被", SkillType.Buff => "增", SkillType.StatusAttack => "状", _ => "" };
+                string typeStr = skill.type switch { SkillType.Active => "主", SkillType.Passive => "被", SkillType.Buff => "增", SkillType.StatusAttack => "状", SkillType.Heal => "治", _ => "" };
                 skillTexts[sIdx].text = $"[{typeStr}] {skill.name} - {skill.desc}";
                 skillTexts[sIdx].gameObject.SetActive(true);
                 sIdx++;

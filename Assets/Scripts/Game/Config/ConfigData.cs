@@ -28,7 +28,7 @@ namespace Game.Config
         public string name;
         public string desc;
         public SkillType type;
-        public Profession profession;
+        public Profession profession;  // 保留字段兼容，但不再限制职业
         public int mpCost;
         public int power;       // 技能威力（基于攻击力的倍率百分比）
         public int level;       // 技能等级
@@ -47,6 +47,23 @@ namespace Game.Config
         public EffectType statusEffect;  // 附加的状态效果类型
         public int statusDuration;       // 状态持续回合
         public float statusPowerRate;    // 状态效果威力倍率（如流血=ATK*0.25中的0.25）
+
+        /// <summary>
+        /// 获取用于标签页分类的显示类型名称
+        /// </summary>
+        public string GetCategoryName()
+        {
+            if (isHeal) return "治疗";
+            return type switch
+            {
+                SkillType.Active => "攻击",
+                SkillType.Passive => "被动",
+                SkillType.Buff => "增益",
+                SkillType.StatusAttack => "控制",
+                SkillType.Heal => "治疗",
+                _ => ""
+            };
+        }
     }
 
     [System.Serializable]

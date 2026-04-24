@@ -9,11 +9,32 @@ namespace Game.UI
 {
     public class SkillLearnPanel : UIPanel
     {
+        // 标签页定义
+        private static readonly SkillTab[] Tabs = new[]
+        {
+            SkillTab.All, SkillTab.Attack, SkillTab.Heal,
+            SkillTab.Buff, SkillTab.Control, SkillTab.Passive, SkillTab.Learned
+        };
+        private static readonly string[] TabNames = new[]
+        {
+            "全部", "攻击", "治疗", "增益", "控制", "被动", "已学"
+        };
+
+        // 当前选中标签页
+        private int currentTab;
+
+        // 对象池大小
+        private const int SkillPoolSize = 16;
+        private const int EqBtnPoolSize = 16;
+        private const int TabCount = 7;
+
         // 缓存引用
         private Text goldText;
-        private const int SkillPoolSize = 8;
-        private const int EqBtnPoolSize = 8;
         private List<UIBuilder.PoolRow> skillRows;
+
+        // 标签页按钮池
+        private Button[] tabBtns;
+        private Text[] tabBtnLabels;
 
         // 已装备技能区按钮池
         private Text eqLabel;
@@ -37,6 +58,27 @@ namespace Game.UI
             goldBar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
             var gold = UIBuilder.CreateText(goldBar.transform, "", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "GoldText");
             UIBuilder.SetStretch(gold.gameObject);
+
+            // 标签页栏（金币栏下方）
+            var tabBar = UIBuilder.CreatePanel(parent, 0, 36, "TabBar");
+            var tabRt = tabBar.GetComponent<RectTransform>();
+            tabRt.anchorMin = new Vector2(0, 1);
+            tabRt.anchorMax = new Vector2(1, 1);
+            tabRt.pivot = new Vector2(0.5f, 1);
+            tabRt.anchoredPosition = new Vector2(0, -110);
+            tabRt.sizeDelta = new Vector2(0, 36);
+            tabBar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
+
+            var tabInner = tabBar.transform;
+            // 7个标签页按钮，均匀排列
+            for (int i = 0; i < TabCount; i++)
+            {
+                var (btn, label) = UIBuilder.CreateButtonWithRef(tabInner, TabNames[i], 110, 30, null, 14, $"Tab_{i}");
+                btn.GetComponent<RectTransform>().anchorMin = new Vector2(0, 0.5f);
+                btn.GetComponent<RectTransform>().anchorMax = new Vector2(0, 0.5f);
+                btn.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+                btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(80 + i * 120, 0);
+            }
 
             // 返回按钮（底部锚定）
             var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack");
@@ -69,23 +111,32 @@ namespace Game.UI
                 btn.gameObject.SetActive(false);
             }
 
-            // 技能列表（拉伸填充 GoldBar 和 EquippedSkills 之间）
+            // 技能列表（拉伸填充 TabBar 和 EquippedSkills 之间）
             var listPanel = UIBuilder.CreateBorderedPanel(parent, 900, 420, "SkillList");
             var listRt = listPanel.GetComponent<RectTransform>();
             listRt.anchorMin = new Vector2(0, 0);
             listRt.anchorMax = new Vector2(1, 1);
             listRt.pivot = new Vector2(0.5f, 0.5f);
             listRt.offsetMin = new Vector2(10, 162);
-            listRt.offsetMax = new Vector2(-10, -120);
+            listRt.offsetMax = new Vector2(-10, -150);
 
             var inner = listPanel.transform.Find("Inner");
-            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 48, 185, 800);
+            UIBuilder.CreatePoolRows(inner, SkillPoolSize, 42, 170, 800);
         }
 
         protected override void BindReferences()
         {
             goldText = FindComponent<Text>("GoldBar/GoldText");
             eqLabel = FindComponent<Text>("EquippedSkills/Inner/EqLabel");
+
+            // 标签页按钮
+            tabBtns = new Button[TabCount];
+            tabBtnLabels = new Text[TabCount];
+            for (int i = 0; i < TabCount; i++)
+            {
+                tabBtns[i] = FindComponent<Button>($"TabBar/Tab_{i}");
+                tabBtnLabels[i] = FindComponent<Text>($"TabBar/Tab_{i}/Label");
+            }
 
             // 从预制体中重建技能行对象池引用
             var inner = FindChild("SkillList/Inner");
@@ -116,17 +167,28 @@ namespace Game.UI
             {
                 eqBtns[i] = FindComponent<Button>($"EquippedSkills/Inner/EqBtn_{i}");
                 eqBtnLabels[i] = FindComponent<Text>($"EquippedSkills/Inner/EqBtn_{i}/Label");
-                // null is expected if prefab doesn't have enough buttons
             }
         }
 
         protected override void BindEvents()
         {
             FindComponent<Button>("BtnBack").onClick.AddListener(() => UIManager.Instance.Back());
+
+            // 标签页按钮事件
+            for (int i = 0; i < TabCount; i++)
+            {
+                int capturedIdx = i;
+                tabBtns[i]?.onClick.AddListener(() =>
+                {
+                    currentTab = capturedIdx;
+                    RefreshUI();
+                });
+            }
         }
 
         public override void OnShow()
         {
+            currentTab = 0;
             RefreshUI();
         }
 
@@ -135,14 +197,30 @@ namespace Game.UI
             var player = GameManager.Instance.Player;
 
             // 金币
-            if (goldText != null) goldText.text = $"金币: {player.gold}    已装备技能: {player.equippedSkills.Count}/{player.maxSkillSlots}";
+            if (goldText != null)
+                goldText.text = $"金币: {player.gold}    已装备技能: {player.equippedSkills.Count}/{player.maxSkillSlots}";
+
+            // 标签页高亮
+            for (int i = 0; i < TabCount; i++)
+            {
+                if (tabBtns[i] == null) continue;
+                bool isActive = (i == currentTab);
+                tabBtns[i].image.color = isActive
+                    ? new Color(UIBuilder.Gold.r, UIBuilder.Gold.g, UIBuilder.Gold.b, 0.25f)
+                    : UIBuilder.ButtonNormal;
+                if (tabBtnLabels[i] != null)
+                    tabBtnLabels[i].color = isActive ? UIBuilder.Gold : UIBuilder.TextDim;
+            }
+
+            // 根据当前标签页获取技能列表
+            var tabType = Tabs[currentTab];
+            var filteredSkills = ConfigManager.Instance.GetSkillsByTab(tabType, player.learnedSkills);
 
             // 技能列表
-            var allSkills = ConfigManager.Instance.GetSkillsByProfession(player.profession);
             int shown = 0;
-            for (int si = 0; si < allSkills.Count && shown < SkillPoolSize; si++)
+            for (int si = 0; si < filteredSkills.Count && shown < SkillPoolSize; si++)
             {
-                var skill = allSkills[si];
+                var skill = filteredSkills[si];
                 bool learned = player.learnedSkills.Contains(skill.id);
                 bool canLearn = !learned
                     && (skill.prereqSkillId == 0 || player.learnedSkills.Contains(skill.prereqSkillId))
@@ -152,21 +230,16 @@ namespace Game.UI
                 var row = skillRows[shown];
                 if (row.obj == null) { shown++; continue; }
                 row.obj.SetActive(true);
-                if (row.rt != null) row.rt.anchoredPosition = new Vector2(0, 185 - shown * 52);
+                if (row.rt != null) row.rt.anchoredPosition = new Vector2(0, 170 - shown * 46);
                 if (row.bg != null) row.bg.color = learned
                     ? new Color(UIBuilder.Green.r * 0.4f, UIBuilder.Green.g * 0.4f, UIBuilder.Green.b * 0.3f, 0.5f)
-                    : UIBuilder.RowEven;
+                    : (shown % 2 == 0 ? UIBuilder.RowEven : UIBuilder.RowOdd);
 
-                string typeStr = skill.type switch
-                {
-                    SkillType.Active => "主动",
-                    SkillType.Passive => "被动",
-                    SkillType.Buff => "增益",
-                    SkillType.StatusAttack => "状态",
-                    _ => ""
-                };
+                // 分类标签
+                string categoryStr = skill.GetCategoryName();
                 string statStr = skill.power > 0 ? $"威力:{skill.power}%" : "";
-                string info = $"{skill.name} [{typeStr}] {statStr}  MP:{skill.mpCost}  {skill.desc}";
+                string mpStr = skill.mpCost > 0 ? $"MP:{skill.mpCost}" : "";
+                string info = $"[{categoryStr}] {skill.name}  {statStr} {mpStr}  {skill.desc}";
                 if (skill.prereqSkillId > 0)
                 {
                     var prereq = ConfigManager.Instance.GetSkill(skill.prereqSkillId);
@@ -191,7 +264,9 @@ namespace Game.UI
                     else
                     {
                         row.actionBtn.interactable = canLearn;
-                        row.actionBtn.image.color = UIBuilder.ButtonNormal;
+                        row.actionBtn.image.color = canLearn
+                            ? UIBuilder.ButtonNormal
+                            : new Color(UIBuilder.ButtonDisable.r, UIBuilder.ButtonDisable.g, UIBuilder.ButtonDisable.b, 0.6f);
                         int capturedId = skill.id;
                         int capturedCost = skill.learnCost;
                         row.actionBtn.onClick.AddListener(() => LearnSkill(capturedId, capturedCost));
@@ -199,8 +274,16 @@ namespace Game.UI
                 }
                 if (row.actionBtnLabel != null)
                 {
-                    row.actionBtnLabel.text = learned ? "已学" : $"{skill.learnCost}金";
-                    row.actionBtnLabel.color = learned ? UIBuilder.Green : (canLearn ? UIBuilder.Gold : UIBuilder.TextDim);
+                    if (learned)
+                    {
+                        row.actionBtnLabel.text = "已学";
+                        row.actionBtnLabel.color = UIBuilder.Green;
+                    }
+                    else
+                    {
+                        row.actionBtnLabel.text = $"{skill.learnCost}金";
+                        row.actionBtnLabel.color = canLearn ? UIBuilder.Gold : UIBuilder.TextDim;
+                    }
                 }
                 if (row.secondBtn != null) row.secondBtn.gameObject.SetActive(false);
 
@@ -210,10 +293,11 @@ namespace Game.UI
             // 隐藏未使用的技能行
             for (int i = shown; i < SkillPoolSize; i++)
             {
-                if (skillRows[i].obj != null) skillRows[i].obj.SetActive(false);
+                if (i < skillRows.Count && skillRows[i].obj != null)
+                    skillRows[i].obj.SetActive(false);
             }
 
-            // 已装备技能 → 卸下按钮
+            // 已装备技能 -> 卸下按钮
             int eqIdx = 0;
             if (eqBtns != null && eqBtnLabels != null)
             {
@@ -231,13 +315,13 @@ namespace Game.UI
                     btn.onClick.AddListener(() => UnequipSkill(capturedSkillId));
                     if (eqBtnLabels[eqIdx] != null)
                     {
-                        eqBtnLabels[eqIdx].text = $"{skill.name} ×";
+                        eqBtnLabels[eqIdx].text = $"{skill.name} x";
                         eqBtnLabels[eqIdx].color = UIBuilder.Red;
                     }
                     eqIdx++;
                 }
 
-                // 未装备的已学技能 → 装备按钮
+                // 未装备的已学技能 -> 装备按钮
                 foreach (var skillId in player.learnedSkills)
                 {
                     if (player.equippedSkills.Contains(skillId)) continue;

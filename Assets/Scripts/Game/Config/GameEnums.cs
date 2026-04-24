@@ -20,10 +20,25 @@ namespace Game.Config
 
     public enum SkillType
     {
-        Active,
-        Passive,
-        Buff,
-        StatusAttack  // 带状态效果的攻击技能
+        Active,        // 攻击技能
+        Passive,       // 被动技能
+        Buff,          // 增益技能
+        StatusAttack,  // 带状态效果的攻击技能（控制类）
+        Heal           // 治疗技能
+    }
+
+    /// <summary>
+    /// 技能学习面板的标签页分类
+    /// </summary>
+    public enum SkillTab
+    {
+        All,       // 全部
+        Attack,    // 攻击
+        Heal,      // 治疗
+        Buff,      // Buff
+        Control,   // 控制
+        Passive,   // 被动
+        Learned    // 已学
     }
 
     public enum DungeonEventType
