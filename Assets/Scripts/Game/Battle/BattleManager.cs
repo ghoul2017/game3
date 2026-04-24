@@ -388,14 +388,14 @@ namespace Game.Battle
             // 宝物加成：幸运硬币(id=5)金币+30%，经验宝石(id=6)经验+20%
             int goldReward = m.goldReward;
             int expReward = m.expReward;
-            
+
             if (p.treasures.Contains(GameConstants.TREASURE_ID_LUCKY_COIN))
             {
                 var luckyCoin = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_LUCKY_COIN);
                 if (luckyCoin != null)
                     goldReward = (int)(goldReward * (1 + luckyCoin.effectValue / 100f));
             }
-            
+
             if (p.treasures.Contains(GameConstants.TREASURE_ID_EXP_GEM))
             {
                 var expGem = ConfigManager.Instance.GetTreasure(GameConstants.TREASURE_ID_EXP_GEM);
@@ -405,6 +405,11 @@ namespace Game.Battle
 
             p.AddExp(expReward);
             p.gold += goldReward;
+
+            // 存储奖励数据
+            b.rewardExp = expReward;
+            b.rewardGold = goldReward;
+            b.rewardItems.Clear();
 
             Debug.Log($"[战斗] 胜利！怪物={m.name} 经验={expReward} 金币={goldReward}");
             string msg = $"击败了 {m.name}！获得 {expReward} 经验，{goldReward} 金币";
@@ -418,6 +423,7 @@ namespace Game.Battle
                     if (item != null)
                     {
                         p.bagItems.Add(drop.itemId);
+                        b.rewardItems.Add(item.name);
                         msg += $"\n获得物品：{item.name}";
                     }
                 }

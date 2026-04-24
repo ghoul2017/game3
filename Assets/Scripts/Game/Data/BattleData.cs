@@ -18,6 +18,11 @@ namespace Game.Data
         public int playerBuffAttack;   // 攻击buff加成
         public int playerBuffDefense;  // 防御buff加成
         public int playerBuffTurns;    // buff剩余回合
+
+        // 战斗奖励
+        public int rewardExp;
+        public int rewardGold;
+        public List<string> rewardItems = new List<string>();
     }
 
     [System.Serializable]

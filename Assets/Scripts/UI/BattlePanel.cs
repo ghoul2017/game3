@@ -52,6 +52,10 @@ namespace Game.UI
         private Text btnAutoLabel;
         private bool isAutoBattle;
 
+        // ---- 奖励面板 ----
+        private GameObject rewardOverlay;
+        private Text rewardText;
+
         private struct SkillRow
         {
             public GameObject obj;
@@ -225,6 +229,23 @@ namespace Game.UI
             UIBuilder.SetAnchored(closeItemBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0, 125 - MaxItemRows * 36), new Vector2(220, 32));
 
+            // === 奖励面板（默认隐藏） ===
+            var rewardOverlayObj = new GameObject("RewardOverlay");
+            rewardOverlayObj.transform.SetParent(parent, false);
+            var rewardOverlayRt = rewardOverlayObj.AddComponent<RectTransform>();
+            UIBuilder.SetStretch(rewardOverlayObj);
+            var rewardBg = rewardOverlayObj.AddComponent<Image>();
+            rewardBg.color = new Color(0, 0, 0, 0.8f);
+            rewardOverlayObj.AddComponent<CanvasGroup>();
+            rewardOverlayObj.SetActive(false);
+
+            var rewardTextObj = UIBuilder.CreateText(rewardOverlayObj.transform, "", 22, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "RewardText");
+            UIBuilder.SetStretch(rewardTextObj.gameObject);
+
+            var (rewardBtn, _) = UIBuilder.CreateButtonWithRef(rewardOverlayObj.transform, "继续", 160, 44, null, 20, "BtnRewardContinue");
+            UIBuilder.SetAnchored(rewardBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0, -80), new Vector2(160, 44));
+
             // === 战斗结果按钮（默认隐藏） ===
             var (resultBtn, _) = UIBuilder.CreateButtonWithRef(parent, "", 240, 55, null, 24, "BtnResult");
             UIBuilder.SetAnchored(resultBtn.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -291,6 +312,10 @@ namespace Game.UI
             // 自动战斗按钮
             btnAuto = FindComponent<Button>("BtnAuto");
             btnAutoLabel = FindComponent<Text>("BtnAuto/Label");
+
+            // 奖励面板
+            rewardOverlay = transform.Find("RewardOverlay").gameObject;
+            rewardText = FindComponent<Text>("RewardOverlay/RewardText");
         }
 
         protected override void BindEvents()
@@ -301,6 +326,7 @@ namespace Game.UI
             btnEscape.onClick.AddListener(OnEscape);
             btnResult.onClick.AddListener(OnBattleEnd);
             btnAuto.onClick.AddListener(OnToggleAutoBattle);
+            FindComponent<Button>("RewardOverlay/BtnRewardContinue").onClick.AddListener(OnRewardContinue);
 
             FindComponent<Button>("SkillPanel/Inner/BtnCloseSkill").onClick.AddListener(() => skillPanel.gameObject.SetActive(false));
             FindComponent<Button>("ItemPanel/Inner/BtnCloseItem").onClick.AddListener(() => itemPanel.gameObject.SetActive(false));
@@ -311,6 +337,7 @@ namespace Game.UI
             isAutoBattle = false;
             skillPanel.gameObject.SetActive(false);
             itemPanel.gameObject.SetActive(false);
+            rewardOverlay.SetActive(false);
             btnResult.gameObject.SetActive(false);
             btnAutoLabel.text = "Auto";
             RefreshUI();
@@ -371,8 +398,23 @@ namespace Game.UI
                 btnEscape.interactable = false;
                 skillPanel.gameObject.SetActive(false);
                 itemPanel.gameObject.SetActive(false);
-                btnResultLabel.text = b.isVictory ? "继续探索" : "返回城镇";
-                btnResult.gameObject.SetActive(true);
+
+                if (b.isVictory)
+                {
+                    // 显示奖励面板
+                    string rewardMsg = $"战斗胜利！\n\n获得 {b.rewardExp} 经验\n获得 {b.rewardGold} 金币";
+                    foreach (var itemName in b.rewardItems)
+                        rewardMsg += $"\n获得物品：{itemName}";
+                    rewardText.text = rewardMsg;
+                    rewardOverlay.SetActive(true);
+                    btnResult.gameObject.SetActive(false);
+                }
+                else
+                {
+                    rewardOverlay.SetActive(false);
+                    btnResultLabel.text = "返回城镇";
+                    btnResult.gameObject.SetActive(true);
+                }
             }
             else
             {
@@ -541,6 +583,13 @@ namespace Game.UI
         }
 
         // ---- 自动战斗 ----
+
+        private void OnRewardContinue()
+        {
+            rewardOverlay.SetActive(false);
+            btnResultLabel.text = "继续探索";
+            btnResult.gameObject.SetActive(true);
+        }
 
         private void OnToggleAutoBattle()
         {
