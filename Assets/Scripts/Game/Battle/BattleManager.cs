@@ -300,12 +300,13 @@ namespace Game.Battle
                 CurrentBattle.log.Add("强大的敌人出现了！");
                 // 播放Boss警告音效和BGM
                 Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_BossWarning);
-                Core.AudioManager.Instance?.PlayMusic(Core.AudioClipType.Battle_BossBGM);
+                Core.AudioManager.Instance?.CrossfadeMusic(Core.AudioClipType.Battle_BossBGM, 1.0f);
             }
             else
             {
                 CurrentBattle.log.Add($"遭遇了 {battleData.monster.name}！");
                 Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Attack);
+                Core.AudioManager.Instance?.CrossfadeMusic(Core.AudioClipType.BGM_Battle, 0.5f);
             }
 
             // 根据速度判定先手
@@ -435,6 +436,7 @@ namespace Game.Battle
             // 速度差闪避判定：怪物闪避
             if (TrySpeedDodge(true))
             {
+                Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Dodge);
                 string dodgeMsg = $"{b.monster.name}闪避了攻击！";
                 b.log.Add(dodgeMsg);
                 return dodgeMsg;
@@ -835,6 +837,7 @@ namespace Game.Battle
             // 速度差闪避判定：玩家闪避
             if (TrySpeedDodge(false))
             {
+                Core.AudioManager.Instance?.PlaySFX(Core.AudioClipType.Battle_Dodge);
                 string dodgeMsg = "你闪避了攻击！";
                 b.log.Add(dodgeMsg);
                 return dodgeMsg;

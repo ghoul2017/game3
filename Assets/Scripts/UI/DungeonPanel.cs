@@ -628,6 +628,9 @@ namespace Game.UI
 
         public override void OnShow()
         {
+            // 地牢背景音乐
+            AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Dungeon, 1.0f);
+
             // 战斗面板关闭后回到地牢面板：检查是否有战斗胜利待处理
             if (pendingBattleTile != null)
             {
@@ -1154,7 +1157,7 @@ namespace Game.UI
 
         private void HandleTreasure(DungeonTile tile)
         {
-            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_TreasureOpen);
             var player = GameManager.Instance.Player;
             int goldFound = Random.Range(20, 40) * GameManager.Instance.Dungeon.floor;
             player.gold += goldFound;
@@ -1186,7 +1189,7 @@ namespace Game.UI
 
         private void HandleSpring(DungeonTile tile)
         {
-            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_HealWater);
             var player = GameManager.Instance.Player;
             int hpHeal = player.maxHp / 3;
             int mpHeal = player.maxMp / 3;
@@ -1202,7 +1205,7 @@ namespace Game.UI
         /// <summary>技能神殿：遍历全技能池，筛选未学技能，随机免费学习一个</summary>
         private void HandleShrine(DungeonTile tile)
         {
-            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
+            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_MagicLearn);
             var player = GameManager.Instance.Player;
 
             // 遍历全技能池，筛选玩家未学的技能（含被动）

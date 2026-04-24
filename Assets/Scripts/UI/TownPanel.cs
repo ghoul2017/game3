@@ -119,6 +119,8 @@ namespace Game.UI
 
         public override void OnShow()
         {
+            // 城镇背景音乐
+            AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Peaceful, 1.0f);
             RefreshUI();
         }
 

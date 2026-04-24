@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,13 +14,20 @@ namespace Game.Core
         Battle_Hit,
         Battle_Victory,
         Battle_Defeat,
+        Battle_Dodge,          // 闪避成功
         UI_Click,
         UI_PanelOpen,
         UI_PanelClose,
         Dungeon_Move,
         Dungeon_Discover,
+        Dungeon_TreasureOpen,  // 宝箱打开
+        Dungeon_HealWater,     // 泉水恢复
+        Dungeon_MagicLearn,    // 神龛学习
         Battle_BossWarning,    // Boss战前警告
-        Battle_BossBGM         // Boss战专属BGM
+        Battle_BossBGM,        // Boss战专属BGM
+        BGM_Peaceful,          // 城镇背景音乐
+        BGM_Dungeon,           // 地牢背景音乐
+        BGM_Battle             // 普通战斗背景音乐
     }
 
     /// <summary>
@@ -150,6 +158,51 @@ namespace Game.Core
                 musicSource.Stop();
         }
 
+        /// <summary>
+        /// 淡入淡出切换背景音乐
+        /// </summary>
+        /// <param name="type">目标音乐类型</param>
+        /// <param name="duration">淡入淡出时长（秒）</param>
+        public void CrossfadeMusic(AudioClipType type, float duration = 1.0f)
+        {
+            if (musicSource == null || !clipCache.TryGetValue(type, out var clip)) return;
+            // 如果正在播放相同的音乐，跳过
+            if (musicSource.clip == clip && musicSource.isPlaying) return;
+            StartCoroutine(CrossfadeCoroutine(clip, duration));
+        }
+
+        private System.Collections.IEnumerator CrossfadeCoroutine(AudioClip newClip, float duration)
+        {
+            float halfDur = duration * 0.5f;
+
+            // 淡出当前音乐
+            if (musicSource.isPlaying)
+            {
+                float startVol = musicSource.volume;
+                float elapsed = 0f;
+                while (elapsed < halfDur)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    musicSource.volume = Mathf.Lerp(startVol, 0f, elapsed / halfDur);
+                    yield return null;
+                }
+                musicSource.Stop();
+                musicSource.volume = 0f;
+            }
+
+            // 淡入新音乐
+            musicSource.clip = newClip;
+            musicSource.Play();
+            float elapsed2 = 0f;
+            while (elapsed2 < halfDur)
+            {
+                elapsed2 += Time.unscaledDeltaTime;
+                musicSource.volume = Mathf.Lerp(0f, musicVolume, elapsed2 / halfDur);
+                yield return null;
+            }
+            musicSource.volume = musicVolume;
+        }
+
         #region 程序化音效生成
 
         /// <summary>
@@ -167,8 +220,15 @@ namespace Game.Core
             clipCache[AudioClipType.Battle_Defeat] = GenerateArpeggio(new float[] { 400f, 350f, 300f, 200f }, 0.2f, 0.4f);
             clipCache[AudioClipType.Dungeon_Move] = GenerateNoiseBurst(0.06f, 0.2f);
             clipCache[AudioClipType.Dungeon_Discover] = GenerateArpeggio(new float[] { 600f, 800f }, 0.12f, 0.35f);
+            clipCache[AudioClipType.Battle_Dodge] = GenerateSweep(800f, 400f, 0.1f, 0.25f);
             clipCache[AudioClipType.Battle_BossWarning] = GenerateArpeggio(new float[] { 200f, 250f, 300f, 400f }, 0.25f, 0.6f);
             clipCache[AudioClipType.Battle_BossBGM] = GenerateBossBGM();
+            clipCache[AudioClipType.Dungeon_TreasureOpen] = GenerateArpeggio(new float[] { 523f, 659f, 784f, 1047f, 1319f }, 0.08f, 0.35f);
+            clipCache[AudioClipType.Dungeon_HealWater] = GenerateSweep(400f, 900f, 0.4f, 0.3f);
+            clipCache[AudioClipType.Dungeon_MagicLearn] = GenerateArpeggio(new float[] { 440f, 554f, 659f, 880f }, 0.15f, 0.4f);
+            clipCache[AudioClipType.BGM_Peaceful] = GeneratePeacefulBGM();
+            clipCache[AudioClipType.BGM_Dungeon] = GenerateDungeonBGM();
+            clipCache[AudioClipType.BGM_Battle] = GenerateBattleBGM();
         }
 
         /// <summary>
@@ -288,6 +348,114 @@ namespace Game.Core
                 }
             }
             var clip = AudioClip.Create("BossBGM", samples, 1, sampleRate, true);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成城镇背景音乐：轻柔舒缓的和弦循环
+        /// </summary>
+        private AudioClip GeneratePeacefulBGM()
+        {
+            int sampleRate = 44100;
+            float duration = 4.0f; // 4秒循环
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            // C大调和弦进行: C-Am-F-G
+            float[][] chordNotes = {
+                new float[] { 261.63f, 329.63f, 392f },     // C大三和弦
+                new float[] { 220f, 261.63f, 329.63f },     // Am小三和弦
+                new float[] { 174.61f, 220f, 261.63f },     // F大三和弦
+                new float[] { 196f, 246.94f, 293.66f }      // G大三和弦
+            };
+            int chordSamples = samples / chordNotes.Length;
+            for (int c = 0; c < chordNotes.Length; c++)
+            {
+                for (int i = 0; i < chordSamples; i++)
+                {
+                    int idx = c * chordSamples + i;
+                    if (idx >= samples) break;
+                    float t = (float)i / sampleRate;
+                    float envelope = Mathf.Sin(Mathf.PI * (float)i / chordSamples);
+                    float val = 0f;
+                    foreach (var freq in chordNotes[c])
+                    {
+                        val += Mathf.Sin(2 * Mathf.PI * freq * t) * 0.15f;
+                    }
+                    data[idx] = val * envelope * 0.4f;
+                }
+            }
+            var clip = AudioClip.Create("PeacefulBGM", samples, 1, sampleRate, true);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成地牢背景音乐：低沉紧张的环境音循环
+        /// </summary>
+        private AudioClip GenerateDungeonBGM()
+        {
+            int sampleRate = 44100;
+            float duration = 3.0f; // 3秒循环
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            // 低频无人机音 + 缓慢脉动
+            float[] bassNotes = { 55f, 55f, 65.41f, 55f, 49f, 55f };
+            int noteSamples = samples / bassNotes.Length;
+            for (int n = 0; n < bassNotes.Length; n++)
+            {
+                for (int i = 0; i < noteSamples; i++)
+                {
+                    int idx = n * noteSamples + i;
+                    if (idx >= samples) break;
+                    float t = (float)i / sampleRate;
+                    float envelope = Mathf.Sin(Mathf.PI * (float)i / noteSamples);
+                    // 低频正弦波 + 轻微失谐的泛音
+                    float bass = Mathf.Sin(2 * Mathf.PI * bassNotes[n] * t) * 0.25f;
+                    float overtone = Mathf.Sin(2 * Mathf.PI * bassNotes[n] * 1.5f * t) * 0.08f;
+                    // 低通滤波模拟：衰减高频
+                    float noise = (Mathf.Sin(2 * Mathf.PI * 120f * t + Mathf.Sin(2 * Mathf.PI * 0.3f * t) * 2f) * 0.04f);
+                    data[idx] = (bass + overtone + noise) * envelope;
+                }
+            }
+            var clip = AudioClip.Create("DungeonBGM", samples, 1, sampleRate, true);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// 生成普通战斗背景音乐：节奏紧张的战斗旋律
+        /// </summary>
+        private AudioClip GenerateBattleBGM()
+        {
+            int sampleRate = 44100;
+            float duration = 3.0f; // 3秒循环
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            // 快节奏音符：小调进行
+            float[] melodyNotes = { 196f, 220f, 233.08f, 220f, 196f, 174.61f, 196f, 233.08f };
+            float[] bassLine = { 98f, 98f, 116.54f, 116.54f, 87.31f, 87.31f, 98f, 98f };
+            int noteSamples = samples / melodyNotes.Length;
+            for (int n = 0; n < melodyNotes.Length; n++)
+            {
+                for (int i = 0; i < noteSamples; i++)
+                {
+                    int idx = n * noteSamples + i;
+                    if (idx >= samples) break;
+                    float t = (float)i / sampleRate;
+                    float envelope = Mathf.Sin(Mathf.PI * (float)i / noteSamples);
+                    // 旋律层（方波近似，增加紧张感）
+                    float melody = Mathf.Sign(Mathf.Sin(2 * Mathf.PI * melodyNotes[n] * t)) * 0.1f * envelope;
+                    // 低音层
+                    float bass = Mathf.Sin(2 * Mathf.PI * bassLine[n] * t) * 0.2f * envelope;
+                    // 打击层：每个音符开始时一个短促噪声
+                    float perc = 0f;
+                    if (i < sampleRate * 0.03f)
+                        perc = (Random.value * 2f - 1f) * 0.08f * (1f - i / (sampleRate * 0.03f));
+                    data[idx] = (melody + bass + perc) * 0.5f;
+                }
+            }
+            var clip = AudioClip.Create("BattleBGM", samples, 1, sampleRate, true);
             clip.SetData(data, 0);
             return clip;
         }

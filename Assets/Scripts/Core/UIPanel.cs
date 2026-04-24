@@ -96,6 +96,10 @@ namespace Game.Core
             canvasGroup.alpha = 1f;
             canvasGroup.interactable = true;
             canvasGroup.blocksRaycasts = true;
+
+            // 播放面板打开音效
+            AudioManager.Instance?.PlaySFX(AudioClipType.UI_PanelOpen);
+
             OnShow();
         }
 
@@ -107,6 +111,10 @@ namespace Game.Core
 
             StopAllCoroutines();
             canvasGroup.alpha = 0f;
+
+            // 播放面板关闭音效
+            AudioManager.Instance?.PlaySFX(AudioClipType.UI_PanelClose);
+
             OnHide();
         }
 
