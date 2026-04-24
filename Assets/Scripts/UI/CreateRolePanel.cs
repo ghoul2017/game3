@@ -134,14 +134,14 @@ namespace Game.UI
             UIBuilder.SetAnchored(hint.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0, -310), new Vector2(400, 26));
 
-            // ---- 底部按钮 ----
+            // ---- 底部按钮（底部锚定，确保始终在屏幕内）----
             var (btnStart, _) = UIBuilder.CreateButtonWithRef(parent, "开始游戏", 220, 50, null, 22, "BtnStart");
-            UIBuilder.SetAnchored(btnStart.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -355), new Vector2(220, 50));
+            UIBuilder.SetAnchored(btnStart.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0, 90), new Vector2(220, 50));
 
             var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回", 220, 50, null, 22, "BtnBack");
-            UIBuilder.SetAnchored(btnBack.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, -415), new Vector2(220, 50));
+            UIBuilder.SetAnchored(btnBack.gameObject, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0, 30), new Vector2(220, 50));
         }
 
         protected override void BindReferences()

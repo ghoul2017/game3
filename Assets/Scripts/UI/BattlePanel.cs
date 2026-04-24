@@ -143,7 +143,7 @@ namespace Game.UI
             UIBuilder.SetStretch(playerInfoObj.gameObject);
 
             // === 操作按钮 ===
-            float btnY = -540;
+            float btnY = -480;
             float btnW = 180;
             float btnH = 48;
             float gap = 40;

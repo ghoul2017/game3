@@ -58,9 +58,13 @@ namespace Game.UI
             UIBuilder.CreateButton(parent, "下一页", 130, 38, null, 16, "BtnNext")
                 .GetComponent<RectTransform>().anchoredPosition = new Vector2(160, -275);
 
-            // 底部按钮
-            UIBuilder.CreateButton(parent, "返回", 180, 45, null, 20, "BtnBack")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -330);
+            // 底部按钮（底部锚定，确保始终在屏幕内）
+            var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 45, null, 20, "BtnBack");
+            var btnBackRt = btnBack.GetComponent<RectTransform>();
+            btnBackRt.anchorMin = new Vector2(0.5f, 0);
+            btnBackRt.anchorMax = new Vector2(0.5f, 0);
+            btnBackRt.pivot = new Vector2(0.5f, 0);
+            btnBackRt.anchoredPosition = new Vector2(0, 30);
         }
 
         protected override void BindReferences()

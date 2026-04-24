@@ -73,9 +73,13 @@ namespace Game.UI
                 btn.gameObject.SetActive(false);
             }
 
-            // 返回按钮
-            UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack")
-                .GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -615);
+            // 返回按钮（底部锚定，确保始终在屏幕内）
+            var btnBack = UIBuilder.CreateButton(parent, "返回", 180, 42, null, 18, "BtnBack");
+            var btnBackRt = btnBack.GetComponent<RectTransform>();
+            btnBackRt.anchorMin = new Vector2(0.5f, 0);
+            btnBackRt.anchorMax = new Vector2(0.5f, 0);
+            btnBackRt.pivot = new Vector2(0.5f, 0);
+            btnBackRt.anchoredPosition = new Vector2(0, 30);
         }
 
         protected override void BindReferences()

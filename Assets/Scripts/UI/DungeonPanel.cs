@@ -106,25 +106,24 @@ namespace Game.UI
             // ===== 底部技能快捷栏 =====
             CreateSkillBarVisuals(parent);
 
-            // ===== 底部按钮区 =====
-            float btnY = -320;
+            // ===== 底部按钮区（底部锚定，确保始终在屏幕内）=====
             float btnW = 150;
             float btnH = 45;
 
             var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回城镇", btnW, btnH, null, 20, "BtnBack");
             UIBuilder.SetAnchored(btnBack.gameObject,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-180, btnY), new Vector2(btnW, btnH));
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(-180, 30), new Vector2(btnW, btnH));
 
             var (btnBag, _) = UIBuilder.CreateButtonWithRef(parent, "背包", btnW, btnH, null, 18, "BtnBag");
             UIBuilder.SetAnchored(btnBag.gameObject,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, btnY), new Vector2(btnW, btnH));
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0, 30), new Vector2(btnW, btnH));
 
             var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色", btnW, btnH, null, 18, "BtnRole");
             UIBuilder.SetAnchored(btnRole.gameObject,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(180, btnY), new Vector2(btnW, btnH));
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(180, 30), new Vector2(btnW, btnH));
         }
 
         private static void CreateStatusPanelVisuals(Transform parent)
