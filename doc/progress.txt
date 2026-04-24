@@ -64,3 +64,4 @@
 
 2026-04-25 F128 COMPLETED - 深色主题UI配色改造：UIBuilder 42个命名常量覆盖全色板，5个面板硬编码替换，所有面板统一黑底+暗金配色
 2026-04-25 F129 COMPLETED - 音频系统：AudioManager单例(SFX通道x5+Music通道x1)+程序化音效生成(正弦波/白噪声/琶音)+10种音效枚举+SettingsPanel音量联动+BattleManager/DungeonPanel关键音效埋点
+2026-04-25 F130 COMPLETED - 速度属性实装：DetermineTurnOrder先手判定+速度差闪避机制+加速/减速Buff+BattlePanel回合归属UI

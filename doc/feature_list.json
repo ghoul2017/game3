@@ -112,7 +112,7 @@
     "4. SettingsPanel音量滑块实际生效：SettingsManager.ApplySettings()调用AudioManager更新音量",
     "5. UIPanel基类OnButtonClick()统一播放UI_Click音效，BattleManager/DungeonPanel关键操作点插入对应音效",
     "6. GameEntry.Awake()中初始化AudioManager，加载所有AudioClip到字典缓存"
-  ],"passes":false},
+  ]},
 
   {"id":"F130","category":"battle","priority":3,"desc":"速度属性实装：speed参与回合顺序判定+高速度闪避加成，告别永远玩家先手","steps":[
     "1. PlayerData.speed字段从职业配置取值(当前各职业speed=10或12)，MonsterData.speed从怪物配置取值",
@@ -120,7 +120,7 @@
     "3. 速度差≥5时，高速度方获得闪避率加成：(speedDiff * 2)%，闪避时战斗日志显示'{方}闪避了攻击！'，伤害为0",
     "4. 速度Buff技能效果：加速术speed+10持续3回合、减速术speed-10持续3回合，Buff改变后立即重新排序",
     "5. BattlePanel UI显示当前回合归属('你的回合⚔'/'敌人回合')和双方速度值"
-  ],"passes":false},
+  ],"passes":true},
 
   {"id":"F131","category":"dungeon","priority":4,"desc":"网格地牢数据模型：DungeonData从线性列表改为2D网格，支持Room/Wall双类型+多尺寸房间+四方向开放连接","steps":[
     "1. 新增TileType枚举：Room(可通行房间)、Wall(不可通行墙壁)",
