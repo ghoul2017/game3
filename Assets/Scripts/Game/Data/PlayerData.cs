@@ -123,5 +123,15 @@ namespace Game.Data
         }
 
         public bool IsAlive => hp > 0;
+
+        /// <summary>
+        /// 学习技能：将技能加入已学列表（不重复）
+        /// </summary>
+        public bool LearnSkill(int skillId)
+        {
+            if (learnedSkills.Contains(skillId)) return false;
+            learnedSkills.Add(skillId);
+            return true;
+        }
     }
 }

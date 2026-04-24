@@ -51,6 +51,9 @@ namespace Game.UI
         private const float MoveDuration = 0.2f; // 平滑移动过渡时长（秒）
         private CanvasGroup cachedCanvasGroup;   // 缓存，避免每帧 GetComponent
 
+        // ---- 战斗回传：战斗结束后标记对应房间 isCleared ----
+        private DungeonTile pendingBattleTile;
+
         // ---- 缓存引用 ----
         private Text titleText;
         private Text statusText;
@@ -486,7 +489,15 @@ namespace Game.UI
             FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnContinue").onClick.AddListener(() =>
             {
                 PlayUIClick();
-                pendingMessage = null;
+                // 检查是否有出口待确认
+                if (pendingExitFloor > 0)
+                {
+                    ConfirmEnterNextFloor();
+                }
+                else
+                {
+                    pendingMessage = null;
+                }
                 RefreshUI();
             });
 
@@ -542,6 +553,21 @@ namespace Game.UI
 
         public override void OnShow()
         {
+            // 战斗面板关闭后回到地牢面板：检查是否有战斗胜利待处理
+            if (pendingBattleTile != null)
+            {
+                var battle = BattleManager.Instance.CurrentBattle;
+                if (battle != null && battle.isFinished && battle.isVictory)
+                {
+                    // 战斗胜利：标记房间为已清理
+                    pendingBattleTile.isCleared = true;
+                    var room = FindMatchingRoom(GameManager.Instance.Dungeon, pendingBattleTile);
+                    room.cleared = true;
+                    Debug.Log($"[地牢] 战斗胜利，房间已清理 pos=({pendingBattleTile.gridPos.x},{pendingBattleTile.gridPos.y})");
+                }
+                pendingBattleTile = null;
+            }
+
             RefreshUI();
         }
 
@@ -901,6 +927,13 @@ namespace Game.UI
                     Debug.Log("[地牢] 发现神殿");
                     HandleShrine(tile);
                     break;
+                case DungeonEventType.Empty:
+                    // F137 随机事件尚未实现，直接标记为已清理
+                    Debug.Log("[地牢] 空房间");
+                    tile.isCleared = true;
+                    var emptyRoom = FindMatchingRoom(dungeon, tile);
+                    emptyRoom.cleared = true;
+                    break;
             }
         }
 
@@ -948,6 +981,9 @@ namespace Game.UI
                 : monsters.Count > 0 ? monsters[Random.Range(0, monsters.Count)] : null;
             if (monsterCfg != null)
             {
+                // 记录战斗对应的瓦片，战斗胜利后标记 isCleared
+                pendingBattleTile = tile;
+
                 float floorScale = 1f + (dungeon.floor - 1) * 0.15f;
                 float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
                 float totalScale = floorScale * eliteScale;
@@ -1048,62 +1084,94 @@ namespace Game.UI
             room.cleared = true;
         }
 
-        /// <summary>神殿处理：随机增益效果</summary>
+        /// <summary>技能神殿：遍历全技能池，筛选未学技能，随机免费学习一个</summary>
         private void HandleShrine(DungeonTile tile)
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
             var player = GameManager.Instance.Player;
-            int roll = Random.Range(0, 3);
-            if (roll == 0)
+
+            // 遍历全技能池，筛选玩家未学的非被动技能
+            var allSkills = ConfigManager.Instance.GetAllSkills();
+            var unlearned = new List<SkillConfig>();
+            foreach (var skill in allSkills)
             {
-                int atkBonus = Random.Range(2, 5);
-                player.attack += atkBonus;
-                pendingMessage = $"神殿赐福！\n攻击力 +{atkBonus}";
+                if (skill.type == SkillType.Passive) continue;
+                if (player.learnedSkills.Contains(skill.id)) continue;
+                unlearned.Add(skill);
             }
-            else if (roll == 1)
+
+            if (unlearned.Count > 0)
             {
-                int defBonus = Random.Range(2, 5);
-                player.defense += defBonus;
-                pendingMessage = $"神殿赐福！\n防御力 +{defBonus}";
+                // 随机选一个免费学习
+                var chosen = unlearned[Random.Range(0, unlearned.Count)];
+                player.LearnSkill(chosen.id);
+                pendingMessage = $"技能神殿：习得 {chosen.name}！\n{chosen.desc}";
+                Debug.Log($"[神殿] 习得技能 {chosen.name}(id={chosen.id})");
             }
             else
             {
+                // 所有技能已学，改为恢复效果
                 int hpHeal = player.maxHp / 2;
                 player.hp = Mathf.Min(player.hp + hpHeal, player.maxHp);
-                pendingMessage = $"神殿赐福！\n恢复 {hpHeal} 生命值";
+                pendingMessage = "技能神殿：你已领悟所有技能！\n恢复了生命值";
             }
+
             tile.isCleared = true;
 
             var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
             room.cleared = true;
         }
 
+        /// <summary>出口处理：显示确认弹窗，点击继续进入下一层</summary>
         private void HandleExit()
         {
-            var player = GameManager.Instance.Player;
             var currentDungeon = GameManager.Instance.Dungeon;
             int nextFloor = currentDungeon.floor + 1;
+
+            // 标记出口房间为已清理
+            var exitTile = currentDungeon.CurrentTile;
+            if (exitTile != null)
+            {
+                exitTile.isCleared = true;
+                var exitRoom = FindMatchingRoom(currentDungeon, exitTile);
+                exitRoom.cleared = true;
+            }
 
             // 通关检查
             if (nextFloor > currentDungeon.maxFloor)
             {
                 pendingMessage = "恭喜通关！\n你征服了地牢所有楼层！\n\n可继续探索无尽模式...";
-                player.dungeonFloor = nextFloor;
-                var endlessDungeon = new DungeonData();
-                endlessDungeon.GenerateFloor(nextFloor);
-                endlessDungeon.maxFloor = int.MaxValue;
-                GameManager.Instance.Dungeon = endlessDungeon;
-                GameManager.Instance.SaveGame();
-                RefreshUI();
-                return;
+                pendingExitFloor = nextFloor;
+                pendingExitMaxFloor = int.MaxValue;
+            }
+            else
+            {
+                pendingMessage = $"发现通往第 {nextFloor} 层的出口！\n点击继续前往下一层";
+                pendingExitFloor = nextFloor;
+                pendingExitMaxFloor = currentDungeon.maxFloor;
             }
 
-            player.dungeonFloor = nextFloor;
+            RefreshUI();
+        }
+
+        /// <summary>待确认的出口层数（非0表示有出口待确认）</summary>
+        private int pendingExitFloor;
+        private int pendingExitMaxFloor;
+
+        /// <summary>确认进入下一层（弹窗点击继续后触发）</summary>
+        private void ConfirmEnterNextFloor()
+        {
+            var player = GameManager.Instance.Player;
+            player.dungeonFloor = pendingExitFloor;
             var dungeon = new DungeonData();
-            dungeon.GenerateFloor(nextFloor);
+            dungeon.GenerateFloor(pendingExitFloor);
+            dungeon.maxFloor = pendingExitMaxFloor;
             GameManager.Instance.Dungeon = dungeon;
             GameManager.Instance.SetState(GameState.InDungeon);
-            RefreshUI();
+            GameManager.Instance.SaveGame();
+
+            pendingMessage = null;
+            pendingExitFloor = 0;
         }
 
         /// <summary>

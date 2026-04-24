@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Game.Config;
 using UnityEngine;
 
@@ -127,10 +128,10 @@ namespace Game.Data
         /// <summary>金币数量</summary>
         public int goldAmount;
 
-        /// <summary>物品配置ID</summary>
-        public int itemId;
+        /// <summary>物品配置ID列表（商人售卖物品）</summary>
+        public List<int> itemIds = new List<int>();
 
-        /// <summary>技能配置ID</summary>
+        /// <summary>技能配置ID（神殿技能）</summary>
         public int skillId;
 
         /// <summary>怪物等级缩放</summary>

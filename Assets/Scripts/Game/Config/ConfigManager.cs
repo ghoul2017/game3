@@ -39,6 +39,10 @@ namespace Game.Config
         public List<SkillConfig> GetSkillsByProfession(Profession prof)
             => skills.Values.Where(s => s.profession == prof).ToList();
 
+        /// <summary>获取所有技能配置</summary>
+        public List<SkillConfig> GetAllSkills()
+            => skills.Values.ToList();
+
         public ItemConfig GetItem(int id)
             => items.TryGetValue(id, out var c) ? c : null;
 
