@@ -30,6 +30,10 @@ namespace Game.UI
         private static readonly Color ColorEmpty     = HexColor(0x2c3e50);      // 暗蓝灰
         private static readonly Color ColorCurrentOutline = HexColor(0xc8a24c); // 金色边框
         private static readonly Color ColorClearedOverlay = new Color(0.5f, 0.5f, 0.5f, 0.35f); // 灰色半透明
+        private static readonly Color ColorFogHidden   = new Color(0f, 0f, 0f, 1f);            // 未探索：纯黑不透明
+        private static readonly Color ColorFogExplored = new Color(0f, 0f, 0f, 0.6f);          // 已探索：黑色半透明
+        private static readonly Color ColorFogVisible  = new Color(0f, 0f, 0f, 0f);            // 可见：完全透明
+        private static readonly Color ColorExploredCleared = new Color(0.5f, 0.5f, 0.5f, 0.3f); // 已探索+已清：灰色叠加
 
         private static Color HexColor(int rgb)
         {
@@ -65,6 +69,7 @@ namespace Game.UI
             public RectTransform rt;
             public Image bg;
             public Image overlay;  // 已清房间半透明叠加
+            public Image fogOverlay;  // 战争迷雾层
             public Text iconText;
             public Text typeLabel;
             public Button btn;
@@ -388,6 +393,18 @@ namespace Game.UI
             typeLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             typeLabel.raycastTarget = false;
 
+            // 战争迷雾层（最顶层，覆盖所有内容）
+            var fogObj = new GameObject("FogOverlay");
+            fogObj.transform.SetParent(obj.transform, false);
+            var fogRt = fogObj.AddComponent<RectTransform>();
+            fogRt.anchorMin = Vector2.zero;
+            fogRt.anchorMax = Vector2.one;
+            fogRt.offsetMin = Vector2.zero;
+            fogRt.offsetMax = Vector2.zero;
+            var fogImg = fogObj.AddComponent<Image>();
+            fogImg.color = ColorFogHidden;
+            fogImg.raycastTarget = false;
+
             obj.AddComponent<Button>();
         }
 
@@ -416,6 +433,7 @@ namespace Game.UI
                     rt = tileObj.GetComponent<RectTransform>(),
                     bg = tileObj.GetComponent<Image>(),
                     overlay = tileObj.transform.Find("Overlay").GetComponent<Image>(),
+                    fogOverlay = tileObj.transform.Find("FogOverlay").GetComponent<Image>(),
                     iconText = tileObj.transform.Find("Icon").GetComponent<Text>(),
                     typeLabel = tileObj.transform.Find("TypeLabel").GetComponent<Text>(),
                     btn = tileObj.GetComponent<Button>()
@@ -572,7 +590,7 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 根据网格数据刷新地图瓦片（零创建零销毁）
+        /// 根据网格数据刷新地图瓦片（零创建零销毁）+ 战争迷雾
         /// </summary>
         private void UpdateGridMap(DungeonData dungeon)
         {
@@ -599,6 +617,9 @@ namespace Game.UI
                     var dungeonTile = dungeon.grid[x, y];
                     bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
 
+                    // 获取可见性状态
+                    var visibility = dungeon.GetTileVisibility(x, y);
+
                     // 位置和大小
                     tile.obj.SetActive(true);
                     tile.rt.pivot = new Vector2(0, 1); // 左上角锚定
@@ -607,38 +628,85 @@ namespace Game.UI
                     tile.rt.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
                     tile.rt.sizeDelta = new Vector2(cellSize, cellSize);
 
-                    // 颜色
-                    if (dungeonTile.tileType == TileType.Wall)
+                    // === 战争迷雾渲染 ===
+                    if (visibility == TileVisibility.Hidden)
                     {
+                        // 未探索：纯黑覆盖，不显示任何内容
                         tile.bg.color = ColorWall;
                         tile.overlay.color = Color.clear;
+                        tile.fogOverlay.color = ColorFogHidden;
                         tile.iconText.text = "";
                         tile.typeLabel.text = "";
                         tile.btn.interactable = false;
                     }
-                    else
+                    else if (visibility == TileVisibility.Explored)
                     {
-                        // 房间类型着色
-                        tile.bg.color = GetTileColor(dungeonTile.roomType);
-                        tile.iconText.text = GetTileIcon(dungeonTile.roomType);
-                        tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType, isCurrent);
-
-                        // 已清房间覆盖灰色半透明
-                        if (dungeonTile.isCleared && !isCurrent)
+                        // 已探索但不在视野内：显示房间颜色但alpha降低
+                        if (dungeonTile.tileType == TileType.Wall)
                         {
-                            tile.overlay.color = ColorClearedOverlay;
+                            tile.bg.color = ColorWall;
+                            tile.overlay.color = Color.clear;
+                            tile.iconText.text = "";
+                            tile.typeLabel.text = "";
                         }
                         else
                         {
-                            tile.overlay.color = Color.clear;
+                            // 房间着色降低透明度
+                            var roomColor = GetTileColor(dungeonTile.roomType);
+                            tile.bg.color = new Color(roomColor.r, roomColor.g, roomColor.b, 0.4f);
+                            tile.iconText.text = GetTileIcon(dungeonTile.roomType);
+                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType, false);
+
+                            // 已清房间再加灰色叠加
+                            if (dungeonTile.isCleared)
+                            {
+                                tile.overlay.color = ColorExploredCleared;
+                            }
+                            else
+                            {
+                                tile.overlay.color = Color.clear;
+                            }
                         }
 
-                        // 只有当前房间和相邻可达房间可交互
-                        tile.btn.interactable = isCurrent || IsAdjacentToCurrent(dungeon, x, y);
+                        tile.fogOverlay.color = ColorFogExplored;
+                        tile.btn.interactable = false;
+                    }
+                    else // Visible
+                    {
+                        // 完全可见：正常渲染
+                        if (dungeonTile.tileType == TileType.Wall)
+                        {
+                            tile.bg.color = ColorWall;
+                            tile.overlay.color = Color.clear;
+                            tile.iconText.text = "";
+                            tile.typeLabel.text = "";
+                            tile.btn.interactable = false;
+                        }
+                        else
+                        {
+                            tile.bg.color = GetTileColor(dungeonTile.roomType);
+                            tile.iconText.text = GetTileIcon(dungeonTile.roomType);
+                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType, isCurrent);
+
+                            // 已清房间覆盖灰色半透明
+                            if (dungeonTile.isCleared && !isCurrent)
+                            {
+                                tile.overlay.color = ColorClearedOverlay;
+                            }
+                            else
+                            {
+                                tile.overlay.color = Color.clear;
+                            }
+
+                            // 只有当前房间和相邻可达房间可交互
+                            tile.btn.interactable = isCurrent || IsAdjacentToCurrent(dungeon, x, y);
+                        }
+
+                        tile.fogOverlay.color = ColorFogVisible;
                     }
 
-                    // 当前房间高亮
-                    if (isCurrent && dungeonTile.tileType == TileType.Room)
+                    // 当前房间高亮（仅可见状态下显示）
+                    if (isCurrent && dungeonTile.tileType == TileType.Room && visibility == TileVisibility.Visible)
                     {
                         currentFound = true;
                         currentRoomOutline.rectTransform.pivot = new Vector2(0, 1);
@@ -747,10 +815,10 @@ namespace Game.UI
 
             bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
 
-            // 移动到目标房间
+            // 移动到目标房间（更新战争迷雾）
             if (!isCurrent)
             {
-                dungeon.currentPos = new GridPos(x, y);
+                dungeon.OnMoveTo(new GridPos(x, y));
                 // 更新旧接口兼容
                 dungeon.currentRoomIndex = FindRoomIndex(dungeon, x, y);
                 AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);

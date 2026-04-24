@@ -46,4 +46,14 @@ namespace Game.Config
         Room,  // 可通行房间
         Wall   // 不可通行墙壁
     }
+
+    /// <summary>
+    /// 战争迷雾可见性状态
+    /// </summary>
+    public enum TileVisibility
+    {
+        Hidden,   // 未探索：全黑
+        Explored, // 已去过但不在当前视野：半透明
+        Visible   // 当前房间及四方向相邻：完全可见
+    }
 }

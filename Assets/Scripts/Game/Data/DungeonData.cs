@@ -714,6 +714,110 @@ namespace Game.Data
             }
 
             currentPos = startPos;
+
+            // 初始化战争迷雾
+            InitVisibility();
+        }
+
+        // ---- 战争迷雾 ----
+
+        /// <summary>四方向偏移量（上/下/左/右）</summary>
+        private static readonly int[] DirX = { 0, 0, -1, 1 };
+        private static readonly int[] DirY = { -1, 1, 0, 0 };
+
+        /// <summary>初始化战争迷雾：所有tile=Hidden，起点及相邻四方向=Visible</summary>
+        public void InitVisibility()
+        {
+            // 全部标记为未探索
+            for (int x = 0; x < gridWidth; x++)
+            {
+                for (int y = 0; y < gridHeight; y++)
+                {
+                    grid[x, y].isExplored = false;
+                }
+            }
+
+            // 起点、起点相邻格子设为可见
+            SetVisibleArea(startPos);
+        }
+
+        /// <summary>获取指定坐标的可见性状态</summary>
+        public TileVisibility GetTileVisibility(int x, int y)
+        {
+            var tile = GetTileAt(x, y);
+            if (tile == null) return TileVisibility.Hidden;
+
+            // 当前玩家位置 → Visible
+            if (currentPos.x == x && currentPos.y == y)
+                return TileVisibility.Visible;
+
+            // 当前位置的相邻格子 → Visible
+            for (int i = 0; i < 4; i++)
+            {
+                if (currentPos.x + DirX[i] == x && currentPos.y + DirY[i] == y)
+                    return TileVisibility.Visible;
+            }
+
+            // 已探索但不在视野内 → Explored
+            if (tile.isExplored)
+                return TileVisibility.Explored;
+
+            // 未探索 → Hidden
+            return TileVisibility.Hidden;
+        }
+
+        /// <summary>玩家移动到新位置：更新迷雾可见性</summary>
+        public void OnMoveTo(GridPos newPos)
+        {
+            // 标记旧位置的相邻格子为已探索（如果不在新可见范围内）
+            MarkExploredAround(currentPos, newPos);
+
+            // 更新当前位置
+            currentPos = newPos;
+
+            // 标记新位置及相邻为可见
+            SetVisibleArea(newPos);
+        }
+
+        /// <summary>将指定位置及四方向相邻格子标记为已探索</summary>
+        private void SetVisibleArea(GridPos pos)
+        {
+            var centerTile = GetTileAt(pos);
+            if (centerTile != null) centerTile.isExplored = true;
+
+            for (int i = 0; i < 4; i++)
+            {
+                var tile = GetTileAt(pos.x + DirX[i], pos.y + DirY[i]);
+                if (tile != null) tile.isExplored = true;
+            }
+        }
+
+        /// <summary>将旧位置周围不再在新可见范围内的格子标记为已探索</summary>
+        private void MarkExploredAround(GridPos oldPos, GridPos newPos)
+        {
+            // 收集新位置可见范围内的坐标
+            var newVisible = new HashSet<GridPos>();
+            newVisible.Add(newPos);
+            for (int i = 0; i < 4; i++)
+            {
+                newVisible.Add(new GridPos(newPos.x + DirX[i], newPos.y + DirY[i]));
+            }
+
+            // 旧位置本身
+            var oldTile = GetTileAt(oldPos);
+            if (oldTile != null && !newVisible.Contains(oldPos))
+                oldTile.isExplored = true;
+
+            // 旧位置相邻
+            for (int i = 0; i < 4; i++)
+            {
+                var nx = oldPos.x + DirX[i];
+                var ny = oldPos.y + DirY[i];
+                var np = new GridPos(nx, ny);
+                var tile = GetTileAt(nx, ny);
+                if (tile != null && !newVisible.Contains(np))
+                    tile.isExplored = true;
+            }
         }
 
         public void OnReturnTown()
