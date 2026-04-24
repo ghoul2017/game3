@@ -24,7 +24,7 @@ namespace Game.UI
         private int currentTab;
 
         // 对象池大小
-        private const int SkillPoolSize = 16;
+        private const int SkillPoolSize = 32;
         private const int EqBtnPoolSize = 16;
         private const int TabCount = 7;
 
