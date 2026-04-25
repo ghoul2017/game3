@@ -1,9 +1,11 @@
+using System.Collections;
 using System.Collections.Generic;
 using Game.Battle;
 using Game.Config;
 using Game.Core;
 using Game.Data;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Game.UI
@@ -21,8 +23,9 @@ namespace Game.UI
         private const float COMBAT_LOG_HEIGHT = 180f;
         private const float CHAR_INFO_HEIGHT = 140f;
         private const int MAX_SKILL_SLOTS = 6;
-        private const float SKILL_SLOT_SIZE = 56f;
-        private const float SKILL_SLOT_GAP = 8f;
+        private const float SKILL_SLOT_W = 130f;
+        private const float SKILL_SLOT_H = 55f;
+        private const float SKILL_SLOT_GAP = 6f;
 
         // 战斗日志对象池
         private const int MAX_LOG_LINES = 12;
@@ -57,8 +60,24 @@ namespace Game.UI
         private readonly List<BagRow> bagRows = new List<BagRow>(MAX_BAG_LINES);
 
         // 技能栏
-        private readonly Image[] skillSlotIcons = new Image[MAX_SKILL_SLOTS];
-        private readonly Text[] skillSlotLabels = new Text[MAX_SKILL_SLOTS];
+        private readonly SkillSlot[] skillSlots = new SkillSlot[MAX_SKILL_SLOTS];
+        private int _selectedSkillIndex = -1;
+
+        // 遗忘确认弹窗
+        private GameObject forgetOverlay;
+        private Text forgetMsgText;
+        private Button forgetConfirmBtn;
+        private int pendingForgetSlotIndex = -1;
+
+        /// <summary>技能槽结构体</summary>
+        private struct SkillSlot
+        {
+            public GameObject obj;
+            public Image bgImage;
+            public Image borderImage;
+            public Text nameText;
+            public Text mpText;
+        }
 
         /// <summary>背包行结构体</summary>
         private struct BagRow
@@ -81,7 +100,7 @@ namespace Game.UI
 
         protected override void BindEvents()
         {
-            // 技能栏点击事件等后续功能接入
+            // 技能栏点击事件在 BuildSkillSlot 中绑定
         }
 
         public override void OnShow()
@@ -620,7 +639,7 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 底部技能栏 — 70px高，6个技能槽，居中排列
+        /// 底部技能栏 — 70px高，6个技能槽(130x55px)，居中排列
         /// </summary>
         private void BuildBottomSkillBar(RectTransform parent)
         {
@@ -646,15 +665,18 @@ namespace Game.UI
             topBorderRt.sizeDelta = new Vector2(0, 2);
             topBorderRt.anchoredPosition = Vector2.zero;
 
-            // 6个技能槽居中排列
-            float totalWidth = MAX_SKILL_SLOTS * SKILL_SLOT_SIZE + (MAX_SKILL_SLOTS - 1) * SKILL_SLOT_GAP;
-            float startX = -totalWidth / 2f + SKILL_SLOT_SIZE / 2f;
+            // 6个技能槽居中排列（减去右侧面板宽度）
+            float totalWidth = MAX_SKILL_SLOTS * SKILL_SLOT_W + (MAX_SKILL_SLOTS - 1) * SKILL_SLOT_GAP;
+            float startX = -totalWidth / 2f + SKILL_SLOT_W / 2f - RIGHT_PANEL_WIDTH / 2f;
 
             for (int i = 0; i < MAX_SKILL_SLOTS; i++)
             {
-                float x = startX + i * (SKILL_SLOT_SIZE + SKILL_SLOT_GAP);
+                float x = startX + i * (SKILL_SLOT_W + SKILL_SLOT_GAP);
                 BuildSkillSlot(barObj.transform, i, x);
             }
+
+            // 遗忘确认弹窗（初始隐藏）
+            BuildForgetOverlay(barObj.transform);
         }
 
         private void BuildSkillSlot(Transform parent, int index, float xPos)
@@ -664,14 +686,14 @@ namespace Game.UI
             slotRt.anchorMin = new Vector2(0.5f, 0.5f);
             slotRt.anchorMax = new Vector2(0.5f, 0.5f);
             slotRt.pivot = new Vector2(0.5f, 0.5f);
-            slotRt.sizeDelta = new Vector2(SKILL_SLOT_SIZE, SKILL_SLOT_SIZE);
+            slotRt.sizeDelta = new Vector2(SKILL_SLOT_W, SKILL_SLOT_H);
             slotRt.anchoredPosition = new Vector2(xPos, 0);
 
-            // 槽位背景
+            // 槽位背景（同时作为Button的目标图形）
             var bgImg = slotObj.AddComponent<Image>();
             bgImg.color = UIColors.CardBg;
 
-            // 边框
+            // 边框（选中时变为金色）
             var borderObj = UIFactory.CreateUI(slotObj.transform, "Border");
             var borderImg = borderObj.AddComponent<Image>();
             borderImg.color = new Color(UIColors.Gold.r, UIColors.Gold.g, UIColors.Gold.b, 0.30f);
@@ -681,27 +703,203 @@ namespace Game.UI
             borderRt.offsetMin = new Vector2(-1, -1);
             borderRt.offsetMax = new Vector2(1, 1);
 
-            // 技能图标（占位）
-            var iconObj = UIFactory.CreateUI(slotObj.transform, "Icon");
-            var iconRt = iconObj.GetComponent<RectTransform>();
-            iconRt.anchorMin = new Vector2(0.1f, 0.1f);
-            iconRt.anchorMax = new Vector2(0.9f, 0.9f);
-            var iconImg = iconObj.AddComponent<Image>();
-            iconImg.color = UIColors.TextDim;
-            skillSlotIcons[index] = iconImg;
+            // 技能名称（上半区域）
+            var nameObj = UIFactory.CreateUI(slotObj.transform, "SkillName");
+            var nameRt = nameObj.GetComponent<RectTransform>();
+            nameRt.anchorMin = new Vector2(0f, 0.45f);
+            nameRt.anchorMax = new Vector2(1f, 0.95f);
+            nameRt.offsetMin = new Vector2(4, 0);
+            nameRt.offsetMax = new Vector2(-4, 0);
+            var nameText = nameObj.AddComponent<Text>();
+            nameText.text = "";
+            nameText.fontSize = 13;
+            nameText.color = UIColors.TextWhite;
+            nameText.alignment = TextAnchor.MiddleCenter;
+            nameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            // 序号标签
-            var labelObj = UIFactory.CreateUI(slotObj.transform, "Label");
-            var labelRt = labelObj.GetComponent<RectTransform>();
-            labelRt.anchorMin = new Vector2(0f, 0f);
-            labelRt.anchorMax = new Vector2(1f, 0.3f);
-            var labelText = labelObj.AddComponent<Text>();
-            labelText.text = (index + 1).ToString();
-            labelText.fontSize = 11;
-            labelText.color = UIColors.TextDim;
-            labelText.alignment = TextAnchor.MiddleCenter;
-            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            skillSlotLabels[index] = labelText;
+            // MP消耗（下半区域）
+            var mpObj = UIFactory.CreateUI(slotObj.transform, "MpCost");
+            var mpRt = mpObj.GetComponent<RectTransform>();
+            mpRt.anchorMin = new Vector2(0f, 0.05f);
+            mpRt.anchorMax = new Vector2(1f, 0.45f);
+            mpRt.offsetMin = new Vector2(4, 0);
+            mpRt.offsetMax = new Vector2(-4, 0);
+            var mpText = mpObj.AddComponent<Text>();
+            mpText.text = "";
+            mpText.fontSize = 11;
+            mpText.color = UIColors.Blue;
+            mpText.alignment = TextAnchor.MiddleCenter;
+            mpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // EventTrigger（同时处理左键和右键）
+            var trigger = slotObj.AddComponent<EventTrigger>();
+            int slotIndex = index;
+
+            // 左键点击：选中/取消
+            var leftEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            leftEntry.callback.AddListener((data) =>
+            {
+                var ped = data as PointerEventData;
+                if (ped != null && ped.button == PointerEventData.InputButton.Left)
+                    OnSkillSlotLeftClick(slotIndex);
+                else if (ped != null && ped.button == PointerEventData.InputButton.Right)
+                    OnSkillSlotRightClick(slotIndex);
+            });
+            trigger.triggers.Add(leftEntry);
+
+            skillSlots[index] = new SkillSlot
+            {
+                obj = slotObj,
+                bgImage = bgImg,
+                borderImage = borderImg,
+                nameText = nameText,
+                mpText = mpText
+            };
+        }
+
+        /// <summary>
+        /// 遗忘确认弹窗 — 半透明遮罩 + 提示文字 + 确认/取消按钮
+        /// </summary>
+        private void BuildForgetOverlay(Transform parent)
+        {
+            var overlayObj = UIFactory.CreateUI(parent, "ForgetOverlay");
+            var overlayRt = overlayObj.GetComponent<RectTransform>();
+            overlayRt.anchorMin = Vector2.zero;
+            overlayRt.anchorMax = Vector2.one;
+            overlayRt.offsetMin = Vector2.zero;
+            overlayRt.offsetMax = Vector2.zero;
+
+            var overlayImg = overlayObj.AddComponent<Image>();
+            overlayImg.color = new Color(UIColors.DarkBg.r, UIColors.DarkBg.g, UIColors.DarkBg.b, 0.88f);
+
+            overlayObj.AddComponent<CanvasGroup>();
+
+            // 提示文字
+            var msgObj = UIFactory.CreateUI(overlayObj.transform, "MsgText");
+            UIBuilder.SetStretch(msgObj);
+            var msgRt = msgObj.GetComponent<RectTransform>();
+            msgRt.offsetMin = new Vector2(20, 30);
+            msgRt.offsetMax = new Vector2(-20, -10);
+            forgetMsgText = msgObj.AddComponent<Text>();
+            forgetMsgText.text = "";
+            forgetMsgText.fontSize = 14;
+            forgetMsgText.color = UIColors.Gold;
+            forgetMsgText.alignment = TextAnchor.MiddleCenter;
+            forgetMsgText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 取消按钮
+            var cancelBtn = UIFactory.CreateButton(overlayObj.transform, "取消", 100, 30, null, 14, "BtnCancel");
+            var cancelRt = cancelBtn.GetComponent<RectTransform>();
+            cancelRt.anchorMin = new Vector2(0.5f, 0f);
+            cancelRt.anchorMax = new Vector2(0.5f, 0f);
+            cancelRt.pivot = new Vector2(1f, 0f);
+            cancelRt.anchoredPosition = new Vector2(-8, 8);
+            cancelBtn.onClick.AddListener(() =>
+            {
+                pendingForgetSlotIndex = -1;
+                if (forgetOverlay != null) forgetOverlay.SetActive(false);
+            });
+
+            // 确认按钮（金色）
+            forgetConfirmBtn = UIFactory.CreateGoldButton(overlayObj.transform, "遗忘", 100, 30, null, 14, "BtnConfirm");
+            var confirmRt = forgetConfirmBtn.GetComponent<RectTransform>();
+            confirmRt.anchorMin = new Vector2(0.5f, 0f);
+            confirmRt.anchorMax = new Vector2(0.5f, 0f);
+            confirmRt.pivot = new Vector2(0f, 0f);
+            confirmRt.anchoredPosition = new Vector2(8, 8);
+            forgetConfirmBtn.onClick.AddListener(OnForgetConfirm);
+
+            forgetOverlay = overlayObj;
+            overlayObj.SetActive(false);
+        }
+
+        // ============ 技能栏交互 ============
+
+        /// <summary>当前选中的技能槽索引，-1表示无选中</summary>
+        public int SelectedSkillIndex => _selectedSkillIndex;
+
+        /// <summary>获取选中技能的ID，无选中返回0</summary>
+        public int GetSelectedSkillId()
+        {
+            if (_selectedSkillIndex < 0) return 0;
+            var player = GameManager.Instance?.Player;
+            if (player == null) return 0;
+            var skills = player.learnedSkills;
+            if (_selectedSkillIndex >= skills.Count) return 0;
+            return skills[_selectedSkillIndex];
+        }
+
+        /// <summary>左键点击技能槽：选中/取消选中</summary>
+        private void OnSkillSlotLeftClick(int index)
+        {
+            var player = GameManager.Instance?.Player;
+            if (player == null) return;
+            var skills = player.learnedSkills;
+            // 空槽位不可选中
+            if (index >= skills.Count) return;
+
+            if (_selectedSkillIndex == index)
+            {
+                // 再次点击取消选中
+                _selectedSkillIndex = -1;
+            }
+            else
+            {
+                // 选中新槽位，取消旧选中
+                _selectedSkillIndex = index;
+            }
+            UpdateSkillSlotSelection();
+        }
+
+        /// <summary>更新技能槽选中高亮状态</summary>
+        private void UpdateSkillSlotSelection()
+        {
+            for (int i = 0; i < MAX_SKILL_SLOTS; i++)
+            {
+                if (skillSlots[i].borderImage == null) continue;
+                bool selected = (i == _selectedSkillIndex);
+                skillSlots[i].borderImage.color = selected
+                    ? UIColors.Gold
+                    : new Color(UIColors.Gold.r, UIColors.Gold.g, UIColors.Gold.b, 0.30f);
+            }
+        }
+
+        /// <summary>右键弹出遗忘确认</summary>
+        private void OnSkillSlotRightClick(int index)
+        {
+            var player = GameManager.Instance?.Player;
+            if (player == null) return;
+            var skills = player.learnedSkills;
+            if (index >= skills.Count) return;
+
+            var skillCfg = ConfigManager.Instance.GetSkill(skills[index]);
+            if (skillCfg == null) return;
+
+            pendingForgetSlotIndex = index;
+            forgetMsgText.text = $"确认遗忘技能 [{skillCfg.name}]？";
+            forgetOverlay.SetActive(true);
+        }
+
+        /// <summary>确认遗忘技能</summary>
+        private void OnForgetConfirm()
+        {
+            if (pendingForgetSlotIndex < 0) return;
+            var player = GameManager.Instance?.Player;
+            if (player == null) return;
+            var skills = player.learnedSkills;
+            if (pendingForgetSlotIndex < skills.Count)
+            {
+                int skillId = skills[pendingForgetSlotIndex];
+                player.ForgetSkill(skillId);
+                // 如果遗忘的是选中技能，清除选中
+                if (_selectedSkillIndex == pendingForgetSlotIndex)
+                    _selectedSkillIndex = -1;
+                else if (_selectedSkillIndex > pendingForgetSlotIndex)
+                    _selectedSkillIndex--; // 索引前移
+            }
+            pendingForgetSlotIndex = -1;
+            forgetOverlay.SetActive(false);
+            RefreshSkillBar();
         }
 
         // ============ 公开刷新方法 ============
@@ -1029,7 +1227,7 @@ namespace Game.UI
             RefreshBag();
         }
 
-        /// <summary>刷新技能栏</summary>
+        /// <summary>刷新技能栏 — 读取 learnedSkills 显示技能名+MP消耗，空槽显示占位</summary>
         public void RefreshSkillBar()
         {
             var player = GameManager.Instance?.Player;
@@ -1037,17 +1235,38 @@ namespace Game.UI
 
             for (int i = 0; i < MAX_SKILL_SLOTS; i++)
             {
-                if (skillSlotIcons[i] == null) continue;
+                var slot = skillSlots[i];
+                if (slot.nameText == null) continue;
 
                 if (skills != null && i < skills.Count)
                 {
-                    skillSlotIcons[i].color = UIColors.Blue;
+                    var skillCfg = ConfigManager.Instance.GetSkill(skills[i]);
+                    if (skillCfg != null)
+                    {
+                        slot.nameText.text = skillCfg.name;
+                        slot.mpText.text = skillCfg.mpCost > 0 ? $"MP:{skillCfg.mpCost}" : "";
+                        slot.nameText.color = UIColors.TextWhite;
+                        slot.bgImage.color = UIColors.CardBg;
+                    }
+                    else
+                    {
+                        slot.nameText.text = "???";
+                        slot.mpText.text = "";
+                        slot.nameText.color = UIColors.TextDim;
+                        slot.bgImage.color = UIColors.CardBg;
+                    }
                 }
                 else
                 {
-                    skillSlotIcons[i].color = UIColors.TextDim;
+                    // 空槽位
+                    slot.nameText.text = "";
+                    slot.mpText.text = "";
+                    slot.bgImage.color = new Color(UIColors.CardBg.r, UIColors.CardBg.g, UIColors.CardBg.b, 0.40f);
                 }
             }
+
+            // 确保选中状态正确
+            UpdateSkillSlotSelection();
         }
 
         // ============ GameState 联动 ============
