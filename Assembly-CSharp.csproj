@@ -69,6 +69,12 @@
      <Compile Include="Assets\Scripts\Game\Battle\BattleManager.cs" />
      <Compile Include="Assets\Scripts\UI\BattlePanel.cs" />
      <Compile Include="Assets\Scripts\Core\AudioManager.cs" />
+     <Compile Include="Assets\Scripts\Game\Battle\AIManager.cs" />
+     <Compile Include="Assets\Scripts\Core\UIPool.cs" />
+     <Compile Include="Assets\Scripts\Core\UIColors.cs" />
+     <Compile Include="Assets\Scripts\Core\UIFactory.cs" />
+     <Compile Include="Assets\Scripts\Game\Data\DungeonTile.cs" />
+     <Compile Include="Assets\Scripts\Game\Battle\StatusEffect.cs" />
      <Folder Include="Assets" />
      <Folder Include="Assets\Scripts\Game" />
      <Folder Include="Assets\Settings" />

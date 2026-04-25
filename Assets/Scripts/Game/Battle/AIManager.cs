@@ -203,7 +203,7 @@ namespace Game.Battle
             }
 
             // 无技能则普攻+20%
-            return new AIDecision(AIMonsterAction.NormalAttack, damageBonus: 1.2f,
+            return new AIDecision(AIMonsterAction.NormalAttack, 0,damageBonus: 1.2f,
                 $"{monster.name}进入狂暴状态，所有伤害提升！");
         }
 
