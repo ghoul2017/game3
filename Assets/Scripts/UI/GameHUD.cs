@@ -27,6 +27,11 @@ namespace Game.UI
         // 战斗日志对象池
         private const int MAX_LOG_LINES = 12;
 
+        // 背包对象池
+        private const int MAX_BAG_LINES = 20;
+        private const float BAG_ROW_HEIGHT = 22f;
+        private const float BAG_ROW_GAP = 2f;
+
         // ============ 组件引用 ============
         private RectTransform gameWorldContainer;
         private RectTransform rightPanel;
@@ -46,11 +51,26 @@ namespace Game.UI
         private Text expText;
 
         // 背包
-        private Text bagCountText;
+        private Text goldText;
+        private Text emptyBagText;
+        private ScrollRect bagScrollRect;
+        private readonly List<BagRow> bagRows = new List<BagRow>(MAX_BAG_LINES);
 
         // 技能栏
         private readonly Image[] skillSlotIcons = new Image[MAX_SKILL_SLOTS];
         private readonly Text[] skillSlotLabels = new Text[MAX_SKILL_SLOTS];
+
+        /// <summary>背包行结构体</summary>
+        private struct BagRow
+        {
+            public GameObject obj;
+            public Image bg;
+            public Text nameText;
+            public Button actionBtn;
+            public Text actionBtnLabel;
+            public Button sellBtn;
+            public Text sellBtnLabel;
+        }
 
         // ============ 生命周期 ============
 
@@ -411,11 +431,14 @@ namespace Game.UI
 
         /// <summary>
         /// 背包区 — 填充剩余空间（右侧面板底部）
+        /// ScrollRect + Mask 可滚动，20行对象池(22px紧凑行高)，顶部金币显示
         /// </summary>
         private void BuildBagSection(Transform parent)
         {
             float offsetY = COMBAT_LOG_HEIGHT + CHAR_INFO_HEIGHT;
             float padding = 4f;
+            float titleHeight = 20f;
+            float goldBarHeight = 18f;
 
             // 区块容器
             var sectionObj = UIFactory.CreateUI(parent, "BagSection");
@@ -442,11 +465,11 @@ namespace Game.UI
             titleRt.anchorMin = new Vector2(0f, 1f);
             titleRt.anchorMax = new Vector2(1f, 1f);
             titleRt.pivot = new Vector2(0.5f, 1f);
-            titleRt.sizeDelta = new Vector2(0, 22);
+            titleRt.sizeDelta = new Vector2(0, titleHeight);
             titleRt.anchoredPosition = Vector2.zero;
             var titleText = titleObj.AddComponent<Text>();
             titleText.text = "背包";
-            titleText.fontSize = 16;
+            titleText.fontSize = 14;
             titleText.color = UIColors.Gold;
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -460,22 +483,140 @@ namespace Game.UI
             divRt.anchorMax = new Vector2(1f, 1f);
             divRt.pivot = new Vector2(0.5f, 1f);
             divRt.sizeDelta = new Vector2(0, 1);
-            divRt.anchoredPosition = new Vector2(0, -22);
+            divRt.anchoredPosition = new Vector2(0, -titleHeight);
 
-            // 背包计数
-            var countObj = UIFactory.CreateUI(bgObj.transform, "BagCount");
-            var countRt = countObj.GetComponent<RectTransform>();
-            countRt.anchorMin = new Vector2(0f, 1f);
-            countRt.anchorMax = new Vector2(1f, 1f);
-            countRt.pivot = new Vector2(0.5f, 1f);
-            countRt.offsetMin = new Vector2(8, -40);
-            countRt.offsetMax = new Vector2(-8, -26);
-            bagCountText = countObj.AddComponent<Text>();
-            bagCountText.text = "0/20";
-            bagCountText.fontSize = 14;
-            bagCountText.color = UIColors.TextDim;
-            bagCountText.alignment = TextAnchor.MiddleCenter;
-            bagCountText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            // 金币栏
+            var goldObj = UIFactory.CreateUI(bgObj.transform, "GoldBar");
+            var goldRt = goldObj.GetComponent<RectTransform>();
+            goldRt.anchorMin = new Vector2(0f, 1f);
+            goldRt.anchorMax = new Vector2(1f, 1f);
+            goldRt.pivot = new Vector2(0.5f, 1f);
+            goldRt.offsetMin = new Vector2(6, -(titleHeight + 1 + goldBarHeight));
+            goldRt.offsetMax = new Vector2(-6, -(titleHeight + 1));
+            goldText = goldObj.AddComponent<Text>();
+            goldText.text = "金币: 0";
+            goldText.fontSize = 12;
+            goldText.color = UIColors.Orange;
+            goldText.alignment = TextAnchor.MiddleCenter;
+            goldText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 空背包提示
+            var emptyObj = UIFactory.CreateUI(bgObj.transform, "EmptyBag");
+            var emptyRt = emptyObj.GetComponent<RectTransform>();
+            emptyRt.anchorMin = Vector2.zero;
+            emptyRt.anchorMax = Vector2.one;
+            emptyRt.offsetMin = Vector2.zero;
+            emptyRt.offsetMax = Vector2.zero;
+            emptyBagText = emptyObj.AddComponent<Text>();
+            emptyBagText.text = "背包是空的";
+            emptyBagText.fontSize = 13;
+            emptyBagText.color = UIColors.TextDim;
+            emptyBagText.alignment = TextAnchor.MiddleCenter;
+            emptyBagText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            emptyObj.SetActive(false);
+
+            // Viewport（含 Mask + ScrollRect）
+            float topOffset = titleHeight + 1 + goldBarHeight + 2;
+            var viewportObj = UIFactory.CreateUI(bgObj.transform, "Viewport");
+            var viewportImg = viewportObj.AddComponent<Image>();
+            viewportImg.color = UIColors.ViewportBg;
+            viewportImg.raycastTarget = true;
+            var viewportMask = viewportObj.AddComponent<Mask>();
+            viewportMask.showMaskGraphic = false;
+            var viewportRt = viewportObj.GetComponent<RectTransform>();
+            viewportRt.anchorMin = new Vector2(0f, 0f);
+            viewportRt.anchorMax = new Vector2(1f, 1f);
+            viewportRt.offsetMin = new Vector2(2, 2);
+            viewportRt.offsetMax = new Vector2(-2, -topOffset);
+
+            // Content（背包行容器）
+            float contentHeight = MAX_BAG_LINES * (BAG_ROW_HEIGHT + BAG_ROW_GAP);
+            var contentObj = UIFactory.CreateUI(viewportObj.transform, "Content");
+            var contentRt = contentObj.GetComponent<RectTransform>();
+            contentRt.anchorMin = new Vector2(0f, 1f);
+            contentRt.anchorMax = new Vector2(1f, 1f);
+            contentRt.pivot = new Vector2(0.5f, 1f);
+            contentRt.sizeDelta = new Vector2(0, contentHeight);
+            contentRt.anchoredPosition = Vector2.zero;
+
+            // 20行对象池（紧凑22px行高）
+            for (int i = 0; i < MAX_BAG_LINES; i++)
+            {
+                float y = -i * (BAG_ROW_HEIGHT + BAG_ROW_GAP);
+                var row = CreateBagRow(contentObj.transform, y);
+                row.obj.SetActive(false);
+                bagRows.Add(row);
+            }
+
+            // ScrollRect
+            bagScrollRect = bgObj.AddComponent<ScrollRect>();
+            bagScrollRect.content = contentRt;
+            bagScrollRect.viewport = viewportRt;
+            bagScrollRect.horizontal = false;
+            bagScrollRect.vertical = true;
+            bagScrollRect.movementType = ScrollRect.MovementType.Clamped;
+            bagScrollRect.scrollSensitivity = 16f;
+            bagScrollRect.elasticity = 0.1f;
+        }
+
+        /// <summary>创建单行背包行（22px高，含名称+操作按钮+出售按钮）</summary>
+        private BagRow CreateBagRow(Transform parent, float y)
+        {
+            var obj = UIFactory.CreateUI(parent, "BagRow");
+            var rt = obj.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(0, BAG_ROW_HEIGHT);
+            rt.anchoredPosition = new Vector2(0, y);
+
+            var bg = obj.AddComponent<Image>();
+            bg.color = UIColors.RowEven;
+            bg.raycastTarget = true;
+
+            // 名称文字（左侧区域）
+            var nameObj = UIFactory.CreateUI(obj.transform, "NameText");
+            var nameRt = nameObj.GetComponent<RectTransform>();
+            nameRt.anchorMin = new Vector2(0f, 0f);
+            nameRt.anchorMax = new Vector2(0.55f, 1f);
+            nameRt.offsetMin = new Vector2(4, 0);
+            nameRt.offsetMax = new Vector2(-2, 0);
+            var nameText = nameObj.AddComponent<Text>();
+            nameText.text = "";
+            nameText.fontSize = 11;
+            nameText.color = UIColors.TextWhite;
+            nameText.alignment = TextAnchor.MiddleLeft;
+            nameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            nameText.verticalOverflow = VerticalWrapMode.Truncate;
+
+            // 操作按钮（右侧第一个）
+            var (actionBtn, actionBtnLabel) = UIFactory.CreateButtonWithRef(obj.transform, "", 48, 18,
+                null, 11, "ActionBtn");
+            var actionRt = actionBtn.GetComponent<RectTransform>();
+            actionRt.anchorMin = new Vector2(0.55f, 0.5f);
+            actionRt.anchorMax = new Vector2(0.55f, 0.5f);
+            actionRt.pivot = new Vector2(0f, 0.5f);
+            actionRt.sizeDelta = new Vector2(48, 18);
+            actionRt.anchoredPosition = new Vector2(0, 0);
+
+            // 出售按钮（右侧第二个）
+            var (sellBtn, sellBtnLabel) = UIFactory.CreateButtonWithRef(obj.transform, "", 44, 18,
+                null, 10, "SellBtn");
+            var sellRt = sellBtn.GetComponent<RectTransform>();
+            sellRt.anchorMin = new Vector2(1f, 0.5f);
+            sellRt.anchorMax = new Vector2(1f, 0.5f);
+            sellRt.pivot = new Vector2(1f, 0.5f);
+            sellRt.sizeDelta = new Vector2(44, 18);
+            sellRt.anchoredPosition = new Vector2(-2, 0);
+
+            return new BagRow
+            {
+                obj = obj, bg = bg,
+                nameText = nameText,
+                actionBtn = actionBtn, actionBtnLabel = actionBtnLabel,
+                sellBtn = sellBtn, sellBtnLabel = sellBtnLabel
+            };
         }
 
         /// <summary>
@@ -664,18 +805,228 @@ namespace Game.UI
             };
         }
 
-        /// <summary>刷新背包</summary>
+        /// <summary>刷新背包 — 读取 bagItems 按 ID 分组，显示 [类型标]名称 x数量 [操作按钮]</summary>
         public void RefreshBag()
         {
-            if (bagCountText == null) return;
-
             var player = GameManager.Instance?.Player;
+
+            // 金币显示
+            if (goldText != null)
+            {
+                int gold = player != null ? player.gold : 0;
+                goldText.text = $"金币: {gold}  ({player?.bagItems.Count ?? 0}/{player?.maxBagSize ?? 20})";
+            }
+
             if (player == null)
             {
-                bagCountText.text = "0/20";
+                for (int i = 0; i < bagRows.Count; i++)
+                    if (bagRows[i].obj != null) bagRows[i].obj.SetActive(false);
+                if (emptyBagText != null) emptyBagText.gameObject.SetActive(true);
                 return;
             }
-            bagCountText.text = $"{player.bagItems.Count}/{player.maxBagSize}";
+
+            // 按 ID 分组
+            var itemCounts = new Dictionary<int, int>();
+            foreach (var itemId in player.bagItems)
+            {
+                if (!itemCounts.ContainsKey(itemId)) itemCounts[itemId] = 0;
+                itemCounts[itemId]++;
+            }
+
+            int idx = 0;
+            foreach (var kv in itemCounts)
+            {
+                if (idx >= MAX_BAG_LINES) break;
+                var itemCfg = ConfigManager.Instance.GetItem(kv.Key);
+                if (itemCfg == null) continue;
+
+                var row = bagRows[idx];
+                if (row.obj == null) { idx++; continue; }
+                row.obj.SetActive(true);
+
+                // 交替行色
+                if (row.bg != null) row.bg.color = idx % 2 == 0 ? UIColors.RowEven : UIColors.RowOdd;
+
+                // 类型标签
+                string typeTag = itemCfg.type switch
+                {
+                    ItemType.Weapon => "武器",
+                    ItemType.Armor => "防具",
+                    ItemType.Accessory => "饰品",
+                    ItemType.Consumable => "消耗",
+                    ItemType.Treasure => "宝物",
+                    _ => ""
+                };
+
+                // 名称（含数量）
+                string display = kv.Value > 1 ? $"[{typeTag}]{itemCfg.name} x{kv.Value}" : $"[{typeTag}]{itemCfg.name}";
+                if (row.nameText != null) row.nameText.text = display;
+
+                // 操作按钮
+                int capturedId = kv.Key;
+                bool isEquipType = itemCfg.type == ItemType.Weapon || itemCfg.type == ItemType.Armor || itemCfg.type == ItemType.Accessory;
+
+                if (isEquipType)
+                {
+                    bool isEquipped = (itemCfg.type == ItemType.Weapon && player.weaponId == capturedId)
+                        || (itemCfg.type == ItemType.Armor && player.armorId == capturedId)
+                        || (itemCfg.type == ItemType.Accessory && player.accessoryId == capturedId);
+                    bool levelOk = player.level >= itemCfg.reqLevel;
+
+                    if (row.actionBtn != null)
+                    {
+                        row.actionBtn.gameObject.SetActive(true);
+                        row.actionBtn.interactable = !isEquipped && levelOk;
+                        row.actionBtn.image.color = isEquipped ? UIColors.ButtonDisable : UIColors.ButtonNormal;
+                        row.actionBtn.onClick.RemoveAllListeners();
+                        if (!isEquipped && levelOk)
+                        {
+                            int id = capturedId;
+                            row.actionBtn.onClick.AddListener(() => EquipItem(id));
+                        }
+                    }
+                    if (row.actionBtnLabel != null)
+                    {
+                        row.actionBtnLabel.text = isEquipped ? "已装" : (levelOk ? "装备" : $"Lv{itemCfg.reqLevel}");
+                        row.actionBtnLabel.color = isEquipped ? UIColors.Green : (levelOk ? UIColors.Gold : UIColors.TextDim);
+                        row.actionBtnLabel.fontSize = 10;
+                    }
+                }
+                else if (itemCfg.type == ItemType.Consumable)
+                {
+                    if (row.actionBtn != null)
+                    {
+                        row.actionBtn.gameObject.SetActive(true);
+                        row.actionBtn.interactable = true;
+                        row.actionBtn.image.color = UIColors.ButtonNormal;
+                        row.actionBtn.onClick.RemoveAllListeners();
+                        int id = capturedId;
+                        row.actionBtn.onClick.AddListener(() => UseItem(id));
+                    }
+                    if (row.actionBtnLabel != null)
+                    {
+                        row.actionBtnLabel.text = "使用";
+                        row.actionBtnLabel.color = UIColors.Gold;
+                        row.actionBtnLabel.fontSize = 10;
+                    }
+                }
+                else
+                {
+                    if (row.actionBtn != null) row.actionBtn.gameObject.SetActive(false);
+                }
+
+                // 出售按钮
+                int sellPrice = itemCfg.sellPrice > 0 ? itemCfg.sellPrice : itemCfg.price / 2;
+                if (row.sellBtn != null)
+                {
+                    row.sellBtn.gameObject.SetActive(true);
+                    row.sellBtn.interactable = true;
+                    row.sellBtn.image.color = UIColors.ButtonNormal;
+                    row.sellBtn.onClick.RemoveAllListeners();
+                    int sId = capturedId;
+                    int sPrice = sellPrice;
+                    row.sellBtn.onClick.AddListener(() => SellItem(sId, sPrice));
+                }
+                if (row.sellBtnLabel != null)
+                {
+                    row.sellBtnLabel.text = $"{sellPrice}金";
+                    row.sellBtnLabel.color = UIColors.Orange;
+                    row.sellBtnLabel.fontSize = 9;
+                }
+
+                idx++;
+            }
+
+            // 隐藏多余行
+            for (int i = idx; i < bagRows.Count; i++)
+            {
+                if (bagRows[i].obj != null) bagRows[i].obj.SetActive(false);
+            }
+
+            // 空背包提示
+            if (emptyBagText != null) emptyBagText.gameObject.SetActive(idx == 0);
+        }
+
+        /// <summary>装备物品</summary>
+        private void EquipItem(int itemId)
+        {
+            var player = GameManager.Instance?.Player;
+            if (player == null) return;
+            var item = ConfigManager.Instance.GetItem(itemId);
+            if (item == null) return;
+            if (player.level < item.reqLevel) return;
+
+            switch (item.type)
+            {
+                case ItemType.Weapon:
+                    if (player.weaponId != 0) player.bagItems.Add(player.weaponId);
+                    player.weaponId = itemId; break;
+                case ItemType.Armor:
+                    if (player.armorId != 0) player.bagItems.Add(player.armorId);
+                    player.armorId = itemId; break;
+                case ItemType.Accessory:
+                    if (player.accessoryId != 0) player.bagItems.Add(player.accessoryId);
+                    player.accessoryId = itemId; break;
+            }
+            player.bagItems.Remove(itemId);
+            player.RecalcStats();
+            RefreshBag();
+            RefreshCharInfo();
+        }
+
+        /// <summary>使用消耗品</summary>
+        private void UseItem(int itemId)
+        {
+            var player = GameManager.Instance?.Player;
+            if (player == null) return;
+            var item = ConfigManager.Instance.GetItem(itemId);
+            if (item == null) return;
+
+            // 回城卷轴仅地牢中可用
+            if (item.consumableEffect == ConsumableEffectType.Teleport)
+            {
+                if (GameManager.Instance.State != GameState.InDungeon) return;
+                player.bagItems.Remove(itemId);
+                GameManager.Instance.Dungeon.OnReturnTown();
+                GameManager.Instance.SetState(GameState.InTown);
+                GameManager.Instance.SaveGame();
+                UIManager.Instance.ReplacePanel<TownPanel>();
+                return;
+            }
+
+            // 炸弹/解毒药仅战斗中可用
+            if (item.consumableEffect == ConsumableEffectType.Bomb) return;
+            if (item.consumableEffect == ConsumableEffectType.CurePoison) return;
+
+            if (item.restoreHp > 0) player.hp = Mathf.Min(player.hp + item.restoreHp, player.maxHp);
+            if (item.restoreMp > 0) player.mp = Mathf.Min(player.mp + item.restoreMp, player.maxMp);
+
+            switch (item.consumableEffect)
+            {
+                case ConsumableEffectType.AtkBuff:
+                    player.atkBuffBattles += item.consumableEffectValue;
+                    break;
+                case ConsumableEffectType.Shield:
+                    player.hasShieldScroll = true;
+                    break;
+                case ConsumableEffectType.ExpBoost:
+                    player.hasExpBoost = true;
+                    break;
+            }
+
+            player.bagItems.Remove(itemId);
+            RefreshBag();
+            RefreshCharInfo();
+        }
+
+        /// <summary>出售物品</summary>
+        private void SellItem(int itemId, int price)
+        {
+            var player = GameManager.Instance?.Player;
+            if (player == null) return;
+            player.bagItems.Remove(itemId);
+            player.gold += price;
+            RefreshBag();
         }
 
         /// <summary>刷新技能栏</summary>
