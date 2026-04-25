@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,7 +6,7 @@ using UnityEngine.UI;
 namespace Game.Core
 {
     /// <summary>
-    /// UI 管理器单例，管理面板栈和 Canvas
+    /// UI 管理器单例，管理面板栈和三层 Canvas（HUD/Window/Tip）
     /// </summary>
     public class UIManager
     {
@@ -14,7 +15,21 @@ namespace Game.Core
 
         private readonly Dictionary<string, UIPanel> panelCache = new Dictionary<string, UIPanel>();
         private readonly Stack<UIPanel> panelStack = new Stack<UIPanel>();
-        private Transform canvasTransform;
+
+        // 三层 Canvas
+        private Canvas canvasHUD;
+        private Canvas canvasWindow;
+        private Canvas canvasTip;
+
+        /// <summary>HUD 层 Canvas（sortingOrder=5），永久存在的固定布局</summary>
+        public Canvas CanvasHUD => canvasHUD;
+        /// <summary>Window 层 Canvas（sortingOrder=10），非全屏可拖动窗口</summary>
+        public Canvas CanvasWindow => canvasWindow;
+        /// <summary>Tip 层 Canvas（sortingOrder=20），浮动信息</summary>
+        public Canvas CanvasTip => canvasTip;
+
+        // 当前打开的窗口面板
+        private UIPanel currentWindow;
 
         public static UIManager EnsureCreated()
         {
@@ -27,19 +42,10 @@ namespace Game.Core
 
         private void InitCanvas()
         {
-            var canvasObj = new GameObject("Canvas");
-            var canvas = canvasObj.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
-            var scaler = canvasObj.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            canvasObj.AddComponent<GraphicRaycaster>();
-
-            canvasTransform = canvasObj.transform;
-            Object.DontDestroyOnLoad(canvasObj);
+            // 创建三层 Canvas
+            canvasHUD = CreateLayerCanvas("HUD", 5);
+            canvasWindow = CreateLayerCanvas("Window", 10);
+            canvasTip = CreateLayerCanvas("Tip", 20);
 
             // 自动创建 EventSystem
             if (UnityEngine.EventSystems.EventSystem.current == null)
@@ -51,6 +57,73 @@ namespace Game.Core
             }
         }
 
+        /// <summary>
+        /// 创建一个层 Canvas，配备 CanvasScaler 和 GraphicRaycaster
+        /// </summary>
+        private Canvas CreateLayerCanvas(string name, int sortingOrder)
+        {
+            var canvasObj = new GameObject($"Canvas_{name}");
+            var canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = sortingOrder;
+
+            var scaler = canvasObj.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasObj.AddComponent<GraphicRaycaster>();
+
+            Object.DontDestroyOnLoad(canvasObj);
+            return canvas;
+        }
+
+        // ---- 新 API：Window 窗口 ----
+
+        /// <summary>
+        /// 显示窗口面板到 Window Canvas。
+        /// 先关闭已有窗口，再实例化面板并调用 OnInit/OnShow。
+        /// </summary>
+        public T ShowWindow<T>() where T : UIPanel
+        {
+            // 关闭已有窗口
+            if (currentWindow != null)
+            {
+                currentWindow.Hide();
+                currentWindow = null;
+            }
+
+            var panel = GetOrCreatePanel<T>(canvasWindow.transform);
+            panel.Show();
+            currentWindow = panel;
+            Debug.Log($"[UI] ShowWindow<{typeof(T).Name}>");
+            return panel;
+        }
+
+        /// <summary>
+        /// 关闭当前 Window 层面板
+        /// </summary>
+        public void CloseWindow()
+        {
+            if (currentWindow == null) return;
+
+            Debug.Log($"[UI] CloseWindow 关闭={currentWindow.GetType().Name}");
+            currentWindow.Hide();
+            currentWindow = null;
+        }
+
+        /// <summary>获取 HUD 层 Canvas（供外部添加永久 HUD 元素）</summary>
+        public Canvas GetHUDCanvas() => canvasHUD;
+
+        /// <summary>获取 Tip 层 Canvas（供外部添加浮动提示）</summary>
+        public Canvas GetTipCanvas() => canvasTip;
+
+        // ---- 旧 API（兼容保留） ----
+
+        /// <summary>
+        /// 显示面板到 HUD Canvas 并压栈管理
+        /// </summary>
+        [Obsolete("建议使用 ShowWindow<T>() 替代，旧接口保留兼容")]
         public T ShowPanel<T>() where T : UIPanel
         {
             string panelName = typeof(T).Name;
@@ -62,12 +135,16 @@ namespace Game.Core
                 top.Hide();
             }
 
-            var panel = GetOrCreatePanel<T>();
+            var panel = GetOrCreatePanel<T>(canvasHUD.transform);
             panel.Show();
             panelStack.Push(panel);
             return panel;
         }
 
+        /// <summary>
+        /// 返回上一级面板
+        /// </summary>
+        [Obsolete("建议使用 CloseWindow() 替代，旧接口保留兼容")]
         public void Back()
         {
             if (panelStack.Count == 0) return;
@@ -83,6 +160,10 @@ namespace Game.Core
             }
         }
 
+        /// <summary>
+        /// 替换当前面板
+        /// </summary>
+        [Obsolete("建议使用 ShowWindow<T>() 替代，旧接口保留兼容")]
         public T ReplacePanel<T>() where T : UIPanel
         {
             string panelName = typeof(T).Name;
@@ -106,26 +187,37 @@ namespace Game.Core
                 var panel = panelStack.Pop();
                 panel.Hide();
             }
+
+            if (currentWindow != null)
+            {
+                currentWindow.Hide();
+                currentWindow = null;
+            }
         }
 
-        private T GetOrCreatePanel<T>() where T : UIPanel
+        private T GetOrCreatePanel<T>(Transform parent) where T : UIPanel
         {
             string typeName = typeof(T).Name;
 
             if (panelCache.TryGetValue(typeName, out var cached))
+            {
+                // 确保面板挂载到正确的 Canvas 下
+                if (cached.transform.parent != parent)
+                    cached.transform.SetParent(parent, false);
                 return (T)cached;
+            }
 
             // 从 Resources/UI/{TypeName} 加载预制体
             var prefab = PrefabLoader.LoadPanelPrefab(typeName);
             GameObject panelObj;
             if (prefab != null)
             {
-                panelObj = PrefabLoader.Instantiate(prefab, canvasTransform, typeName);
+                panelObj = PrefabLoader.Instantiate(prefab, parent, typeName);
             }
             else
             {
                 // 无预制体时回退到 CreateVisuals
-                panelObj = CreatePanelFromVisuals<T>(typeName);
+                panelObj = CreatePanelFromVisuals<T>(typeName, parent);
             }
 
             var panel = panelObj.GetOrAddComponent<T>();
@@ -133,11 +225,11 @@ namespace Game.Core
             return panel;
         }
 
-        private GameObject CreatePanelFromVisuals<T>(string typeName) where T : UIPanel
+        private GameObject CreatePanelFromVisuals<T>(string typeName, Transform parent) where T : UIPanel
         {
             var panelObj = new GameObject(typeName);
             panelObj.AddComponent<RectTransform>();
-            panelObj.transform.SetParent(canvasTransform, false);
+            panelObj.transform.SetParent(parent, false);
             var cvMethod = typeof(T).GetMethod("CreateVisuals",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             if (cvMethod != null)
