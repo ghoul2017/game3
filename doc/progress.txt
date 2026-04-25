@@ -91,3 +91,4 @@
 2026-04-25 F111 COMPLETED - 拆分UIBuilder为独立模块：UIColors(37颜色常量)+UIFactory(12控件创建方法)+UIPool(对象池)，UIBuilder保留门面向后兼容
 2026-04-25 F160 COMPLETED - 技能系统改造：取消装备槽概念，learnedSkills即可用技能，MAX_SKILL_SLOTS 4→6，新增ForgetSkill+槽满检查
 2026-04-25 F161 COMPLETED - UIManager三层Canvas架构：HUD(5)/Window(10)/Tip(20)独立Canvas+ShowWindow/CloseWindow/GetHUDCanvas+旧API兼容
+2026-04-25 F162 COMPLETED - GameHUD框架：GameWorldContainer+RightPanel(战斗日志180px+角色140px+背包填充)+BottomSkillBar(6槽)+UpdateVisibility+Create工厂方法
