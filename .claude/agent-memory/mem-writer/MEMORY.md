@@ -24,3 +24,4 @@
 - [WindowBase可拖动窗口架构](arch-window-base.md) — F163 abstract BuildContent/virtual标题尺寸、标题栏拖拽、WindowBase关闭时Destroy非缓存、单窗口互斥
 - [TipManager浮动信息提示架构](arch-tip-manager.md) — F164 TipItem struct池(8个)+HoverTip鼠标跟随单例+AutoTip定时淡出(duration含fadeTime)+struct写回陷阱
 - [BattleController轻量战斗控制器架构](arch-battle-controller.md) — F170 非MonoBehaviour单例+事件驱动(OnRoundComplete/OnBattleEnd)、ExecuteXxx编排BattleManager、logCountAtRoundStart日志提取、RoundResult/BattleResult数据模型
+- [地牢内联战斗架构](arch-inline-battle.md) — F171 DungeonPanel订阅BattleController事件、两次点击模式、防连点(isRoundAnimating)/面板禁用/被动技能回退/MP不足提示
