@@ -2145,7 +2145,7 @@ namespace Game.UI
         }
 
         /// <summary>销毁时取消订阅 BattleController 事件</summary>
-        protected override void OnDestroyed()
+        public override void OnDestroyed()
         {
             if (BattleController.Instance != null)
             {
