@@ -77,7 +77,7 @@
   {"id":"F110","category":"framework","desc":"UIBuilder 瘦身：移除已无调用者的工厂方法，保留仍使用的工具方法","passes":true},
 
   {"id":"F111","category":"refactor","desc":"拆分 UIBuilder 为独立模块：UIColors（颜色常量）+ UIFactory（控件创建）+ UIPool（对象池）","passes":true},
-  {"id":"F112","category":"refactor","desc":"封装 Logger 日志系统：日志等级 + 条件编译 + 格式化输出，替换所有 Debug.Log","passes":false},
+  {"id":"F112","category":"refactor","desc":"封装 Logger 日志系统：日志等级 + 条件编译 + 格式化输出，替换所有 Debug.Log","passes":true},
   {"id":"F113","category":"refactor","desc":"迁移 ConfigManager 到 JSON：配置外置到 Resources/Config/*.json，支持热更新","passes":false},
 
   {"id":"F114","category":"battle","desc":"修复被动技能效果：狂战之怒(血量越低攻击越高)、坚守(HP<30%减伤)、复活(战斗中复活一次)、魔力涌动(每回合回蓝)","passes":true},
