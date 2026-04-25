@@ -123,7 +123,7 @@ namespace Game.UI
         private Text statsText;
 
         // 底部技能栏引用
-        private const int MaxSkillSlots = 4;
+        private const int MaxSkillSlots = GameConstants.MAX_SKILL_SLOTS;
         private Text[] skillLabels = new Text[MaxSkillSlots];
         private Text[] skillMpLabels = new Text[MaxSkillSlots];
 
@@ -604,10 +604,10 @@ namespace Game.UI
         {
             for (int i = 0; i < MaxSkillSlots; i++)
             {
-                bool hasSkill = i < player.equippedSkills.Count && player.equippedSkills[i] != 0;
+                bool hasSkill = i < player.learnedSkills.Count;
                 if (hasSkill)
                 {
-                    var skillCfg = ConfigManager.Instance.GetSkill(player.equippedSkills[i]);
+                    var skillCfg = ConfigManager.Instance.GetSkill(player.learnedSkills[i]);
                     if (skillCfg != null)
                     {
                         skillLabels[i].text = skillCfg.name;

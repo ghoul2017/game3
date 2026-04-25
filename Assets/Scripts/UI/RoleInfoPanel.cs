@@ -12,7 +12,7 @@ namespace Game.UI
         private Text titleText;
         private Text[] attrTexts = new Text[10];
         private Text[] equipTexts = new Text[3];
-        private Text[] skillTexts = new Text[4];
+        private Text[] skillTexts = new Text[GameConstants.MAX_SKILL_SLOTS];
         private Slider expSlider;
         private Text expText;
         private Text emptyTreasureText;
@@ -52,14 +52,14 @@ namespace Game.UI
                 UIBuilder.SetAnchored(t.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-48, -35 - i * 30), new Vector2(320, 26));
             }
 
-            var skillPanel = UIBuilder.CreateBorderedPanel(parent, 420, 160, "SkillPanel");
+            var skillPanel = UIBuilder.CreateBorderedPanel(parent, 420, 220, "SkillPanel");
             skillPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(240, -35);
             var skillInner = skillPanel.transform.Find("Inner");
 
-            var skillTitle = UIBuilder.CreateText(skillInner, "已装备技能", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "SkillTitle");
+            var skillTitle = UIBuilder.CreateText(skillInner, "已学技能", 18, UIBuilder.Gold, TextAnchor.MiddleCenter, true, "SkillTitle");
             UIBuilder.SetAnchored(skillTitle.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -5), new Vector2(200, 26));
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < GameConstants.MAX_SKILL_SLOTS; i++)
             {
                 var t = UIBuilder.CreateText(skillInner, "", 15, UIBuilder.TextWhite, TextAnchor.MiddleLeft, name: $"Skill_{i}");
                 UIBuilder.SetAnchored(t.gameObject, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-10, -35 - i * 26), new Vector2(380, 24));
@@ -115,7 +115,7 @@ namespace Game.UI
             for (int i = 0; i < 3; i++)
                 equipTexts[i] = FindComponent<Text>($"EquipPanel/Inner/Equip_{i}");
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < GameConstants.MAX_SKILL_SLOTS; i++)
                 skillTexts[i] = FindComponent<Text>($"SkillPanel/Inner/Skill_{i}");
 
             expSlider = FindComponent<Slider>("ExpPanel/Inner/ExpSlider");
@@ -163,9 +163,9 @@ namespace Game.UI
             }
 
             int sIdx = 0;
-            foreach (var skillId in player.equippedSkills)
+            foreach (var skillId in player.learnedSkills)
             {
-                if (sIdx >= 4) break;
+                if (sIdx >= GameConstants.MAX_SKILL_SLOTS) break;
                 var skill = ConfigManager.Instance.GetSkill(skillId);
                 if (skill == null) continue;
                 string typeStr = skill.type switch { SkillType.Active => "主", SkillType.Passive => "被", SkillType.Buff => "增", SkillType.StatusAttack => "状", SkillType.Heal => "治", SkillType.Debuff => "减", SkillType.DoT => "持", SkillType.Control => "控", _ => "" };
@@ -173,7 +173,7 @@ namespace Game.UI
                 skillTexts[sIdx].gameObject.SetActive(true);
                 sIdx++;
             }
-            for (int i = sIdx; i < 4; i++)
+            for (int i = sIdx; i < GameConstants.MAX_SKILL_SLOTS; i++)
                 skillTexts[i].gameObject.SetActive(false);
 
             int expToNext = player.GetExpToNextLevel();

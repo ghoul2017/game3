@@ -185,7 +185,7 @@ namespace Game.Battle
         private bool HasPassive(int skillId)
         {
             var p = GameManager.Instance.Player;
-            return p.equippedSkills.Contains(skillId);
+            return p.learnedSkills.Contains(skillId);
         }
 
         /// <summary>狂战之怒：HP越低攻击越高，最高+50%</summary>

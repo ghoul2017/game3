@@ -43,8 +43,9 @@ namespace Game.Data
 
         // 技能
         public List<int> learnedSkills = new List<int>();
+        [System.Obsolete("已废弃：learnedSkills即为可用技能，无需装备槽")]
         public List<int> equippedSkills = new List<int>();
-        public int maxSkillSlots = 4;
+        public int maxSkillSlots = GameConstants.MAX_SKILL_SLOTS;
 
         // 宝物
         public List<int> treasures = new List<int>();
@@ -182,12 +183,23 @@ namespace Game.Data
         public bool IsAlive => hp > 0;
 
         /// <summary>
-        /// 学习技能：将技能加入已学列表（不重复）
+        /// 学习技能：将技能加入已学列表（不重复，槽满时返回false）
         /// </summary>
         public bool LearnSkill(int skillId)
         {
             if (learnedSkills.Contains(skillId)) return false;
+            if (learnedSkills.Count >= maxSkillSlots) return false;
             learnedSkills.Add(skillId);
+            return true;
+        }
+
+        /// <summary>
+        /// 遗忘技能：从已学列表移除指定技能
+        /// </summary>
+        public bool ForgetSkill(int skillId)
+        {
+            if (!learnedSkills.Contains(skillId)) return false;
+            learnedSkills.Remove(skillId);
             return true;
         }
     }

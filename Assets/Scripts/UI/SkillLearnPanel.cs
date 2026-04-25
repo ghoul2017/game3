@@ -27,7 +27,7 @@ namespace Game.UI
         private const int SkillPoolSize = 48;
         private const int SkillSelectPoolSize = 16;
         private const int TabCount = 7;
-        private const int EquipSlotCount = 4;
+        private const int EquipSlotCount = GameConstants.MAX_SKILL_SLOTS;
 
         // 缓存引用
         private Text goldText;
@@ -330,13 +330,10 @@ namespace Game.UI
         {
             var player = GameManager.Instance.Player;
 
-            // 金币（统计实际装备的技能数量，排除占位0）
+            // 金币（显示已学技能数量）
             if (goldText != null)
             {
-                int equippedCount = 0;
-                foreach (var sid in player.equippedSkills)
-                    if (sid != 0) equippedCount++;
-                goldText.text = $"金币: {player.gold}    已装备技能: {equippedCount}/{player.maxSkillSlots}";
+                goldText.text = $"金币: {player.gold}    已学技能: {player.learnedSkills.Count}/{player.maxSkillSlots}";
             }
 
             // 标签页高亮
@@ -440,18 +437,17 @@ namespace Game.UI
             RefreshEquipSlots(player);
         }
 
-        /// <summary>刷新4个装备槽位显示</summary>
+        /// <summary>刷新技能槽位显示（learnedSkills即可用技能）</summary>
         private void RefreshEquipSlots(PlayerData player)
         {
             for (int i = 0; i < EquipSlotCount; i++)
             {
                 if (slotBtns[i] == null) continue;
 
-                bool hasSkill = i < player.equippedSkills.Count && player.equippedSkills[i] != 0;
+                bool hasSkill = i < player.learnedSkills.Count;
                 if (hasSkill)
                 {
-                    // 已装备技能
-                    var skillId = player.equippedSkills[i];
+                    var skillId = player.learnedSkills[i];
                     var skill = ConfigManager.Instance.GetSkill(skillId);
                     if (skill != null)
                     {
@@ -475,167 +471,38 @@ namespace Game.UI
                         }
                         if (slotMpLabels[i] != null) slotMpLabels[i].text = "";
                     }
-                    // 已装备槽位高亮
                     slotBtns[i].image.color = new Color(UIBuilder.ButtonNormal.r, UIBuilder.ButtonNormal.g, UIBuilder.ButtonNormal.b, 1f);
                 }
                 else
                 {
-                    // 空槽位
                     if (slotNameLabels[i] != null)
                     {
                         slotNameLabels[i].text = $"+ 空槽位";
                         slotNameLabels[i].color = UIBuilder.TextDim;
                     }
                     if (slotMpLabels[i] != null) slotMpLabels[i].text = "";
-                    // 空槽位暗色
-                    slotBtns[i].image.color = new Color(UIBuilder.ButtonDisable.r, UIBuilder.ButtonDisable.g, UIBuilder.ButtonDisable.b, 0.5f);
+                    slotBtns[i].image.color = new Color(UIBuilder.ButtonDisable.r, UIBuilder.ButtonDisable.g, UIBuilder.ButtonDisable.g, 0.5f);
                 }
             }
         }
 
-        /// <summary>点击装备槽位处理</summary>
+        /// <summary>点击技能槽位处理：已学技能点击=遗忘</summary>
         private void OnClickEquipSlot(int slotIndex)
         {
             var player = GameManager.Instance.Player;
-            bool hasSkill = slotIndex < player.equippedSkills.Count && player.equippedSkills[slotIndex] != 0;
+            bool hasSkill = slotIndex < player.learnedSkills.Count;
 
             if (hasSkill)
             {
-                // 已装备：直接卸下
-                int skillId = player.equippedSkills[slotIndex];
+                // 已学技能：遗忘
+                int skillId = player.learnedSkills[slotIndex];
                 var skill = ConfigManager.Instance.GetSkill(skillId);
                 string skillName = skill != null ? skill.name : "技能";
-                UnequipFromSlot(slotIndex);
-                Debug.Log($"[技能] 从槽位{slotIndex}卸下技能 {skillName}");
-            }
-            else
-            {
-                // 空槽位：弹出技能选择弹窗
-                ShowSkillSelectOverlay(slotIndex);
-            }
-        }
-
-        /// <summary>从指定槽位卸下技能</summary>
-        private void UnequipFromSlot(int slotIndex)
-        {
-            var player = GameManager.Instance.Player;
-            if (slotIndex < player.equippedSkills.Count && player.equippedSkills[slotIndex] != 0)
-            {
-                player.equippedSkills[slotIndex] = 0;
-                // 清理尾部空位（值为0的占位），保持列表紧凑
-                while (player.equippedSkills.Count > 0 && player.equippedSkills[player.equippedSkills.Count - 1] == 0)
-                    player.equippedSkills.RemoveAt(player.equippedSkills.Count - 1);
+                player.ForgetSkill(skillId);
+                Debug.Log($"[技能] 遗忘技能 {skillName}");
                 RefreshUI();
             }
-        }
-
-        /// <summary>显示技能选择弹窗</summary>
-        private void ShowSkillSelectOverlay(int slotIndex)
-        {
-            var player = GameManager.Instance.Player;
-            selectingSlotIndex = slotIndex;
-
-            // 收集已学但未装备的技能
-            var availableSkills = new List<SkillConfig>();
-            foreach (var skillId in player.learnedSkills)
-            {
-                if (!player.equippedSkills.Contains(skillId))
-                {
-                    var skill = ConfigManager.Instance.GetSkill(skillId);
-                    if (skill != null)
-                        availableSkills.Add(skill);
-                }
-            }
-
-            // 更新标题
-            if (selectTitle != null)
-                selectTitle.text = availableSkills.Count > 0
-                    ? $"选择装备到槽位 {slotIndex + 1}"
-                    : "没有可装备的技能";
-
-            // 填充技能选择列表
-            int shown = 0;
-            for (int i = 0; i < availableSkills.Count && shown < SkillSelectPoolSize; i++)
-            {
-                var skill = availableSkills[i];
-                var row = selectRows[shown];
-                if (row.obj == null) { shown++; continue; }
-                row.obj.SetActive(true);
-                if (row.rt != null) row.rt.anchoredPosition = new Vector2(0, 130 - shown * 42);
-                if (row.bg != null) row.bg.color = shown % 2 == 0 ? UIBuilder.RowEven : UIBuilder.RowOdd;
-
-                string categoryStr = skill.GetCategoryName();
-                string mpStr = skill.mpCost > 0 ? $"MP:{skill.mpCost}" : "";
-                if (row.nameText != null)
-                {
-                    row.nameText.text = $"[{categoryStr}] {skill.name}  {mpStr}  {skill.desc}";
-                    row.nameText.color = UIBuilder.TextWhite;
-                }
-
-                // 装备按钮
-                if (row.actionBtn != null)
-                {
-                    row.actionBtn.gameObject.SetActive(true);
-                    row.actionBtn.interactable = true;
-                    if (row.actionBtn.image != null)
-                        row.actionBtn.image.color = UIBuilder.ButtonNormal;
-                    row.actionBtn.onClick.RemoveAllListeners();
-                    int capturedId = skill.id;
-                    row.actionBtn.onClick.AddListener(() =>
-                    {
-                        EquipSkillToSlot(capturedId);
-                        CloseSelectOverlay();
-                    });
-                }
-                if (row.actionBtnLabel != null)
-                {
-                    row.actionBtnLabel.text = "装备";
-                    row.actionBtnLabel.color = UIBuilder.Green;
-                }
-                if (row.secondBtn != null) row.secondBtn.gameObject.SetActive(false);
-
-                shown++;
-            }
-
-            // 隐藏未使用行
-            for (int i = shown; i < SkillSelectPoolSize; i++)
-            {
-                if (i < selectRows.Count && selectRows[i].obj != null)
-                    selectRows[i].obj.SetActive(false);
-            }
-
-            selectOverlay.SetActive(true);
-        }
-
-        /// <summary>关闭技能选择弹窗</summary>
-        private void CloseSelectOverlay()
-        {
-            selectingSlotIndex = -1;
-            selectOverlay.SetActive(false);
-            RefreshUI();
-        }
-
-        /// <summary>装备技能到指定槽位</summary>
-        private void EquipSkillToSlot(int skillId)
-        {
-            var player = GameManager.Instance.Player;
-            if (selectingSlotIndex < 0 || selectingSlotIndex >= player.maxSkillSlots) return;
-            // 同一技能不可重复装备
-            if (player.equippedSkills.Contains(skillId)) return;
-            if (!player.learnedSkills.Contains(skillId)) return;
-
-            // 确保列表足够长（用0占位）
-            while (player.equippedSkills.Count <= selectingSlotIndex)
-                player.equippedSkills.Add(0);
-
-            // 设置目标槽位
-            player.equippedSkills[selectingSlotIndex] = skillId;
-
-            // 清理尾部空位（值为0的占位），保持列表紧凑
-            while (player.equippedSkills.Count > 0 && player.equippedSkills[player.equippedSkills.Count - 1] == 0)
-                player.equippedSkills.RemoveAt(player.equippedSkills.Count - 1);
-
-            Debug.Log($"[技能] 装备技能 id={skillId} 到槽位{selectingSlotIndex}");
+            // 空槽位不响应（技能通过列表学习）
         }
 
         private void LearnSkill(int skillId, int cost)
@@ -644,7 +511,12 @@ namespace Game.UI
             var player = GameManager.Instance.Player;
             if (player.gold < cost || player.learnedSkills.Contains(skillId)) return;
             player.gold -= cost;
-            player.learnedSkills.Add(skillId);
+            if (!player.LearnSkill(skillId))
+            {
+                // 槽满：退还金币
+                player.gold += cost;
+                Debug.Log($"[技能] 技能槽已满，无法学习");
+            }
             RefreshUI();
         }
 

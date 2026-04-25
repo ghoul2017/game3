@@ -74,7 +74,7 @@ namespace Game.Config
         public const int MAX_BATTLE_LOG_LINES = 6;
 
         /// <summary>技能栏最大数量</summary>
-        public const int MAX_SKILL_SLOTS = 4;
+        public const int MAX_SKILL_SLOTS = 6;
 
         /// <summary>宝物栏最大数量</summary>
         public const int MAX_TREASURE_SLOTS = 12;

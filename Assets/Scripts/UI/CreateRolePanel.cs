@@ -255,8 +255,7 @@ namespace Game.UI
 
             foreach (var skillId in profCfg.defaultSkillIds)
             {
-                player.learnedSkills.Add(skillId);
-                player.equippedSkills.Add(skillId);
+                player.LearnSkill(skillId);
             }
 
             player.RecalcStats();

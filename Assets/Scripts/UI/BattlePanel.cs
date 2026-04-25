@@ -1403,10 +1403,12 @@ namespace Game.UI
         {
             var player = GameManager.Instance.Player;
             int idx = 0;
-            foreach (var skillId in player.equippedSkills)
+            foreach (var skillId in player.learnedSkills)
             {
                 var skill = ConfigManager.Instance.GetSkill(skillId);
                 if (skill == null) continue;
+                // 被动技能无法主动使用，跳过
+                if (skill.type == SkillType.Passive) continue;
                 if (idx >= MaxSkillRows) break;
 
                 var row = skillRows[idx];
