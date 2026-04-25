@@ -88,24 +88,63 @@ dev.cmd          # 单次开发（非交互模式）
 devloop.cmd [N]  # 循环开发，默认 8 轮
 ```
 
-## UI 架构关键约定
+## 核心架构决策
 
-- **UIPanel 基类** → 所有面板继承，重写 `BindReferences()`/`BindEvents()`/`OnShow()`/`OnHide()`
-- **UIManager** → 单例，栈式面板管理（`ShowPanel<T>()`/`ReplacePanel<T>()`）
-- **UIBuilder** → 静态工具类，提供 `CreateVisuals()` 静态方法生成预制体结构
-- **PrefabLoader** → 预制体加载器，缓存加载 `Resources/UI/{PanelName}`
-- **PrefabGenerator** → 编辑器工具，批量生成所有面板预制体
-- **UI 配色**: RPG 风格 — 深蓝/紫底色 + 金色强调色（常量在 UIBuilder 中）
+### UI 架构（F111 模块拆分）
+
+UIBuilder 拆分为三个独立模块，UIBuilder 保留为门面：
+
+| 模块 | 职责 |
+|------|------|
+| `UIColors` | 所有 UI 颜色常量的唯一定义处 |
+| `UIFactory` | 控件创建方法（自动应用深色主题） |
+| `UIPool` | 对象池（PoolRow + CreatePoolRows） |
+| `UIBuilder` | 门面转发 + 布局辅助（SetStretch/SetAnchored） |
+
+- **颜色唯一来源**: `UIColors`，严禁硬编码 `Color.white`/`Color.gray`/`new Color(...)`
+- UI 配色: RPG 风格深色主题 — 深蓝/紫底色 `#0d0d1a`/`#1a1a2e` + 金色强调色 `#c8a24c`
+- **完整色板见 `.claude/rules/ui.code.md`**
+
+### 音频系统
+
+- **AudioManager**: MonoBehaviour 单例 + DontDestroyOnLoad
+- **SFX**: 5 通道 AudioSource 轮播池（Round-Robin），避免 GC
+- **BGM**: Crossfade 半时淡出+半时淡入，`Time.unscaledDeltaTime` 不受暂停影响
+- 场景音乐流转: TownPanel/DungeonPanel/BattleManager 的 OnShow/生命周期中触发
+
+### 战斗系统
+
+- **统一回合流程**: RoundStart(Tick) → 先手Action → 后手Action → RoundEnd(DecayBuffs)
+- **TickEffects 只在 RoundStart 执行一次**（F140 修复双重 Tick）
+- **伤害公式**: 乘法防御模型 `DEFENSE_REDUCTION_RATE=0.6` + 浮动 `DAMAGE_VARIANCE_RATE=0.15`
+- **速度体系**: 决定回合顺序 + 速度差闪避机制
+- **Boss 战**: 五层 Boss（层 5/10/15/20/25）+ 专属 BGM + 逃跑禁用
+- **完整规则见 `.claude/rules/battle.code.md`**
+
+### 网格地牢系统（F131-F136）
+
+- **数据模型**: GridPos(自定义struct) + DungeonTile(四方向连通) + ContentData
+- **生成算法**: 随机游走扩张 + 多尺寸房间 + BFS 连通性保障
+- **迁移策略**: 旧 rooms 与新 grid 双数据同步，逐功能分阶段迁移
+- **战争迷雾**: 三态实时计算（Hidden/Explored/Visible），isExplored 持久化
+- **完整规则见 `.claude/rules/game.code.md`**
 
 ### UI 面板编码规则（重要）
 
 - **CreateVisuals()** 静态方法构建 UI 结构（仅 PrefabGenerator 调用，运行时不执行）
-- **BindReferences()** 绑定预制体中的组件引用到字段
-- **BindEvents()** 绑定按钮等控件的事件
-- **OnShow()** → **RefreshUI()** 只修改 `.text`/`.value`/`.color` 等属性，**零销毁零创建**
+- **OnInit → BindReferences() → BindEvents()** | **OnShow → RefreshUI()**
+- **RefreshUI()** 只修改 `.text`/`.value`/`.color` 等属性，**零销毁零创建**
 - **动态列表用对象池**：预创建行，SetActive 显隐，原地更新文字
-- **绝不使用 Object.DestroyImmediate** — 它是导致文字消失、面板错乱的根本原因
-- **Hide 用 CanvasGroup**（alpha=0），不用 SetActive(false) — 避免破坏 RectTransform 层级
+- **绝不使用 Object.DestroyImmediate**
+- **Hide 用 CanvasGroup（alpha=0）**，不用 SetActive(false)
+- **过渡协程精准停止**（transitionCoroutine），不使用 StopAllCoroutines
+
+### 技能系统
+
+- **通用化**: 全职业可学任何技能（F144），ID 三段分配（职业/通用/Boss）
+- **7 标签页**: All/Attack/Heal/Buff/Control/Passive/Learned
+- **4 装备槽**: 索引定位 + 0 占位符 + 尾部裁剪 + 多消费者安全跳过
+- **完整规则见 `.claude/rules/game.code.md`**
 
 ## 开发注意事项
 
@@ -121,10 +160,10 @@ devloop.cmd [N]  # 循环开发，默认 8 轮
 
 | 路径 | 规则文件 | 核心要点 |
 |---|---|---|
-| `Assets/Scripts/Core/**` | `core.code.md` | 单例模式、UIPanel 生命周期、UIManager 栈管理 |
-| `Assets/Scripts/UI/**` | `ui.code.md` | OnInit 缓存、RefreshUI 只改属性、对象池、禁用 DestroyImmediate |
-| `Assets/Scripts/Game/Battle/**` | `battle.code.md` | 回合制流程、Buff 处理、伤害计算 |
-| `Assets/Scripts/Game/**` | `game.code.md` | 配置加载、数据模型、命名空间规范 |
+| `Assets/Scripts/Core/**` | `core.code.md` | UIPanel 生命周期、transitionCoroutine 精准停止、AudioManager 单例+轮播池、UIManager 栈管理 |
+| `Assets/Scripts/UI/**` | `ui.code.md` | 深色主题配色(UIColors 唯一来源)、F111 模块拆分、对象池、DestroyImmediate 禁令、CanvasGroup 隐藏、网格地图渲染规则 |
+| `Assets/Scripts/Game/Battle/**` | `battle.code.md` | 统一回合四阶段流程、TickEffects 仅一次、速度/伤害/Boss 公式体系、视觉效果、已知待修复 |
+| `Assets/Scripts/Game/**` | `game.code.md` | 网格地牢数据模型+迁移策略、战争迷雾、技能通用化+装备槽、Buff 配置、战斗数值常量 |
 
 
 ## 用户偏好
