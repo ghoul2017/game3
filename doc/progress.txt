@@ -93,3 +93,4 @@
 2026-04-25 F161 COMPLETED - UIManager三层Canvas架构：HUD(5)/Window(10)/Tip(20)独立Canvas+ShowWindow/CloseWindow/GetHUDCanvas+旧API兼容
 2026-04-25 F162 COMPLETED - GameHUD框架：GameWorldContainer+RightPanel(战斗日志180px+角色140px+背包填充)+BottomSkillBar(6槽)+UpdateVisibility+Create工厂方法
 2026-04-25 F163 COMPLETED - WindowBase可拖动非全屏窗口系统：abstract基类继承UIPanel+IDragHandler三接口+标题栏40px拖拽+关闭按钮+内容区+UIManager.ShowWindow/CloseWindow生命周期
+2026-04-25 F164 COMPLETED - TipManager浮动信息提示系统：MonoBehaviour单例挂TipCanvas+对象池8个(CardBg+BorderColor+Text+CanvasGroup)+HoverTip鼠标跟随(15,-10)+AutoTip定时淡出(2.5s→0.3s)+UIManager初始化集成
