@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Game.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -86,11 +87,10 @@ namespace Game.Core
         /// </summary>
         public T ShowWindow<T>() where T : UIPanel
         {
-            // 关闭已有窗口
+            // 关闭已有窗口（调用 OnWindowClose 并销毁）
             if (currentWindow != null)
             {
-                currentWindow.Hide();
-                currentWindow = null;
+                CloseWindowInternal();
             }
 
             var panel = GetOrCreatePanel<T>(canvasWindow.transform);
@@ -101,14 +101,35 @@ namespace Game.Core
         }
 
         /// <summary>
-        /// 关闭当前 Window 层面板
+        /// 关闭当前 Window 层面板。
+        /// 对 WindowBase 子类：调用 OnWindowClose 后销毁 GameObject 并从缓存移除。
         /// </summary>
         public void CloseWindow()
         {
             if (currentWindow == null) return;
 
             Debug.Log($"[UI] CloseWindow 关闭={currentWindow.GetType().Name}");
-            currentWindow.Hide();
+            CloseWindowInternal();
+        }
+
+        /// <summary>内部关闭窗口：调用 OnWindowClose → 销毁 GameObject → 清缓存</summary>
+        private void CloseWindowInternal()
+        {
+            if (currentWindow == null) return;
+
+            // WindowBase 子类调用 OnWindowClose 回调
+            var windowBase = currentWindow as WindowBase;
+            if (windowBase != null)
+            {
+                windowBase.InvokeWindowClose();
+                string typeName = currentWindow.GetType().Name;
+                panelCache.Remove(typeName);
+                Object.Destroy(currentWindow.gameObject);
+            }
+            else
+            {
+                currentWindow.Hide();
+            }
             currentWindow = null;
         }
 
@@ -190,8 +211,7 @@ namespace Game.Core
 
             if (currentWindow != null)
             {
-                currentWindow.Hide();
-                currentWindow = null;
+                CloseWindowInternal();
             }
         }
 
