@@ -101,3 +101,4 @@
 2026-04-25 F168 COMPLETED - 城镇网格地图：5x4固定网格+4建筑(旅馆/商店/技能公会/地牢入口)可点击交互+悬停变色+GameHUD集成+GameEntry/GameManager调用链
 2026-04-25 F169 COMPLETED - 地牢点击直交互改造：移除移动概念+点击已揭示Room直接触发事件+边缘揭示迷雾+activeBattleTile重命名
 2026-04-25 F171 COMPLETED - 地牢内联战斗集成：DungeonPanel订阅BattleController事件+点击怪触发内联战斗+再次点击执行回合+tile闪红动画+胜利清房AutoTip+战败回城
+2026-04-25 F172 COMPLETED - ShopWindow商店/商人窗口：双模式(Town全商店翻页+Merchant3件8折)+继承WindowBase+对象池物品行+购买逻辑
