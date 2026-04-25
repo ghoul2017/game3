@@ -160,9 +160,9 @@ namespace Game.UI
             // 卡片按钮（覆盖整张卡片）
             var btn = cardObj.AddComponent<Button>();
             var btnColors = btn.colors;
-            btnColors.normalColor = Color.white;
-            btnColors.highlightedColor = new Color(1.15f, 1.12f, 1.06f);
-            btnColors.pressedColor = new Color(0.72f, 0.68f, 0.58f);
+            btnColors.normalColor = UIColors.ButtonNormal;
+            btnColors.highlightedColor = UIColors.ButtonHover;
+            btnColors.pressedColor = UIColors.ButtonPress;
             btnColors.fadeDuration = 0.1f;
             btn.colors = btnColors;
 
@@ -383,14 +383,15 @@ namespace Game.UI
         private void ChooseShrineSkill(int skillId, string skillName, PlayerData player)
         {
             if (hasChosen) return;
-            hasChosen = true;
 
-            // 槽满检查
+            // 槽满检查（在设置 hasChosen 之前）
             if (player.learnedSkills.Count >= player.maxSkillSlots)
             {
                 ShowTip($"技能槽已满({player.maxSkillSlots}/{player.maxSkillSlots})，无法学习");
                 return;
             }
+
+            hasChosen = true;
 
             if (player.LearnSkill(skillId))
             {
