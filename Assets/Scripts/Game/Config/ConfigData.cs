@@ -4,6 +4,14 @@ using UnityEngine;
 
 namespace Game.Config
 {
+    // JSON数组包装类（JsonUtility不支持顶层数组）
+    [System.Serializable] public class ProfessionConfigList { public List<ProfessionConfig> list; }
+    [System.Serializable] public class SkillConfigList { public List<SkillConfig> list; }
+    [System.Serializable] public class ItemConfigList { public List<ItemConfig> list; }
+    [System.Serializable] public class MonsterConfigList { public List<MonsterConfig> list; }
+    [System.Serializable] public class TreasureConfigList { public List<TreasureConfig> list; }
+    [System.Serializable] public class BuffConfigList { public List<BuffConfig> list; }
+
     [System.Serializable]
     public class ProfessionConfig
     {
