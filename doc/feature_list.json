@@ -78,7 +78,7 @@
 
   {"id":"F111","category":"refactor","desc":"拆分 UIBuilder 为独立模块：UIColors（颜色常量）+ UIFactory（控件创建）+ UIPool（对象池）","passes":true},
   {"id":"F112","category":"refactor","desc":"封装 Logger 日志系统：日志等级 + 条件编译 + 格式化输出，替换所有 Debug.Log","passes":true},
-  {"id":"F113","category":"refactor","desc":"迁移 ConfigManager 到 JSON：配置外置到 Resources/Config/*.json，支持热更新","passes":false},
+  {"id":"F113","category":"refactor","desc":"迁移 ConfigManager 到 JSON：配置外置到 Resources/Config/*.json，支持热更新","passes":true},
 
   {"id":"F114","category":"battle","desc":"修复被动技能效果：狂战之怒(血量越低攻击越高)、坚守(HP<30%减伤)、复活(战斗中复活一次)、魔力涌动(每回合回蓝)","passes":true},
   {"id":"F115","category":"battle","desc":"修复治疗术(4001)：添加 Heal 技能类型，治疗术恢复自身HP而非攻击怪物","passes":true},
