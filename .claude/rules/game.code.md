@@ -37,8 +37,9 @@
 
 ### 神殿技能筛选
 - 全技能池 → 排除已学 → 随机选一个 → 免费学习
-- F146 起包含被动技能（不再排除 Passive）
+- 包含被动技能（不再排除 Passive）
 - 所有技能已学时回退为恢复 HP（maxHp/2）
+- 学满6个技能时也无法学习（槽满检查）
 
 ## 技能系统通用化（F144-F145）
 
@@ -67,32 +68,24 @@
 ### 技能池大小
 SkillPoolSize = 48（容纳全部 44 个非 Boss 技能）
 
-## 技能装备槽（F146）
+## 技能系统（F160 改造）
 
 ### 数据模型
-- `PlayerData.equippedSkills`: `List<int>`，索引=槽位，值=技能ID，0=空槽
-- `maxSkillSlots = 4`
-- **尾部裁剪**: 中间空槽保留 0，尾部连续 0 会被 RemoveAt 裁剪
+- `PlayerData.learnedSkills`: `List<int>`，已学技能ID列表，**学习即可用，无装备槽概念**
+- `PlayerData.equippedSkills`: `[Obsolete]`，仅用于旧存档反序列化兼容，新代码不使用
+- `maxSkillSlots = 6`（MAX_SKILL_SLOTS），已学技能上限
 
-### 多消费者安全
-所有消费 equippedSkills 的地方都必须跳过 0 值：
-```csharp
-// 正确模式
-for (int i = 0; i < count; i++)
-{
-    int skillId = equippedSkills[i];
-    if (skillId == 0) continue;
-    var skill = ConfigManager.GetSkill(skillId);
-    if (skill == null) continue;
-    // 使用 skill
-}
-```
+### 技能容量与学习
+- 学满 6 个后无法再学习新技能（金币不扣，`LearnSkill()` 返回 false 时 SkillLearnPanel 退还金币）
+- 可通过 `ForgetSkill(id)` 遗忘技能腾出槽位
+- 被动技能不可主动使用（`PopulateSkillPanel` 跳过 `SkillType.Passive`）
 
-### 装备规则
-- 同一技能不可重复装备
-- 只能装备已学习技能
-- 点击已装备技能 = 卸下（设为0+尾部裁剪）
-- 点击空槽 = 从已学未装备中选
+### 被动技能检查路径
+`BattleManager.HasPassive(id)` → `player.learnedSkills.Contains(id)`
+
+### UI 展示
+- BattlePanel/DungeonPanel/RoleInfoPanel 均直接遍历 `learnedSkills` 展示技能
+- SkillLearnPanel 显示已学技能数 `learnedSkills.Count / maxSkillSlots`
 
 ## 战斗数值常量
 

@@ -20,7 +20,7 @@
 - [伤害公式与金币奖励机制](arch-damage-formula.md) — F150 乘法防御模型(DEFENSE_REDUCTION_RATE=0.6)、伤害浮动0.15、Boss/普通怪金币缩放双路径
 - [战斗视觉效果架构](arch-battle-visual-effects.md) — F153 伤害浮动数字(日志驱动+lastProcessedLogCount去重)、Boss震动信号(bossSkillTriggered一次性标记)、面板过渡(精准停协程)
 - [UIManager三层Canvas架构](arch-ui-three-canvas.md) — F161 HUD/Window/Tip三层Canvas(sortingOrder:5/10/20)、panelCache跨层互斥、GetOrCreatePanel自动重挂载
-- [GameHUD框架架构](arch-game-hud.md) — F162+F165+F166+F167 永久HUD+右侧面板：战斗日志+角色信息+背包+底部技能栏(EventTrigger左右键+遗忘索引边界)
+- [GameHUD框架架构](arch-game-hud.md) — F162+F165+F166+F167+F168 永久HUD+右侧面板+GameWorldContainer子控制器(TownMapController双模式UI:MonoBehaviour+Create非UIPanel)
 - [WindowBase可拖动窗口架构](arch-window-base.md) — F163 abstract BuildContent/virtual标题尺寸、标题栏拖拽、WindowBase关闭时Destroy非缓存、单窗口互斥
 - [TipManager浮动信息提示架构](arch-tip-manager.md) — F164 TipItem struct池(8个)+HoverTip鼠标跟随单例+AutoTip定时淡出(duration含fadeTime)+struct写回陷阱
 - [BattleController轻量战斗控制器架构](arch-battle-controller.md) — F170 非MonoBehaviour单例+事件驱动(OnRoundComplete/OnBattleEnd)、ExecuteXxx编排BattleManager、logCountAtRoundStart日志提取、RoundResult/BattleResult数据模型

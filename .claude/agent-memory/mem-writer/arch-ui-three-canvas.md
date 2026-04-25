@@ -20,7 +20,7 @@ type: project
 
 **关键约束**: panelCache 按类型名（typeof(T).Name）索引，同一面板类型不能同时存在于 HUD 栈和 Window 层。
 
-- ShowWindow 先 Hide currentWindow（单例管理），再创建/复用面板
+- ShowWindow 先 CloseWindowInternal 旧窗口：WindowBase 子类 Destroy+清缓存，非 WindowBase 回退 Hide()（F163 改造）
 - ShowPanel 先 Hide 栈顶面板（Stack 管理），再创建/复用面板
 - 两者共享 panelCache，但管理方式不同（currentWindow vs panelStack），互不干扰
 

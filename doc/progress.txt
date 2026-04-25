@@ -98,3 +98,4 @@
 2026-04-25 F166 COMPLETED - 右侧面板-背包：BagSection(ScrollRect+Mask填充剩余)+20行对象池(22px紧凑行)+按ID分组显示+装备/使用/出售操作+金币+容量+空背包提示
 2026-04-25 F167 COMPLETED - 底部技能栏(6槽)：6个130x55px槽位水平居中+技能名+MP消耗+左键选中金色高亮+右键遗忘确认弹窗+SelectedSkillIndex属性
 2026-04-25 F170 COMPLETED - BattleController轻量战斗控制器：非MonoBehaviour单例+事件驱动(OnRoundComplete/OnBattleEnd)+ExecuteAttack/ExecuteSkill/ExecuteItem/ExecuteEscape+零UI引用
+2026-04-25 F168 COMPLETED - 城镇网格地图：5x4固定网格+4建筑(旅馆/商店/技能公会/地牢入口)可点击交互+悬停变色+GameHUD集成+GameEntry/GameManager调用链
