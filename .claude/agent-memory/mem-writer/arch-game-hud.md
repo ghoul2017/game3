@@ -1,6 +1,6 @@
 ---
 name: GameHUD框架架构
-description: F162+F165+F168 永久HUD布局+右侧面板+GameWorldContainer子控制器(TownMapController)双模式UI架构
+description: F162+F165+F168+F176 永久HUD布局+右侧面板+GameWorldContainer子控制器+跨场景ClearAll+SetState模式+旧面板废弃
 type: project
 ---
 
@@ -182,6 +182,48 @@ GameManager.SetState(state) -> GameHUD.UpdateVisibility(state) [static]
 | 建筑 | 行为 | 复用 |
 |------|------|------|
 | 旅馆 | player.FullRestore() + SaveGame + TipManager 提示 | 独立逻辑 |
-| 商店 | UIManager.ShowPanel\<ShopPanel\>() | 复用面板栈 |
-| 技能公会 | UIManager.ShowPanel\<SkillLearnPanel\>() | 复用面板栈 |
-| 地牢入口 | new DungeonData() + GenerateFloor + SetState(InDungeon) + ReplacePanel\<DungeonPanel\>() | 替换面板 |
+| 商店 | UIManager.ShowWindow\<ShopWindow\>() | Window 层 |
+| 技能公会 | UIManager.ShowPanel\<SkillLearnPanel\>() | 旧面板栈（暂未废弃） |
+| 地牢入口 | new DungeonData() + ClearAll + SetState(InDungeon) + ShowPanel\<DungeonPanel\>() | 新流程 |
+
+## 跨场景切换模式：ClearAll + SetState（F176）
+
+### 核心模式
+
+所有场景切换统一使用 `UIManager.ClearAll()` + `GameManager.SetState()` 两步：
+
+```
+ClearAll()                    — 清空旧面板栈（弹栈Hide + 关闭Window）
+SetState(newState)            — 联动 GameHUD.UpdateVisibility + TownMapController 显隐
+[可选] ShowPanel/ShowWindow   — 显示新场景面板
+```
+
+**Why:** 旧流程中 `GameManager.NewGame()`/`ContinueGame()` 内部调用 `SetState`，而调用方（MainPanel）也会触发状态相关操作，导致 `UpdateVisibility` 被重复调用。F176 将状态管理责任全部移到调用方，GameManager 只负责数据初始化，不触碰 GameState。
+
+**How to apply:** 新增场景切换点时，先 `ClearAll()` 再 `SetState()`。不要在 GameManager 的数据方法中夹杂 SetState 调用。
+
+### 完整场景切换路径
+
+| 触发点 | 操作 | 目标状态 |
+|--------|------|----------|
+| MainPanel(开始冒险) | SetState(CreatingRole) + ReplacePanel\<CreateRolePanel\> | CreatingRole |
+| MainPanel(继续冒险) | ClearAll + SetState(InTown) | InTown |
+| CreateRolePanel(创建完成) | ClearAll + SetState(InTown) | InTown |
+| TownMapController(商店) | ShowWindow\<ShopWindow\> | InTown（不变） |
+| TownMapController(地牢入口) | ClearAll + SetState(InDungeon) + ShowPanel\<DungeonPanel\> | InDungeon |
+| DungeonPanel(返回城镇) | ClearAll + SetState(InTown) | InTown |
+| DungeonPanel(战败) | ClearAll + SetState(InTown) | InTown |
+| GameHUD(回城卷轴) | ClearAll + SetState(InTown) | InTown |
+
+### 旧面板废弃状态（F176）
+
+以下面板标记 `[System.Obsolete]`，功能已迁移到新架构：
+
+| 旧面板 | 废弃原因 | 替代方案 |
+|--------|----------|----------|
+| TownPanel | 城镇由 GameHUD+TownMapController 处理 | TownMapController (F168) |
+| BagPanel | 背包集成到 GameHUD | GameHUD 背包区 (F166) |
+| RoleInfoPanel | 角色信息集成到 GameHUD | GameHUD 角色信息区 (F165) |
+| ShopPanel | 商店由 ShopWindow 替代 | ShopWindow (WindowBase, F163) |
+| BattlePanel | 战斗由 DungeonPanel 内联处理 | DungeonPanel 内联战斗 (F171) |
+| SkillLearnPanel | **暂未废弃**，等待 WindowBase 版本 | 仍由 TownMapController 调用 |
