@@ -395,7 +395,7 @@ namespace Game.UI
 
             if (player.LearnSkill(skillId))
             {
-                Debug.Log($"[神殿] 免费习得技能 {skillName}(id={skillId})");
+                Logger.LogI("神殿", $"免费习得技能 {skillName}(id={skillId})");
                 ShowTip($"学会了 {skillName}！");
             }
             else
@@ -415,7 +415,7 @@ namespace Game.UI
 
             int hpHeal = player.maxHp / 2;
             player.hp = Mathf.Min(player.hp + hpHeal, player.maxHp);
-            Debug.Log($"[神殿] 兜底恢复HP {hpHeal}");
+            Logger.LogI("神殿", $"兜底恢复HP {hpHeal}");
             ShowTip($"恢复了 {hpHeal} HP！");
 
             StartCoroutine(DelayedClose(0.6f));
@@ -442,7 +442,7 @@ namespace Game.UI
             hasChosen = true;
             player.gold -= price;
             player.bagItems.Add(itemId);
-            Debug.Log($"[商人] 购买 {itemName}(id={itemId}) 花费={price}");
+            Logger.LogI("商人", $"购买 {itemName}(id={itemId}) 花费={price}");
             ShowTip($"购买了 {itemName}！");
 
             RefreshUI();

@@ -571,7 +571,7 @@ namespace Game.UI
                     ShowBattleTip("战斗中无法返回城镇！");
                     return;
                 }
-                Debug.Log("[操作] 返回城镇");
+                Logger.LogI("操作", "返回城镇");
                 if (GameManager.Instance?.Dungeon != null)
                     GameManager.Instance.Dungeon.OnReturnTown();
                 if (GameManager.Instance.Dungeon != null)
@@ -656,7 +656,7 @@ namespace Game.UI
                     activeBattleTile.isCleared = true;
                     var room = FindMatchingRoom(GameManager.Instance.Dungeon, activeBattleTile);
                     room.cleared = true;
-                    Debug.Log($"[地牢] 战斗胜利，房间已清理 pos=({activeBattleTile.gridPos.x},{activeBattleTile.gridPos.y})");
+                    Logger.LogI("地牢", $"战斗胜利，房间已清理 pos=({activeBattleTile.gridPos.x},{activeBattleTile.gridPos.y})");
                 }
                 activeBattleTile = null;
             }
@@ -1171,27 +1171,27 @@ namespace Game.UI
                     HandleBattle(dungeon, tile);
                     break;
                 case DungeonEventType.Treasure:
-                    Debug.Log("[地牢] 发现宝箱");
+                    Logger.LogI("地牢", "发现宝箱");
                     HandleTreasure(tile);
                     break;
                 case DungeonEventType.Spring:
-                    Debug.Log("[地牢] 发现泉水");
+                    Logger.LogI("地牢", "发现泉水");
                     HandleSpring(tile);
                     break;
                 case DungeonEventType.Merchant:
-                    Debug.Log("[地牢] 遇到商人");
+                    Logger.LogI("地牢", "遇到商人");
                     ShopWindow.OpenTownShop();
                     break;
                 case DungeonEventType.Exit:
-                    Debug.Log("[地牢] 进入下一层");
+                    Logger.LogI("地牢", "进入下一层");
                     HandleExit(tile);
                     break;
                 case DungeonEventType.Shrine:
-                    Debug.Log("[地牢] 发现神殿");
+                    Logger.LogI("地牢", "发现神殿");
                     HandleShrine(tile);
                     break;
                 case DungeonEventType.Empty:
-                    Debug.Log("[地牢] 空房间");
+                    Logger.LogI("地牢", "空房间");
                     HandleEmptyRoom(dungeon, tile);
                     break;
             }
@@ -1200,7 +1200,7 @@ namespace Game.UI
         /// <summary>处理战斗事件（F171 内联战斗：不再切换面板）</summary>
         private void HandleBattle(DungeonData dungeon, DungeonTile tile)
         {
-            Debug.Log($"[地牢] 遭遇战斗 type={tile.roomType}");
+            Logger.LogI("地牢", $"遭遇战斗 type={tile.roomType}");
             var monsters = ConfigManager.Instance.GetMonstersByFloor(dungeon.floor);
             var monsterCfg = tile.roomType == DungeonEventType.Boss
                 ? ConfigManager.Instance.GetBossByFloor(dungeon.floor)
@@ -1288,7 +1288,7 @@ namespace Game.UI
             // 刷新 HUD 战斗日志
             RefreshHUDCombatLog();
 
-            Debug.Log($"[地牢] 内联战斗开始 怪物={displayName} HP={scaledHp}");
+            Logger.LogI("地牢", $"内联战斗开始 怪物={displayName} HP={scaledHp}");
         }
 
         // ============ F171 内联战斗核心逻辑 ============
@@ -1445,7 +1445,7 @@ namespace Game.UI
                 activeBattleTile = null;
                 activeBattleTileIndex = -1;
 
-                Debug.Log($"[地牢] 内联战斗胜利 奖励: exp={battle.rewardExp} gold={battle.rewardGold}");
+                Logger.LogI("地牢", $"内联战斗胜利 奖励: exp={battle.rewardExp} gold={battle.rewardGold}");
             }
             else
             {
@@ -1655,7 +1655,7 @@ namespace Game.UI
                 var chosen = unlearned[Random.Range(0, unlearned.Count)];
                 player.LearnSkill(chosen.id);
                 pendingMessage = $"技能神殿：你领悟了 {chosen.name}！\n{chosen.desc}";
-                Debug.Log($"[神殿] 免费习得技能 {chosen.name}(id={chosen.id})");
+                Logger.LogI("神殿", $"免费习得技能 {chosen.name}(id={chosen.id})");
 
                 // 如果SkillLearnPanel打开着，刷新显示
                 TryRefreshSkillLearnPanel();
@@ -1768,7 +1768,7 @@ namespace Game.UI
             else
                 eventType = EmptyRoomEvent.MysticPower;
 
-            Debug.Log($"[地牢] 空房间触发随机事件: {eventType}");
+            Logger.LogI("地牢", $"空房间触发随机事件: {eventType}");
             pendingEvent = eventType;
             pendingEventTile = tile;
 

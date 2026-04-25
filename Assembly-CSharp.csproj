@@ -79,6 +79,11 @@
      <Compile Include="Assets\Scripts\UI\GameHUD.cs" />
      <Compile Include="Assets\Scripts\UI\BattleLogFormatter.cs" />
      <Compile Include="Assets\Scripts\UI\WindowBase.cs" />
+     <Compile Include="Assets\Scripts\UI\SkillLearnWindow.cs" />
+     <Compile Include="Assets\Scripts\UI\ThreeChooseOneWindow.cs" />
+     <Compile Include="Assets\Scripts\UI\ShopWindow.cs" />
+     <Compile Include="Assets\Scripts\Game\Battle\BattleController.cs" />
+     <Compile Include="Assets\Scripts\UI\TownMapController.cs" />
      <Folder Include="Assets" />
      <Folder Include="Assets\Scripts\Game" />
      <Folder Include="Assets\Settings" />

@@ -238,7 +238,7 @@ namespace Game.UI
             if (string.IsNullOrEmpty(roleName))
                 roleName = "冒险者";
 
-            Debug.Log($"[操作] 创建角色 职业={selectedProfession} 名字={roleName}");
+            Logger.LogI("操作", $"创建角色 职业={selectedProfession} 名字={roleName}");
 
             var player = new PlayerData
             {

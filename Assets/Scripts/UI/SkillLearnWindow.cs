@@ -307,7 +307,7 @@ namespace Game.UI
                 ShowSlotFullTip();
                 return;
             }
-            Debug.Log($"[技能] 学习技能 id={skillId} 花费={cost}");
+            Logger.LogI("技能", $"学习技能 id={skillId} 花费={cost}");
             RefreshUI();
         }
 
@@ -320,7 +320,7 @@ namespace Game.UI
             var skill = ConfigManager.Instance.GetSkill(skillId);
             string skillName = skill != null ? skill.name : "技能";
             player.ForgetSkill(skillId);
-            Debug.Log($"[技能] 遗忘技能 {skillName}");
+            Logger.LogI("技能", $"遗忘技能 {skillName}");
             RefreshUI();
         }
 

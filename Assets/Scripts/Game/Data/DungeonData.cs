@@ -85,7 +85,7 @@ namespace Game.Data
             floor = floorNum;
             rooms.Clear();
             currentRoomIndex = 0;
-            Debug.Log($"[地牢] 生成第 {floorNum} 层");
+            Logger.LogI("地牢", $"生成第 {floorNum} 层");
 
             // 核心生成：随机游走算法生成2D网格
             GenerateGrid();
@@ -93,7 +93,7 @@ namespace Game.Data
             // 从网格数据反向填充旧的线性列表，保持向后兼容
             SyncRoomsFromGrid();
 
-            Debug.Log($"[地牢] 第{floorNum}层生成完毕 网格={gridWidth}x{gridHeight} 房间数={roomTiles.Count}");
+            Logger.LogI("地牢", $"第{floorNum}层生成完毕 网格={gridWidth}x{gridHeight} 房间数={roomTiles.Count}");
         }
 
         /// <summary>将指定格子设为Room</summary>

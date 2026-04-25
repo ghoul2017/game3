@@ -273,7 +273,7 @@ namespace Game.Battle
         public void StartBattle(BattleData battleData)
         {
             CurrentBattle = battleData;
-            Debug.Log($"[战斗] 开始战斗 怪物={battleData.monster.name} HP={battleData.monster.hp}");
+            Logger.LogI("战斗", $"开始战斗 怪物={battleData.monster.name} HP={battleData.monster.hp}");
             CurrentBattle.isFinished = false;
             CurrentBattle.isVictory = false;
             CurrentBattle.playerBuffAttack = 0;
@@ -1130,7 +1130,7 @@ namespace Game.Battle
             b.rewardGold = goldReward;
             b.rewardItems.Clear();
 
-            Debug.Log($"[战斗] 胜利！怪物={m.name} 经验={expReward} 金币={goldReward}");
+            Logger.LogI("战斗", $"胜利！怪物={m.name} 经验={expReward} 金币={goldReward}");
             string msg = $"击败了 {m.name}！获得 {expReward} 经验，{goldReward} 金币";
 
             // 掉落物品
@@ -1166,7 +1166,7 @@ namespace Game.Battle
                 if (!p.defeatedBosses.Contains(m.id))
                 {
                     p.defeatedBosses.Add(m.id);
-                    Debug.Log($"[战斗] 记录Boss击杀：{m.name}(id={m.id})");
+                    Logger.LogI("战斗", $"记录Boss击杀：{m.name}(id={m.id})");
                 }
 
                 b.bossDefeated = true;
@@ -1197,7 +1197,7 @@ namespace Game.Battle
 
             // 失败惩罚：损失金币
             int lostGold = (int)(p.gold * GameConstants.DEFEAT_GOLD_LOSS_RATE);
-            Debug.Log($"[战斗] 失败！损失金币={lostGold}");
+            Logger.LogI("战斗", $"失败！损失金币={lostGold}");
             p.gold -= lostGold;
             p.dungeonFloor = Mathf.Max(1, p.dungeonFloor - 1);
             p.FullRestore();

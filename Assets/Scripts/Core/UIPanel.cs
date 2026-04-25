@@ -134,11 +134,11 @@ namespace Game.Core
             if (!isInitialized)
             {
                 isInitialized = true;
-                Debug.Log($"[Panel] OnInit -> {GetType().Name}");
+                Logger.LogD("Panel", $"OnInit -> {GetType().Name}");
                 OnInit();
             }
 
-            Debug.Log($"[Panel] Show -> {GetType().Name} 子物体数={transform.childCount}");
+            Logger.LogD("Panel", $"Show -> {GetType().Name} 子物体数={transform.childCount}");
 
             // 停止旧的过渡动画（不使用StopAllCoroutines，避免中断子类协程）
             if (transitionCoroutine != null)
@@ -230,7 +230,7 @@ namespace Game.Core
                 var comp = t.GetComponent<T>();
                 if (comp != null) return comp;
             }
-            Debug.LogWarning($"[UIPanel] FindComponent<{typeof(T).Name}> 失败: {GetType().Name}/{path}");
+            Logger.LogW("UIPanel", $"FindComponent<{typeof(T).Name}> 失败: {GetType().Name}/{path}");
             return null;
         }
 
@@ -241,7 +241,7 @@ namespace Game.Core
         {
             var t = transform.Find(path);
             if (t == null)
-                Debug.LogWarning($"[UIPanel] FindChild 失败: {GetType().Name}/{path}");
+                Logger.LogW("UIPanel", $"FindChild 失败: {GetType().Name}/{path}");
             return t;
         }
     }

@@ -74,7 +74,7 @@ namespace Game.UI
         {
             FindComponent<Button>("BtnDungeon").onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 进入地牢");
+                Logger.LogI("操作", "进入地牢");
                 var dungeon = new DungeonData();
                 dungeon.GenerateFloor(GameManager.Instance.Player.dungeonFloor > 0 ?
                     GameManager.Instance.Player.dungeonFloor : 1);
@@ -85,7 +85,7 @@ namespace Game.UI
 
             FindComponent<Button>("BtnRest").onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 休息恢复");
+                Logger.LogI("操作", "休息恢复");
                 GameManager.Instance.Player.FullRestore();
                 GameManager.Instance.SaveGame();
                 RefreshUI();
@@ -93,25 +93,25 @@ namespace Game.UI
 
             FindComponent<Button>("BtnShop").onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 打开商店");
+                Logger.LogI("操作", "打开商店");
                 UIManager.Instance.ShowPanel<ShopPanel>();
             });
 
             FindComponent<Button>("BtnSkill").onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 打开技能学习");
+                Logger.LogI("操作", "打开技能学习");
                 UIManager.Instance.ShowPanel<SkillLearnPanel>();
             });
 
             FindComponent<Button>("BtnRole").onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 查看角色信息");
+                Logger.LogI("操作", "查看角色信息");
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             });
 
             FindComponent<Button>("BtnSave").onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 存档退出");
+                Logger.LogI("操作", "存档退出");
                 GameManager.Instance.SaveGame();
                 GameManager.Instance.SetState(GameState.MainMenu);
                 UIManager.Instance.ReplacePanel<MainPanel>();

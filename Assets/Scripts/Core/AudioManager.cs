@@ -110,7 +110,7 @@ namespace Game.Core
             SoundVolume = sm.SfxVolume;
             MusicVolume = sm.MusicVolume;
 
-            Debug.Log("[AudioManager] 初始化完成 — SFX通道=5 Music通道=1 音效数=" + clipCache.Count);
+            Logger.LogI("AudioManager", "初始化完成 — SFX通道=5 Music通道=1 音效数=" + clipCache.Count);
         }
 
         /// <summary>

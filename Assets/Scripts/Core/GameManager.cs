@@ -29,7 +29,7 @@ namespace Game.Core
         public void SetState(GameState state)
         {
             State = state;
-            Debug.Log($"[Game] 状态切换 -> {state}");
+            Logger.LogI("Game", $"状态切换 -> {state}");
             GameHUD.UpdateVisibility(state);
         }
 
@@ -56,7 +56,7 @@ namespace Game.Core
             if (Player != null)
             {
                 DataManager.Instance.Save(Player);
-                Debug.Log("[GameManager] 存档成功");
+                Logger.LogI("GameManager", "存档成功");
             }
         }
     }

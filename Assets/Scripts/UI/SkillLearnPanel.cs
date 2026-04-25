@@ -500,7 +500,7 @@ namespace Game.UI
                 var skill = ConfigManager.Instance.GetSkill(skillId);
                 string skillName = skill != null ? skill.name : "技能";
                 player.ForgetSkill(skillId);
-                Debug.Log($"[技能] 遗忘技能 {skillName}");
+                Logger.LogI("技能", $"遗忘技能 {skillName}");
                 RefreshUI();
             }
             // 空槽位不响应（技能通过列表学习）
@@ -508,7 +508,7 @@ namespace Game.UI
 
         private void LearnSkill(int skillId, int cost)
         {
-            Debug.Log($"[技能] 学习技能 id={skillId} 花费={cost}");
+            Logger.LogI("技能", $"学习技能 id={skillId} 花费={cost}");
             var player = GameManager.Instance.Player;
             if (player.gold < cost || player.learnedSkills.Contains(skillId)) return;
             player.gold -= cost;
@@ -516,7 +516,7 @@ namespace Game.UI
             {
                 // 槽满：退还金币
                 player.gold += cost;
-                Debug.Log($"[技能] 技能槽已满，无法学习");
+                Logger.LogI("技能", "技能槽已满，无法学习");
             }
             RefreshUI();
         }

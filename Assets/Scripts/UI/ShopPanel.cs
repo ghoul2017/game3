@@ -194,7 +194,7 @@ namespace Game.UI
 
         private void BuyItem(int itemId, int price)
         {
-            Debug.Log($"[商店] 购买物品 id={itemId} 价格={price}");
+            Logger.LogI("商店", $"购买物品 id={itemId} 价格={price}");
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item != null && player.level < item.reqLevel) return; // 等级限制

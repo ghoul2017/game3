@@ -105,7 +105,7 @@ namespace Game.UI
         {
             btnNewGame.onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 点击 开始冒险");
+                Logger.LogI("操作", "点击 开始冒险");
                 ConfigManager.Instance.Init();
                 GameManager.Instance.NewGame();
                 GameManager.Instance.SetState(GameState.CreatingRole);
@@ -114,7 +114,7 @@ namespace Game.UI
 
             btnContinue.onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 点击 继续冒险");
+                Logger.LogI("操作", "点击 继续冒险");
                 ConfigManager.Instance.Init();
                 GameManager.Instance.ContinueGame();
                 if (GameManager.Instance.Player != null)
@@ -124,20 +124,20 @@ namespace Game.UI
                     GameManager.Instance.SetState(GameState.InTown);
                 }
                 else
-                    Debug.LogWarning("[操作] 继续冒险失败：无存档");
+                    Logger.LogW("操作", "继续冒险失败：无存档");
             });
 
             var btnSettings = FindComponent<Button>("BtnSettings");
             btnSettings.onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 点击 设置");
+                Logger.LogI("操作", "点击 设置");
                 UIManager.Instance.ShowPanel<SettingsPanel>();
             });
 
             var btnQuit = FindComponent<Button>("BtnQuit");
             btnQuit.onClick.AddListener(() =>
             {
-                Debug.Log("[操作] 点击 退出游戏");
+                Logger.LogI("操作", "点击 退出游戏");
                 Application.Quit();
 #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;

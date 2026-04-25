@@ -18,10 +18,10 @@ namespace Game.Core
         {
             if (!File.Exists(SavePath))
             {
-                Debug.Log("[系统] 无存档文件");
+                Logger.LogI("系统", "无存档文件");
                 return null;
             }
-            Debug.Log("[系统] 加载存档");
+            Logger.LogI("系统", "加载存档");
             try
             {
                 var json = File.ReadAllText(SavePath);
@@ -29,14 +29,14 @@ namespace Game.Core
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[DataManager] 读档失败: {e.Message}");
+                Logger.LogE("DataManager", $"读档失败: {e.Message}");
                 return null;
             }
         }
 
         public void Save(PlayerData data)
         {
-            Debug.Log("[系统] 保存存档");
+            Logger.LogI("系统", "保存存档");
             try
             {
                 var dir = Path.GetDirectoryName(SavePath);
@@ -46,7 +46,7 @@ namespace Game.Core
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[DataManager] 存档失败: {e.Message}");
+                Logger.LogE("DataManager", $"存档失败: {e.Message}");
             }
         }
 

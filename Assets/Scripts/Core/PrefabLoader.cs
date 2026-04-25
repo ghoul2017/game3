@@ -78,7 +78,7 @@ namespace Game.Core
             Cache[resourcePath] = prefab;
 
             if (prefab == null)
-                Debug.Log($"[PrefabLoader] 预制体未找到: Resources/{resourcePath}");
+                Logger.LogW("PrefabLoader", $"预制体未找到: Resources/{resourcePath}");
 
             return prefab;
         }

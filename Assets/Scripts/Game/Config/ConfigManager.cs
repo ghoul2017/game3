@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Game.Battle;
+using Game.Core;
 using UnityEngine;
 
 namespace Game.Config
@@ -28,7 +29,7 @@ namespace Game.Config
             InitMonsters();
             InitTreasures();
             InitBuffs();
-            Debug.Log("[ConfigManager] 配置加载完成");
+            Logger.LogI("ConfigManager", "配置加载完成");
         }
 
         public ProfessionConfig GetProfession(Profession prof)

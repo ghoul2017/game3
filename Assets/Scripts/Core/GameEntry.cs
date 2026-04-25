@@ -10,13 +10,13 @@ namespace Game.Core
     {
         private void Awake()
         {
-            Debug.Log("[GameEntry] 初始化音频系统");
+            Logger.LogI("GameEntry", "初始化音频系统");
             AudioManager.EnsureCreated();
         }
 
         private void Start()
         {
-            Debug.Log("[GameEntry] 方块与地下城 启动");
+            Logger.LogI("GameEntry", "方块与地下城 启动");
             UIManager.EnsureCreated();
             GameHUD.Create();  // 创建 HUD（初始隐藏）
             UIManager.Instance.ShowPanel<MainPanel>();

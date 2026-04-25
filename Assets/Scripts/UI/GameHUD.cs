@@ -1346,7 +1346,7 @@ namespace Game.UI
             var hudCanvas = uiMgr.GetHUDCanvas();
             if (hudCanvas == null)
             {
-                Debug.LogError("[GameHUD] HUD Canvas 不存在");
+                Logger.LogE("GameHUD", "HUD Canvas 不存在");
                 return null;
             }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Game.Config;
+using Game.Core;
 using UnityEngine;
 
 namespace Game.Data
@@ -162,7 +163,7 @@ namespace Game.Data
             {
                 exp -= GetExpToNextLevel();
                 level++;
-                Debug.Log($"[角色] 升级！Lv.{level}");
+                Logger.LogI("角色", $"升级！Lv.{level}");
                 var profCfg = ConfigManager.Instance.GetProfession(profession);
                 strength += profCfg.strGrow;
                 agility += profCfg.agiGrow;

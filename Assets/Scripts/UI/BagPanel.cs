@@ -224,7 +224,7 @@ namespace Game.UI
 
         private void EquipItem(int itemId)
         {
-            Debug.Log($"[背包] 装备物品 id={itemId}");
+            Logger.LogI("背包", $"装备物品 id={itemId}");
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
@@ -232,7 +232,7 @@ namespace Game.UI
             // 等级限制检查
             if (player.level < item.reqLevel)
             {
-                Debug.Log($"[背包] 等级不足，需要 {item.reqLevel} 级");
+                Logger.LogI("背包", $"等级不足，需要 {item.reqLevel} 级");
                 return;
             }
 
@@ -255,7 +255,7 @@ namespace Game.UI
 
         private void UseItem(int itemId)
         {
-            Debug.Log($"[背包] 使用物品 id={itemId}");
+            Logger.LogI("背包", $"使用物品 id={itemId}");
             var player = GameManager.Instance.Player;
             var item = ConfigManager.Instance.GetItem(itemId);
             if (item == null) return;
@@ -265,7 +265,7 @@ namespace Game.UI
             {
                 if (GameManager.Instance.State != GameState.InDungeon)
                 {
-                    Debug.Log("[背包] 回城卷轴仅在地牢中可用");
+                    Logger.LogI("背包", "回城卷轴仅在地牢中可用");
                     if (infoText != null) infoText.text = "回城卷轴仅在地牢中可用";
                     return;
                 }
@@ -300,15 +300,15 @@ namespace Game.UI
             {
                 case ConsumableEffectType.AtkBuff:
                     player.atkBuffBattles += item.consumableEffectValue;
-                    Debug.Log($"[背包] 兴奋剂：ATK+20%，持续 {player.atkBuffBattles} 场战斗");
+                    Logger.LogI("背包", $"兴奋剂：ATK+20%，持续 {player.atkBuffBattles} 场战斗");
                     break;
                 case ConsumableEffectType.Shield:
                     player.hasShieldScroll = true;
-                    Debug.Log("[背包] 护盾卷轴：下次受伤减伤50%");
+                    Logger.LogI("背包", "护盾卷轴：下次受伤减伤50%");
                     break;
                 case ConsumableEffectType.ExpBoost:
                     player.hasExpBoost = true;
-                    Debug.Log("[背包] 经验书：下一场战斗经验+50%");
+                    Logger.LogI("背包", "经验书：下一场战斗经验+50%");
                     break;
             }
 
@@ -318,7 +318,7 @@ namespace Game.UI
 
         private void SellItem(int itemId, int price)
         {
-            Debug.Log($"[背包] 出售物品 id={itemId} 价格={price}");
+            Logger.LogI("背包", $"出售物品 id={itemId} 价格={price}");
             var player = GameManager.Instance.Player;
             player.bagItems.Remove(itemId);
             player.gold += price;

@@ -107,7 +107,7 @@ namespace Game.Core
             var panel = GetOrCreatePanel<T>(canvasWindow.transform);
             panel.Show();
             currentWindow = panel;
-            Debug.Log($"[UI] ShowWindow<{typeof(T).Name}>");
+            Logger.LogI("UI", $"ShowWindow<{typeof(T).Name}>");
             return panel;
         }
 
@@ -119,7 +119,7 @@ namespace Game.Core
         {
             if (currentWindow == null) return;
 
-            Debug.Log($"[UI] CloseWindow 关闭={currentWindow.GetType().Name}");
+            Logger.LogI("UI", $"CloseWindow 关闭={currentWindow.GetType().Name}");
             CloseWindowInternal();
         }
 
@@ -159,7 +159,7 @@ namespace Game.Core
         public T ShowPanel<T>() where T : UIPanel
         {
             string panelName = typeof(T).Name;
-            Debug.Log($"[UI] ShowPanel<{panelName}> 栈深度={panelStack.Count}");
+            Logger.LogI("UI", $"ShowPanel<{panelName}> 栈深度={panelStack.Count}");
             // 隐藏栈顶
             if (panelStack.Count > 0)
             {
@@ -182,7 +182,7 @@ namespace Game.Core
             if (panelStack.Count == 0) return;
 
             var current = panelStack.Pop();
-            Debug.Log($"[UI] Back 关闭={current.GetType().Name} 栈深度={panelStack.Count}");
+            Logger.LogI("UI", $"Back 关闭={current.GetType().Name} 栈深度={panelStack.Count}");
             current.Hide();
 
             if (panelStack.Count > 0)
@@ -202,12 +202,12 @@ namespace Game.Core
             if (panelStack.Count > 0)
             {
                 var old = panelStack.Pop();
-                Debug.Log($"[UI] ReplacePanel<{panelName}> 替换={old.GetType().Name}");
+                Logger.LogI("UI", $"ReplacePanel<{panelName}> 替换={old.GetType().Name}");
                 old.Hide();
             }
             else
             {
-                Debug.Log($"[UI] ReplacePanel<{panelName}> (空栈)");
+                Logger.LogI("UI", $"ReplacePanel<{panelName}> (空栈)");
             }
             return ShowPanel<T>();
         }
