@@ -38,6 +38,7 @@ namespace Game.Core
 
             instance = new UIManager();
             instance.InitCanvas();
+            instance.InitTipManager();
             return instance;
         }
 
@@ -56,6 +57,16 @@ namespace Game.Core
                 esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
                 Object.DontDestroyOnLoad(esObj);
             }
+        }
+
+        /// <summary>
+        /// 在 Tip Canvas 上初始化 TipManager 单例
+        /// </summary>
+        private void InitTipManager()
+        {
+            var tipObj = new GameObject("TipManager");
+            tipObj.transform.SetParent(canvasTip.transform, false);
+            tipObj.AddComponent<TipManager>();
         }
 
         /// <summary>
