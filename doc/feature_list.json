@@ -346,7 +346,7 @@
 
   {"id":"F173","category":"ui/window","priority":5,"desc":"SkillLearnWindow技能学习窗口。继承WindowBase(750x520)，7标签页+技能列表+学习按钮，槽满提示先遗忘，移除装备槽逻辑","steps":["1. 新建 Assets/Scripts/UI/SkillLearnWindow.cs，继承WindowBase","2. BuildContent(): 顶部已学X/6+金币, 7标签页TabBar, 技能列表ScrollRect(对象池20行)","3. 每行：[类型标]名称 power% MP消耗 描述 [学习按钮|已学标记]","4. 学习检查：未学+前置满足+金币够+槽位(learnedSkills.Count<6)+等级够","5. 槽满提示技能槽已满(6/6)，请先遗忘再学习","6. 移除装备槽/选择装备相关逻辑（与原SkillLearnPanel的区别）"],"passes":true},
 
-  {"id":"F174","category":"ui/window","priority":5,"desc":"ThreeChooseOneWindow神殿/商人3选1窗口。神殿：3个随机未学技能免费选1学，全已学兜底恢复50%HP；商人：3件随机物品8折选1买","steps":["1. 新建 Assets/Scripts/UI/ThreeChooseOneWindow.cs，继承WindowBase(500x380)","2. BuildContent(): 标题描述+3个选项卡片(200x80)+离开按钮","3. 神殿模式(Shrine): 3个未学技能随机选1免费学习→AutoTip提示","4. 神殿全已学兜底: 显示恢复50%HP→点击接受","5. 商人模式(Merchant): 3件随机物品8折选1购买","6. 选择后关闭窗口"],"passes":false},
+  {"id":"F174","category":"ui/window","priority":5,"desc":"ThreeChooseOneWindow神殿/商人3选1窗口。神殿：3个随机未学技能免费选1学，全已学兜底恢复50%HP；商人：3件随机物品8折选1买","steps":["1. 新建 Assets/Scripts/UI/ThreeChooseOneWindow.cs，继承WindowBase(500x380)","2. BuildContent(): 标题描述+3个选项卡片(200x80)+离开按钮","3. 神殿模式(Shrine): 3个未学技能随机选1免费学习→AutoTip提示","4. 神殿全已学兜底: 显示恢复50%HP→点击接受","5. 商人模式(Merchant): 3件随机物品8折选1购买","6. 选择后关闭窗口"],"passes":true},
 
   {"id":"F175","category":"ui/tips","priority":5,"desc":"Tip系统全面接入。怪物/宝物/泉水等瓦片悬停HoverTip+战斗胜利/宝箱/泉水奖励AutoTip","steps":["1. DungeonPanel中给怪物/精英/Boss瓦片添加IPointerEnter/Exit事件","2. HoverTip内容：怪物名+HP/ATK/DEF/SPD+状态效果（从ConfigManager读取）","3. 宝箱/泉水/神殿/商人瓦片悬停显示简短描述","4. 战斗胜利AutoTip: 获得{exp}经验{gold}金币+物品","5. 宝箱AutoTip: 获得{gold}金币+宝物/物品","6. 泉水AutoTip: 恢复{hp}HP{mp}MP","7. 位置：被交互瓦片的屏幕坐标上方"],"passes":false},
 

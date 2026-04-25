@@ -103,3 +103,4 @@
 2026-04-25 F171 COMPLETED - 地牢内联战斗集成：DungeonPanel订阅BattleController事件+点击怪触发内联战斗+再次点击执行回合+tile闪红动画+胜利清房AutoTip+战败回城
 2026-04-25 F172 COMPLETED - ShopWindow商店/商人窗口：双模式(Town全商店翻页+Merchant3件8折)+继承WindowBase+对象池物品行+购买逻辑
 2026-04-25 F173 COMPLETED - SkillLearnWindow技能学习窗口：继承WindowBase(750x520)+7标签页+对象池20行+学习检查+槽满提示+遗忘按钮
+2026-04-25 F174 COMPLETED - ThreeChooseOneWindow神殿/商人3选1窗口：继承WindowBase(500x380)+双模式(神殿3技能免费选1+兜底恢复50%HP/商人3物品8折选1)+卡片式UI+AutoTip提示
