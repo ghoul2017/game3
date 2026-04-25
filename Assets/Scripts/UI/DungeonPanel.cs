@@ -29,7 +29,6 @@ namespace Game.UI
         private static readonly Color ColorBoss      = HexColor(0x8e44ad);      // 深紫
         private static readonly Color ColorExit      = HexColor(0xbdc3c7);      // 灰白
         private static readonly Color ColorEmpty     = HexColor(0x2c3e50);      // 暗蓝灰
-        private static readonly Color ColorCurrentOutline = HexColor(0xc8a24c); // 金色边框
         private static readonly Color ColorClearedOverlay = new Color(0.5f, 0.5f, 0.5f, 0.35f); // 灰色半透明
         private static readonly Color ColorFogHidden   = new Color(0f, 0f, 0f, 1f);            // 未探索：纯黑不透明
         private static readonly Color ColorFogExplored = new Color(0f, 0f, 0f, 0.6f);          // 已探索：黑色半透明
@@ -74,13 +73,8 @@ namespace Game.UI
         private Text msgBtnOption2Label;
         private RectTransform msgBtnContinueRt;
 
-        // ---- 移动状态 ----
-        private bool isMoving;           // 移动动画进行中，阻止连续输入
-        private const float MoveDuration = 0.2f; // 平滑移动过渡时长（秒）
-        private CanvasGroup cachedCanvasGroup;   // 缓存，避免每帧 GetComponent
-
         // ---- 战斗回传：战斗结束后标记对应房间 isCleared ----
-        private DungeonTile pendingBattleTile;
+        private DungeonTile activeBattleTile;
 
         // ---- 缓存引用 ----
         private Text titleText;
@@ -95,9 +89,6 @@ namespace Game.UI
 
         // 网格瓦片对象池
         private GridTile[] gridTiles;
-
-        // 当前房间高亮边框
-        private Image currentRoomOutline;
 
         private struct GridTile
         {
@@ -189,29 +180,6 @@ namespace Game.UI
             scrollRect.elasticity = 0.1f;
             scrollRect.scrollSensitivity = 1f;
             scrollRect.decelerationRate = 0.135f;
-
-            // 当前房间高亮边框（独立于瓦片池，仅一个）
-            var outlineObj = new GameObject("CurrentOutline");
-            outlineObj.transform.SetParent(contentRt, false);
-            var outlineRt = outlineObj.AddComponent<RectTransform>();
-            outlineRt.sizeDelta = new Vector2(DefaultCellSize, DefaultCellSize);
-            outlineRt.anchorMin = new Vector2(0, 1);
-            outlineRt.anchorMax = new Vector2(0, 1);
-            outlineRt.pivot = new Vector2(0, 1);
-            var outlineImg = outlineObj.AddComponent<Image>();
-            outlineImg.color = ColorCurrentOutline;
-            outlineImg.raycastTarget = false;
-
-            var outlineInner = new GameObject("Inner");
-            outlineInner.transform.SetParent(outlineObj.transform, false);
-            var oiRt = outlineInner.AddComponent<RectTransform>();
-            oiRt.anchorMin = Vector2.zero;
-            oiRt.anchorMax = Vector2.one;
-            oiRt.offsetMin = new Vector2(3, 3);
-            oiRt.offsetMax = new Vector2(-3, -3);
-            var oiImg = outlineInner.AddComponent<Image>();
-            oiImg.color = Color.clear;
-            oiImg.raycastTarget = false;
 
             // 网格瓦片对象池（最大 100 = 10x10）
             for (int i = 0; i < MaxTiles; i++)
@@ -452,7 +420,6 @@ namespace Game.UI
 
         protected override void BindReferences()
         {
-            cachedCanvasGroup = GetComponent<CanvasGroup>();
             titleText = FindComponent<Text>("TitleBar/Title");
             statusText = FindComponent<Text>("StatusBar/StatusText");
 
@@ -460,9 +427,6 @@ namespace Game.UI
             mapScrollRect = FindComponent<ScrollRect>("MapPanel/Inner/Viewport");
             mapContent = FindComponent<RectTransform>("MapPanel/Inner/Viewport/Content");
             mapViewport = transform.Find("MapPanel/Inner/Viewport").gameObject;
-
-            // 当前房间高亮边框
-            currentRoomOutline = FindComponent<Image>("MapPanel/Inner/Viewport/Content/CurrentOutline");
 
             // 网格瓦片对象池
             gridTiles = new GridTile[MaxTiles];
@@ -633,18 +597,18 @@ namespace Game.UI
             AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Dungeon, 1.0f);
 
             // 战斗面板关闭后回到地牢面板：检查是否有战斗胜利待处理
-            if (pendingBattleTile != null)
+            if (activeBattleTile != null)
             {
                 var battle = BattleManager.Instance.CurrentBattle;
                 if (battle != null && battle.isFinished && battle.isVictory)
                 {
                     // 战斗胜利：标记房间为已清理
-                    pendingBattleTile.isCleared = true;
-                    var room = FindMatchingRoom(GameManager.Instance.Dungeon, pendingBattleTile);
+                    activeBattleTile.isCleared = true;
+                    var room = FindMatchingRoom(GameManager.Instance.Dungeon, activeBattleTile);
                     room.cleared = true;
-                    Debug.Log($"[地牢] 战斗胜利，房间已清理 pos=({pendingBattleTile.gridPos.x},{pendingBattleTile.gridPos.y})");
+                    Debug.Log($"[地牢] 战斗胜利，房间已清理 pos=({activeBattleTile.gridPos.x},{activeBattleTile.gridPos.y})");
                 }
-                pendingBattleTile = null;
+                activeBattleTile = null;
             }
 
             RefreshUI();
@@ -663,10 +627,7 @@ namespace Game.UI
             titleText.text = $"地牢 第{dungeon.floor} 层";
 
             // 顶部状态栏
-            var curTile = dungeon.CurrentTile;
-            statusText.text = curTile != null
-                ? $"坐标 ({dungeon.currentPos.x},{dungeon.currentPos.y})  房间数 {dungeon.roomTiles.Count}"
-                : "";
+            statusText.text = $"房间数 {dungeon.roomTiles.Count}  点击房间探索";
 
             // 右侧状态面板
             hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
@@ -728,9 +689,6 @@ namespace Game.UI
             // 更新 content 尺寸
             mapContent.sizeDelta = new Vector2(w * cellSize, h * cellSize);
 
-            // 隐藏当前房间高亮
-            bool currentFound = false;
-
             // 遍历所有瓦片
             for (int y = 0; y < h; y++)
             {
@@ -741,7 +699,6 @@ namespace Game.UI
 
                     var tile = gridTiles[idx];
                     var dungeonTile = dungeon.grid[x, y];
-                    bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
 
                     // 获取可见性状态
                     var visibility = dungeon.GetTileVisibility(x, y);
@@ -757,7 +714,7 @@ namespace Game.UI
                     // === 战争迷雾渲染 ===
                     if (visibility == TileVisibility.Hidden)
                     {
-                        // 未探索：纯黑覆盖，不显示任何内容
+                        // 未探索：纯黑覆盖，不显示任何内容，不可点击
                         tile.bg.color = ColorWall;
                         tile.overlay.color = Color.clear;
                         tile.fogOverlay.color = ColorFogHidden;
@@ -774,6 +731,7 @@ namespace Game.UI
                             tile.overlay.color = Color.clear;
                             tile.iconText.text = "";
                             tile.typeLabel.text = "";
+                            tile.btn.interactable = false;
                         }
                         else
                         {
@@ -781,21 +739,16 @@ namespace Game.UI
                             var roomColor = GetTileColor(dungeonTile.roomType);
                             tile.bg.color = new Color(roomColor.r, roomColor.g, roomColor.b, 0.4f);
                             tile.iconText.text = GetTileIcon(dungeonTile.roomType);
-                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType, false);
+                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType);
 
                             // 已清房间再加灰色叠加
-                            if (dungeonTile.isCleared)
-                            {
-                                tile.overlay.color = ColorExploredCleared;
-                            }
-                            else
-                            {
-                                tile.overlay.color = Color.clear;
-                            }
+                            tile.overlay.color = dungeonTile.isCleared ? ColorExploredCleared : Color.clear;
+
+                            // 已探索的 Room 瓦片可点击
+                            tile.btn.interactable = true;
                         }
 
                         tile.fogOverlay.color = ColorFogExplored;
-                        tile.btn.interactable = false;
                     }
                     else // Visible
                     {
@@ -812,37 +765,16 @@ namespace Game.UI
                         {
                             tile.bg.color = GetTileColor(dungeonTile.roomType);
                             tile.iconText.text = GetTileIcon(dungeonTile.roomType);
-                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType, isCurrent);
+                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType);
 
                             // 已清房间覆盖灰色半透明
-                            if (dungeonTile.isCleared && !isCurrent)
-                            {
-                                tile.overlay.color = ColorClearedOverlay;
-                            }
-                            else
-                            {
-                                tile.overlay.color = Color.clear;
-                            }
+                            tile.overlay.color = dungeonTile.isCleared ? ColorClearedOverlay : Color.clear;
 
-                            // 只有当前房间和相邻可达房间可交互
-                            tile.btn.interactable = isCurrent || IsAdjacentToCurrent(dungeon, x, y);
+                            // 可见的 Room 瓦片可点击
+                            tile.btn.interactable = true;
                         }
 
                         tile.fogOverlay.color = ColorFogVisible;
-                    }
-
-                    // 当前房间高亮（仅可见状态下显示）
-                    if (isCurrent && dungeonTile.tileType == TileType.Room && visibility == TileVisibility.Visible)
-                    {
-                        currentFound = true;
-                        currentRoomOutline.rectTransform.pivot = new Vector2(0, 1);
-                        currentRoomOutline.rectTransform.anchorMin = new Vector2(0, 1);
-                        currentRoomOutline.rectTransform.anchorMax = new Vector2(0, 1);
-                        // 动画进行中不覆盖位置，由协程控制
-                        if (!isMoving)
-                            currentRoomOutline.rectTransform.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
-                        currentRoomOutline.rectTransform.sizeDelta = new Vector2(cellSize, cellSize);
-                        currentRoomOutline.gameObject.SetActive(true);
                     }
                 }
             }
@@ -853,32 +785,6 @@ namespace Game.UI
             {
                 gridTiles[i].obj.SetActive(false);
             }
-
-            if (!currentFound)
-            {
-                currentRoomOutline.gameObject.SetActive(false);
-            }
-        }
-
-        /// <summary>判断指定坐标是否与当前玩家位置相邻且连通</summary>
-        private bool IsAdjacentToCurrent(DungeonData dungeon, int x, int y)
-        {
-            var cp = dungeon.currentPos;
-            int dx = x - cp.x;
-            int dy = y - cp.y;
-            // 必须上下左右相邻（距离=1）
-            if (Mathf.Abs(dx) + Mathf.Abs(dy) != 1) return false;
-            // 检查当前瓦片对应方向的连通性
-            var currentTile = dungeon.CurrentTile;
-            if (currentTile == null) return false;
-            // 上(y-1) 下(y+1) 左(x-1) 右(x+1)
-            if (dy == -1 && !currentTile.connectUp) return false;
-            if (dy == 1 && !currentTile.connectDown) return false;
-            if (dx == -1 && !currentTile.connectLeft) return false;
-            if (dx == 1 && !currentTile.connectRight) return false;
-            // 目标必须是房间
-            var tile = dungeon.GetTileAt(x, y);
-            return tile != null && tile.tileType == TileType.Room;
         }
 
         /// <summary>根据房间类型获取颜色</summary>
@@ -916,9 +822,8 @@ namespace Game.UI
         }
 
         /// <summary>根据房间类型获取类型名</summary>
-        private string GetTileTypeName(DungeonEventType roomType, bool isCurrent)
+        private string GetTileTypeName(DungeonEventType roomType)
         {
-            if (isCurrent) return "当前";
             return roomType switch
             {
                 DungeonEventType.Monster => "怪物",
@@ -933,68 +838,59 @@ namespace Game.UI
             };
         }
 
-        /// <summary>网格瓦片点击处理：通过 index 反算 GridPos</summary>
+        /// <summary>网格瓦片点击处理：点击已揭示的Room瓦片直接触发事件，边缘瓦片揭示迷雾</summary>
         private void OnClickGridTile(int index)
         {
             var dungeon = GameManager.Instance.Dungeon;
             if (dungeon.grid == null) return;
-            if (isMoving) return;
 
             int w = dungeon.gridWidth;
             int x = index % w;
             int y = index / w;
 
-            // 当前位置点击：不移动，但可触发房间事件
-            bool isCurrent = dungeon.currentPos.x == x && dungeon.currentPos.y == y;
-            if (isCurrent)
-            {
-                var curTile = dungeon.CurrentTile;
-                if (curTile != null && !curTile.isCleared)
-                    TriggerRoomEvent(dungeon, curTile);
-                RefreshUI();
-                return;
-            }
-
-            // 检查相邻且连通
-            if (!IsAdjacentToCurrent(dungeon, x, y)) return;
-
             var tile = dungeon.GetTileAt(x, y);
-            if (tile == null || tile.tileType != TileType.Room) return;
+            if (tile == null) return;
 
-            // 执行移动
-            TryMoveTo(dungeon, x, y);
-        }
+            var visibility = dungeon.GetTileVisibility(x, y);
 
-        /// <summary>尝试移动到指定相邻坐标（点击/键盘共用入口）</summary>
-        private void TryMoveTo(DungeonData dungeon, int targetX, int targetY)
-        {
-            if (isMoving) return;
+            // Hidden 状态不响应
+            if (visibility == TileVisibility.Hidden) return;
 
-            var tile = dungeon.GetTileAt(targetX, targetY);
-            if (tile == null || tile.tileType != TileType.Room) return;
+            // 边缘瓦片揭示迷雾：如果该瓦片相邻有未探索瓦片，则将其揭示
+            RevealAdjacentFog(dungeon, x, y);
 
-            // 检查是否为新发现的房间（迷雾揭开）
-            bool wasHidden = !tile.isExplored;
+            // Explored/Visible 状态的 Room 瓦片：直接触发事件
+            if (tile.tileType != TileType.Room) return;
+            if (tile.isCleared) return;
 
-            // 更新战争迷雾 + 移动数据
-            dungeon.OnMoveTo(new GridPos(targetX, targetY));
-            dungeon.currentRoomIndex = FindRoomIndex(dungeon, targetX, targetY);
-            AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Move);
-            if (wasHidden)
-                AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_Discover);
-
-            // 平滑移动指示器动画
-            StartCoroutine(SmoothMoveIndicator(targetX, targetY, () =>
-            {
-                // 动画完成后处理房间事件
-                if (!tile.isCleared)
-                    TriggerRoomEvent(dungeon, tile);
-                RefreshUI();
-            }));
-
-            // 立即刷新地图（迷雾/瓦片状态）
+            TriggerRoomEvent(dungeon, tile);
             RefreshUI();
         }
+
+        /// <summary>揭示指定坐标相邻的迷雾瓦片（点击边缘Explored瓦片时触发）</summary>
+        private void RevealAdjacentFog(DungeonData dungeon, int cx, int cy)
+        {
+            bool revealed = false;
+            for (int i = 0; i < 4; i++)
+            {
+                int nx = cx + DirX[i];
+                int ny = cy + DirY[i];
+                var neighbor = dungeon.GetTileAt(nx, ny);
+                if (neighbor != null && !neighbor.isExplored)
+                {
+                    neighbor.isExplored = true;
+                    revealed = true;
+                }
+            }
+            if (revealed)
+            {
+                RefreshUI();
+            }
+        }
+
+        // 四方向偏移（上、下、左、右）
+        private static readonly int[] DirX = { 0, 0, -1, 1 };
+        private static readonly int[] DirY = { -1, 1, 0, 0 };
 
         /// <summary>处理房间事件逻辑</summary>
         private void TriggerRoomEvent(DungeonData dungeon, DungeonTile tile)
@@ -1020,7 +916,7 @@ namespace Game.UI
                     break;
                 case DungeonEventType.Exit:
                     Debug.Log("[地牢] 进入下一层");
-                    HandleExit();
+                    HandleExit(tile);
                     break;
                 case DungeonEventType.Shrine:
                     Debug.Log("[地牢] 发现神殿");
@@ -1031,40 +927,6 @@ namespace Game.UI
                     HandleEmptyRoom(dungeon, tile);
                     break;
             }
-        }
-
-        /// <summary>平滑移动玩家位置指示器（Lerp过渡）</summary>
-        private System.Collections.IEnumerator SmoothMoveIndicator(int targetX, int targetY, System.Action onComplete)
-        {
-            isMoving = true;
-            float elapsed = 0f;
-            Vector2 startPos = currentRoomOutline.rectTransform.anchoredPosition;
-            Vector2 endPos = new Vector2(targetX * cellSize, -targetY * cellSize);
-
-            while (elapsed < MoveDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / MoveDuration);
-                // 缓动：SmoothStep
-                t = t * t * (3f - 2f * t);
-                currentRoomOutline.rectTransform.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
-                yield return null;
-            }
-
-            currentRoomOutline.rectTransform.anchoredPosition = endPos;
-            isMoving = false;
-            onComplete?.Invoke();
-        }
-
-        /// <summary>在旧 rooms 列表中查找匹配的房间索引（向后兼容）</summary>
-        private int FindRoomIndex(DungeonData dungeon, int x, int y)
-        {
-            for (int i = 0; i < dungeon.rooms.Count; i++)
-            {
-                if (dungeon.rooms[i].position.x == x && dungeon.rooms[i].position.y == y)
-                    return i;
-            }
-            return dungeon.currentRoomIndex;
         }
 
         /// <summary>处理战斗事件</summary>
@@ -1080,7 +942,7 @@ namespace Game.UI
                 // Boss战：显示警告弹窗，玩家确认后进入战斗
                 if (tile.roomType == DungeonEventType.Boss)
                 {
-                    pendingBattleTile = tile;
+                    activeBattleTile = tile;
                     pendingMessage = $"强大的敌人出现了！\n{monsterCfg.name} 挡住了去路！\n\n无法从这里逃跑...";
                     msgBtnContinueLabel.text = "迎战";
                     // 存储Boss配置供确认后使用
@@ -1102,7 +964,7 @@ namespace Game.UI
         private void StartBattleWithConfig(DungeonData dungeon, DungeonTile tile, MonsterConfig monsterCfg)
         {
             // 记录战斗对应的瓦片，战斗胜利后标记 isCleared
-            pendingBattleTile = tile;
+            activeBattleTile = tile;
 
             float floorScale = 1f + (dungeon.floor - 1) * 0.12f;
             float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
@@ -1259,17 +1121,16 @@ namespace Game.UI
         }
 
         /// <summary>出口处理：显示确认弹窗，点击继续进入下一层</summary>
-        private void HandleExit()
+        private void HandleExit(DungeonTile tile)
         {
             var currentDungeon = GameManager.Instance.Dungeon;
             int nextFloor = currentDungeon.floor + 1;
 
             // 标记出口房间为已清理
-            var exitTile = currentDungeon.CurrentTile;
-            if (exitTile != null)
+            if (tile != null)
             {
-                exitTile.isCleared = true;
-                var exitRoom = FindMatchingRoom(currentDungeon, exitTile);
+                tile.isCleared = true;
+                var exitRoom = FindMatchingRoom(currentDungeon, tile);
                 exitRoom.cleared = true;
             }
 
@@ -1683,12 +1544,11 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 滚轮缩放 + 键盘移动（WASD/方向键）
+        /// 滚轮缩放
         /// </summary>
         private void Update()
         {
             HandleScrollZoom();
-            HandleKeyboardMove();
         }
 
         private void HandleScrollZoom()
@@ -1720,47 +1580,5 @@ namespace Game.UI
             }
         }
 
-        /// <summary>键盘移动：WASD/方向键，检查连通方向后移动</summary>
-        private void HandleKeyboardMove()
-        {
-            if (isMoving) return;
-
-            // 面板隐藏时（CanvasGroup alpha=0）不响应
-            if (cachedCanvasGroup != null && cachedCanvasGroup.alpha < 0.5f) return;
-
-            var dungeon = GameManager.Instance.Dungeon;
-            if (dungeon == null || dungeon.grid == null) return;
-
-            // 消息覆盖层打开时不响应键盘移动
-            if (!string.IsNullOrEmpty(pendingMessage)) return;
-
-            var currentTile = dungeon.CurrentTile;
-            if (currentTile == null) return;
-
-            // 读取方向输入（WASD + 方向键）
-            int dx = 0, dy = 0;
-            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;    // 上（y-1）
-            else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) dy = 1;  // 下（y+1）
-            else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1; // 左（x-1）
-            else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) dx = 1; // 右（x+1）
-            else return; // 无方向键按下
-
-            // 检查当前瓦片对应方向的连通性
-            bool connected = false;
-            if (dy == -1) connected = currentTile.connectUp;
-            else if (dy == 1) connected = currentTile.connectDown;
-            else if (dx == -1) connected = currentTile.connectLeft;
-            else if (dx == 1) connected = currentTile.connectRight;
-
-            if (!connected) return;
-
-            int targetX = dungeon.currentPos.x + dx;
-            int targetY = dungeon.currentPos.y + dy;
-
-            // 边界检查
-            if (!dungeon.IsInBounds(targetX, targetY)) return;
-
-            TryMoveTo(dungeon, targetX, targetY);
-        }
     }
 }
