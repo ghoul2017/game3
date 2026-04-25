@@ -90,3 +90,4 @@
 2026-04-25 F153 COMPLETED - 视听打磨：伤害浮动数字(8对象池+飘移淡出)+Boss屏幕震动(±5px)+面板过渡动画(FadeIn0.2s/FadeOut0.15s)+配色常量统一+性能检查
 2026-04-25 F111 COMPLETED - 拆分UIBuilder为独立模块：UIColors(37颜色常量)+UIFactory(12控件创建方法)+UIPool(对象池)，UIBuilder保留门面向后兼容
 2026-04-25 F160 COMPLETED - 技能系统改造：取消装备槽概念，learnedSkills即可用技能，MAX_SKILL_SLOTS 4→6，新增ForgetSkill+槽满检查
+2026-04-25 F161 COMPLETED - UIManager三层Canvas架构：HUD(5)/Window(10)/Tip(20)独立Canvas+ShowWindow/CloseWindow/GetHUDCanvas+旧API兼容

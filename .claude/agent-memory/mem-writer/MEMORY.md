@@ -1,0 +1,22 @@
+# Memory Index (mem-writer agent)
+
+- [深色主题UI配色规范](biz-dark-theme.md) — F128配色+F111模块拆分：UIColors(颜色唯一来源)/UIFactory(控件)/UIPool(对象池)/UIBuilder(门面)
+- [音频系统架构](arch-audio-system.md) — AudioManager单例/SFX池/BGM Crossfade/场景音乐流转(C152)/音量分离
+- [战斗速度系统](arch-battle-speed.md) — F130速度公式/回合顺序判定/速度闪避机制/加速减速Buff/执行时序
+- [网格地牢架构与迁移计划](arch-dungeon-grid.md) — F131-F136 数据模型、F132生成算法、F133渲染坐标映射与旧数据兼容、分阶段迁移策略
+- [网格地图UI架构](arch-grid-map-ui.md) — F133 ScrollRect挂载位置、CurrentOutline独立高亮、滚轮缩放、房间着色方案
+- [战争迷雾系统架构](arch-fog-of-war.md) — F134 三态迷雾(实时计算非持久化)、InitVisibility时序陷阱、FogOverlay渲染层
+- [玩家网格移动架构](arch-player-grid-movement.md) — F135 连通性检查用connectXxx字段、isMoving锁+协程、RefreshUI先于动画、键盘三重守卫
+- [网格房间事件触发架构](arch-room-event-trigger.md) — F136-F137 战斗回传/出口确认/空房间随机事件双选项MsgOverlay、降级处理、概率注释勘误
+- [状态效果系统架构](arch-status-effect.md) — F138 三类效果(DoT/控制/属性修正)、叠加规则、Tick时序、新旧buff共存
+- [状态效果技能架构](arch-status-effect-skills.md) — F139 StatusAttack类型设计、CalcStatusEffectValue数值分发、眩晕duration+1陷阱
+- [统一回合流程架构](arch-unified-round.md) — F140 四阶段回合(RoundStart->Action->Action->RoundEnd)、兼容包装器、逃跑独立路径、手动/自动两种调用链
+- [战斗系统待修复警告](debug-battle-warnings.md) — F140验证发现：dodgeChance无上限、StatusEffect不必要堆分配、null保护缺失
+- [怪物AI模式架构](arch-monster-ai.md) — F141+F147 五种AI行为模式、28种怪物分配、Boss三阶段阈值、mp字段陷阱、楼层分布(maxFloor=0无上限)
+- [UIPanel协程动画时序陷阱与修复](debug-panel-coroutine-trap.md) — Show()/Hide()改为只停transitionCoroutine(F153修复)、FadeOut中断OnHide不调用、displayValue防御仍必要
+- [Boss战系统架构](arch-boss-battle.md) — F143 五层Boss配置/警告弹窗复用/逃跑双保险禁用/专属BGM/必掉装备/击杀记录/GetBossByFloor精确匹配陷阱
+- [技能系统通用化与标签页架构](arch-skill-universal.md) — F144-F145 全职业通用+18通用技能(6001-6018)+Debuff/DoT/Control归控制标签页+SkillPoolSize=48+Burn效果+被动触发路径
+- [技能系统改造](arch-skill-equip-slots.md) — F160 取消装备槽，learnedSkills即可用技能，容量6，equippedSkills[Obsolete]兼容旧存档，槽满退还金币
+- [伤害公式与金币奖励机制](arch-damage-formula.md) — F150 乘法防御模型(DEFENSE_REDUCTION_RATE=0.6)、伤害浮动0.15、Boss/普通怪金币缩放双路径
+- [战斗视觉效果架构](arch-battle-visual-effects.md) — F153 伤害浮动数字(日志驱动+lastProcessedLogCount去重)、Boss震动信号(bossSkillTriggered一次性标记)、面板过渡(精准停协程)
+- [UIManager三层Canvas架构](arch-ui-three-canvas.md) — F161 HUD/Window/Tip三层Canvas(sortingOrder:5/10/20)、panelCache跨层互斥、GetOrCreatePanel自动重挂载
