@@ -1,5 +1,6 @@
 using UnityEngine;
 using Game.Data;
+using Game.UI;
 
 namespace Game.Core
 {
@@ -29,6 +30,7 @@ namespace Game.Core
         {
             State = state;
             Debug.Log($"[Game] 状态切换 -> {state}");
+            GameHUD.UpdateVisibility(state);
         }
 
         public bool HasSave()

@@ -17,6 +17,10 @@ namespace Game.UI
     /// </summary>
     public class GameHUD : UIPanel
     {
+        private static GameHUD _instance;
+        /// <summary>运行时单例，由 Create() 设置</summary>
+        public static GameHUD Instance => _instance;
+
         // ============ 布局常量 ============
         private const float RIGHT_PANEL_WIDTH = 260f;
         private const float BOTTOM_BAR_HEIGHT = 70f;
@@ -68,6 +72,9 @@ namespace Game.UI
         private Text forgetMsgText;
         private Button forgetConfirmBtn;
         private int pendingForgetSlotIndex = -1;
+
+        // 城镇地图
+        private TownMapController townMapController;
 
         /// <summary>技能槽结构体</summary>
         private struct SkillSlot
@@ -1275,20 +1282,47 @@ namespace Game.UI
         /// 根据 GameState 自动切换 HUD 可见性
         /// MainMenu/CreatingRole -> 隐藏；InTown/InDungeon/InBattle -> 显示
         /// </summary>
-        public void UpdateVisibility(GameState state)
+        public static void UpdateVisibility(GameState state)
         {
+            if (_instance == null) return;
             switch (state)
             {
                 case GameState.MainMenu:
                 case GameState.CreatingRole:
                 case GameState.None:
-                    Hide();
+                    _instance.Hide();
+                    _instance.HideTownMap();
                     break;
                 case GameState.InTown:
+                    _instance.Show();
+                    _instance.ShowTownMap();
+                    break;
                 case GameState.InDungeon:
                 case GameState.InBattle:
-                    Show();
+                    _instance.Show();
+                    _instance.HideTownMap();
                     break;
+            }
+        }
+
+        // ============ 城镇地图 ============
+
+        /// <summary>显示城镇地图（InTown 时调用）</summary>
+        private void ShowTownMap()
+        {
+            if (townMapController == null)
+            {
+                townMapController = TownMapController.Create(gameWorldContainer);
+            }
+            townMapController.gameObject.SetActive(true);
+        }
+
+        /// <summary>隐藏城镇地图</summary>
+        private void HideTownMap()
+        {
+            if (townMapController != null)
+            {
+                townMapController.gameObject.SetActive(false);
             }
         }
 
@@ -1310,7 +1344,11 @@ namespace Game.UI
 
             // 检查是否已存在
             var existing = hudCanvas.GetComponentInChildren<GameHUD>();
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                _instance = existing;
+                return existing;
+            }
 
             // 创建 HUD 对象
             var hudObj = new GameObject("GameHUD");
@@ -1318,6 +1356,7 @@ namespace Game.UI
             hudObj.transform.SetParent(hudCanvas.transform, false);
 
             var hud = hudObj.GetOrAddComponent<GameHUD>();
+            _instance = hud;
             // 标记不随场景销毁（Canvas 本身已 DontDestroyOnLoad，所以无需额外处理）
             return hud;
         }

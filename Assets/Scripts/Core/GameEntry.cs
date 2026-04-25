@@ -18,6 +18,7 @@ namespace Game.Core
         {
             Debug.Log("[GameEntry] 方块与地下城 启动");
             UIManager.EnsureCreated();
+            GameHUD.Create();  // 创建 HUD（初始隐藏）
             UIManager.Instance.ShowPanel<MainPanel>();
         }
     }
