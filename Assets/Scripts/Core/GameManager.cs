@@ -42,16 +42,13 @@ namespace Game.Core
         {
             Player = null;
             Dungeon = null;
-            SetState(GameState.CreatingRole);
+            // 状态由调用方（MainPanel）管理
         }
 
         public void ContinueGame()
         {
             Player = DataManager.Instance.Load();
-            if (Player != null)
-            {
-                SetState(GameState.InTown);
-            }
+            // 不在此处SetState，由调用方（MainPanel）负责
         }
 
         public void SaveGame()

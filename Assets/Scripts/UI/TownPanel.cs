@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
+    [System.Obsolete("已废弃，城镇由GameHUD+TownMapController处理")]
     public class TownPanel : UIPanel
     {
         // ---- 缓存引用 ----

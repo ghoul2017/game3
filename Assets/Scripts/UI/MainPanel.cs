@@ -108,6 +108,7 @@ namespace Game.UI
                 Debug.Log("[操作] 点击 开始冒险");
                 ConfigManager.Instance.Init();
                 GameManager.Instance.NewGame();
+                GameManager.Instance.SetState(GameState.CreatingRole);
                 UIManager.Instance.ReplacePanel<CreateRolePanel>();
             });
 
@@ -117,7 +118,11 @@ namespace Game.UI
                 ConfigManager.Instance.Init();
                 GameManager.Instance.ContinueGame();
                 if (GameManager.Instance.Player != null)
-                    UIManager.Instance.ReplacePanel<TownPanel>();
+                {
+                    // 新流程：清空旧面板栈，GameHUD+TownMapController由GameState联动
+                    UIManager.Instance.ClearAll();
+                    GameManager.Instance.SetState(GameState.InTown);
+                }
                 else
                     Debug.LogWarning("[操作] 继续冒险失败：无存档");
             });

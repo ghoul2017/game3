@@ -262,9 +262,10 @@ namespace Game.UI
             player.FullRestore();
 
             GameManager.Instance.Player = player;
-            GameManager.Instance.SetState(GameState.InTown);
             GameManager.Instance.SaveGame();
-            UIManager.Instance.ReplacePanel<TownPanel>();
+            // 新流程：清空旧面板栈，GameHUD+TownMapController由GameState联动
+            UIManager.Instance.ClearAll();
+            GameManager.Instance.SetState(GameState.InTown);
         }
     }
 }

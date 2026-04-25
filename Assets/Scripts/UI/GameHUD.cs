@@ -1200,9 +1200,10 @@ namespace Game.UI
                 if (GameManager.Instance.State != GameState.InDungeon) return;
                 player.bagItems.Remove(itemId);
                 GameManager.Instance.Dungeon.OnReturnTown();
-                GameManager.Instance.SetState(GameState.InTown);
                 GameManager.Instance.SaveGame();
-                UIManager.Instance.ReplacePanel<TownPanel>();
+                // 新流程：清空旧面板栈，SetState联动显示GameHUD+TownMapController
+                UIManager.Instance.ClearAll();
+                GameManager.Instance.SetState(GameState.InTown);
                 return;
             }
 

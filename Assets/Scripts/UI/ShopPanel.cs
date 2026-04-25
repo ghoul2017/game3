@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
+    [System.Obsolete("已废弃，商店由ShopWindow(WindowBase)替代")]
     public class ShopPanel : UIPanel
     {
         // 缓存引用

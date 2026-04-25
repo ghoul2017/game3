@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
+    [System.Obsolete("暂未废弃，等待WindowBase版本完成")]
     public class SkillLearnPanel : UIPanel
     {
         // 标签页定义

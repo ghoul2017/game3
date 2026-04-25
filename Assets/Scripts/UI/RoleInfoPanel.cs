@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
+    [System.Obsolete("已废弃，角色信息已集成到GameHUD")]
     public class RoleInfoPanel : UIPanel
     {
         // 缓存引用

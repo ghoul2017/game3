@@ -265,10 +265,10 @@ namespace Game.UI
             }
         }
 
-        /// <summary>商店：打开商店面板</summary>
+        /// <summary>商店：打开商店窗口</summary>
         private void OnShopClick()
         {
-            UIManager.Instance.ShowPanel<ShopPanel>();
+            ShopWindow.OpenTownShop();
         }
 
         /// <summary>技能公会：打开技能学习面板</summary>
@@ -286,8 +286,10 @@ namespace Game.UI
             var dungeon = new DungeonData();
             dungeon.GenerateFloor(player.dungeonFloor > 0 ? player.dungeonFloor : 1);
             GameManager.Instance.Dungeon = dungeon;
+            // 新流程：清除旧面板栈，显示DungeonPanel，GameState联动隐藏城镇地图
+            UIManager.Instance.ClearAll();
             GameManager.Instance.SetState(GameState.InDungeon);
-            UIManager.Instance.ReplacePanel<DungeonPanel>();
+            UIManager.Instance.ShowPanel<DungeonPanel>();
         }
     }
 }

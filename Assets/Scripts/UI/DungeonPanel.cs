@@ -576,9 +576,10 @@ namespace Game.UI
                     GameManager.Instance.Dungeon.OnReturnTown();
                 if (GameManager.Instance.Dungeon != null)
                     GameManager.Instance.Player.dungeonFloor = GameManager.Instance.Dungeon.floor;
-                GameManager.Instance.SetState(GameState.InTown);
                 GameManager.Instance.SaveGame();
-                UIManager.Instance.ReplacePanel<TownPanel>();
+                // 新流程：清空旧面板栈，SetState联动显示GameHUD+TownMapController
+                UIManager.Instance.ClearAll();
+                GameManager.Instance.SetState(GameState.InTown);
             });
 
             FindComponent<Button>("BtnBag").onClick.AddListener(() =>
@@ -1179,7 +1180,7 @@ namespace Game.UI
                     break;
                 case DungeonEventType.Merchant:
                     Debug.Log("[地牢] 遇到商人");
-                    UIManager.Instance.ShowPanel<ShopPanel>();
+                    ShopWindow.OpenTownShop();
                     break;
                 case DungeonEventType.Exit:
                     Debug.Log("[地牢] 进入下一层");
@@ -1479,9 +1480,10 @@ namespace Game.UI
             // 返回城镇
             if (GameManager.Instance.Dungeon != null)
                 GameManager.Instance.Dungeon.OnReturnTown();
-            GameManager.Instance.SetState(GameState.InTown);
             GameManager.Instance.SaveGame();
-            UIManager.Instance.ReplacePanel<TownPanel>();
+            // 新流程：清空旧面板栈，SetState联动显示GameHUD+TownMapController
+            UIManager.Instance.ClearAll();
+            GameManager.Instance.SetState(GameState.InTown);
 
             flashCoroutine = null;
         }

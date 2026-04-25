@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
+    [System.Obsolete("已废弃，背包已集成到GameHUD")]
     public class BagPanel : UIPanel
     {
         // 缓存引用

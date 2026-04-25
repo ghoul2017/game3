@@ -9,6 +9,7 @@ using UnityEngine.UI;
 
 namespace Game.UI
 {
+    [System.Obsolete("已废弃，战斗由DungeonPanel内联处理")]
     public class BattlePanel : UIPanel
     {
         private const int MaxLogLines = 6;
