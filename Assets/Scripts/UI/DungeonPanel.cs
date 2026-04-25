@@ -5,6 +5,7 @@ using Game.Core;
 using Game.Config;
 using Game.Data;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Game.UI
@@ -114,6 +115,7 @@ namespace Game.UI
             public Text iconText;
             public Text typeLabel;
             public Button btn;
+            public EventTrigger eventTrigger; // 悬停事件（HoverTip）
         }
 
         // 右侧状态栏引用
@@ -448,6 +450,10 @@ namespace Game.UI
             {
                 string path = $"MapPanel/Inner/Viewport/Content/Tile_{i}";
                 var tileObj = transform.Find(path).gameObject;
+                // 添加 EventTrigger 组件（用于悬停 HoverTip）
+                var evtTrigger = tileObj.GetComponent<EventTrigger>();
+                if (evtTrigger == null)
+                    evtTrigger = tileObj.AddComponent<EventTrigger>();
                 gridTiles[i] = new GridTile
                 {
                     obj = tileObj,
@@ -457,7 +463,8 @@ namespace Game.UI
                     fogOverlay = tileObj.transform.Find("FogOverlay").GetComponent<Image>(),
                     iconText = tileObj.transform.Find("Icon").GetComponent<Text>(),
                     typeLabel = tileObj.transform.Find("TypeLabel").GetComponent<Text>(),
-                    btn = tileObj.GetComponent<Button>()
+                    btn = tileObj.GetComponent<Button>(),
+                    eventTrigger = evtTrigger
                 };
                 tileObj.SetActive(false);
             }
@@ -500,6 +507,9 @@ namespace Game.UI
                     PlayUIClick();
                     OnClickGridTile(capturedIndex);
                 });
+
+                // 悬停事件：HoverTip 显示/隐藏
+                SetupTileHoverEvents(i);
             }
 
             FindComponent<Button>("MapPanel/Inner/MsgOverlay/BtnContinue").onClick.AddListener(() =>
@@ -900,6 +910,189 @@ namespace Game.UI
             };
         }
 
+        // ============ F175 HoverTip / AutoTip ============
+
+        /// <summary>为网格瓦片添加 PointerEnter/Exit 事件</summary>
+        private void SetupTileHoverEvents(int index)
+        {
+            var evtTrigger = gridTiles[index].eventTrigger;
+            if (evtTrigger == null) return;
+
+            // PointerEnter → 显示 HoverTip
+            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            int capturedEnter = index;
+            enterEntry.callback.AddListener(_ => OnTilePointerEnter(capturedEnter));
+            evtTrigger.triggers.Add(enterEntry);
+
+            // PointerExit → 隐藏 HoverTip
+            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener(_ => OnTilePointerExit());
+            evtTrigger.triggers.Add(exitEntry);
+        }
+
+        /// <summary>鼠标进入瓦片：显示 HoverTip</summary>
+        private void OnTilePointerEnter(int index)
+        {
+            var dungeon = GameManager.Instance.Dungeon;
+            if (dungeon == null || dungeon.grid == null) return;
+
+            int w = dungeon.gridWidth;
+            int x = index % w;
+            int y = index / w;
+
+            var tile = dungeon.GetTileAt(x, y);
+            if (tile == null || tile.tileType != TileType.Room) return;
+
+            // 迷雾中的瓦片不显示提示
+            var visibility = dungeon.GetTileVisibility(x, y);
+            if (visibility == TileVisibility.Hidden) return;
+
+            // 已清理的瓦片不显示提示
+            if (tile.isCleared) return;
+
+            string content = BuildHoverTipContent(tile, dungeon.floor);
+            if (string.IsNullOrEmpty(content)) return;
+
+            TipManager.Instance?.ShowHoverTip(content, Input.mousePosition);
+        }
+
+        /// <summary>鼠标离开瓦片：隐藏 HoverTip</summary>
+        private void OnTilePointerExit()
+        {
+            TipManager.Instance?.HideHoverTip();
+        }
+
+        /// <summary>构建瓦片悬停提示内容</summary>
+        private string BuildHoverTipContent(DungeonTile tile, int floor)
+        {
+            switch (tile.roomType)
+            {
+                case DungeonEventType.Monster:
+                case DungeonEventType.Elite:
+                case DungeonEventType.Boss:
+                    return BuildMonsterTipContent(tile, floor);
+
+                case DungeonEventType.Treasure:
+                    return "宝箱\n可能包含金币、宝物或消耗品";
+
+                case DungeonEventType.Spring:
+                    return "魔法泉水\n恢复 1/3 生命和法力";
+
+                case DungeonEventType.Shrine:
+                    return "技能神殿\n免费领悟一个随机技能";
+
+                case DungeonEventType.Merchant:
+                    return "流浪商人\n可以购买装备和消耗品";
+
+                case DungeonEventType.Exit:
+                    return $"通往第 {floor + 1} 层的出口";
+
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>构建怪物瓦片悬停提示：怪物名+属性+技能状态效果</summary>
+        private string BuildMonsterTipContent(DungeonTile tile, int floor)
+        {
+            // Boss 使用 GetBossByFloor
+            MonsterConfig cfg;
+            if (tile.roomType == DungeonEventType.Boss)
+            {
+                cfg = ConfigManager.Instance.GetBossByFloor(floor);
+            }
+            else
+            {
+                // 普通怪/精英：取该层可选怪物中随机一个（预览）
+                var monsters = ConfigManager.Instance.GetMonstersByFloor(floor);
+                if (monsters.Count == 0) return tile.roomType == DungeonEventType.Elite ? "精英怪物" : "未知怪物";
+                // 用坐标作为种子，确保同一瓦片始终显示同一怪物
+                int seed = tile.gridPos.x * 100 + tile.gridPos.y;
+                System.Random rng = new System.Random(seed);
+                cfg = monsters[rng.Next(monsters.Count)];
+            }
+
+            if (cfg == null) return "未知怪物";
+
+            float floorScale = 1f + (floor - 1) * 0.12f;
+            float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
+            float totalScale = floorScale * eliteScale;
+
+            int scaledHp = Mathf.RoundToInt(cfg.hp * totalScale);
+            int scaledAtk = Mathf.RoundToInt(cfg.attack * totalScale);
+            int scaledDef = Mathf.RoundToInt(cfg.defense * totalScale);
+
+            string title = tile.roomType == DungeonEventType.Boss
+                ? cfg.name
+                : tile.roomType == DungeonEventType.Elite
+                    ? $"精英{cfg.name}" : cfg.name;
+
+            string tip = $"{title}\nHP:{scaledHp}  ATK:{scaledAtk}  DEF:{scaledDef}  SPD:{cfg.speed}";
+
+            // 列出技能状态效果
+            if (cfg.skillIds != null && cfg.skillIds.Count > 0)
+            {
+                var effects = new HashSet<string>();
+                foreach (var sid in cfg.skillIds)
+                {
+                    var skillCfg = ConfigManager.Instance.GetSkill(sid);
+                    if (skillCfg == null) continue;
+                    if (skillCfg.statusDuration > 0)
+                        effects.Add(GetEffectName(skillCfg.statusEffect));
+                    if (skillCfg.debuffAttack > 0) effects.Add("降攻");
+                    if (skillCfg.debuffDefense > 0) effects.Add("降防");
+                    if (skillCfg.debuffSpeed > 0) effects.Add("降速");
+                }
+                if (effects.Count > 0)
+                {
+                    tip += "\n" + string.Join(" ", effects);
+                }
+            }
+
+            return tip;
+        }
+
+        /// <summary>获取状态效果中文名</summary>
+        private static string GetEffectName(EffectType effect)
+        {
+            return effect switch
+            {
+                EffectType.Bleed => "流血",
+                EffectType.Poison => "中毒",
+                EffectType.Burn => "燃烧",
+                EffectType.Stun => "眩晕",
+                EffectType.Silence => "沉默",
+                EffectType.Vulnerable => "易伤",
+                _ => ""
+            };
+        }
+
+        /// <summary>计算瓦片的屏幕坐标（用于 AutoTip 定位）</summary>
+        private Vector2 GetTileScreenPos(int tileIndex)
+        {
+            if (tileIndex < 0 || tileIndex >= MaxTiles) return Input.mousePosition;
+
+            var tile = gridTiles[tileIndex];
+            // 将瓦片的 anchoredPosition 转换到屏幕坐标
+            Vector3 worldPos = tile.rt.position;
+            Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(null, worldPos);
+            return screenPos;
+        }
+
+        /// <summary>将屏幕坐标转换为 Tip Canvas 的锚定坐标，定位在目标上方</summary>
+        private Vector2 ScreenPosToTipAnchored(Vector2 screenPos, float offsetY = 80f)
+        {
+            if (TipManager.Instance == null) return Vector2.zero;
+
+            var tipRt = TipManager.Instance.GetComponent<RectTransform>();
+            // 先转为 Tip Canvas 坐标
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                tipRt, screenPos, null, out Vector2 localPos);
+            // 偏移到上方
+            localPos.y += offsetY;
+            return localPos;
+        }
+
         /// <summary>网格瓦片点击处理：内联战斗时执行动作，否则触发事件</summary>
         private void OnClickGridTile(int index)
         {
@@ -1220,7 +1413,6 @@ namespace Game.UI
         {
             isInlineBattleActive = false;
             isRoundAnimating = false;
-            activeBattleTileIndex = -1;
 
             if (battle.isVictory)
             {
@@ -1243,13 +1435,14 @@ namespace Game.UI
                         rewardText += $"\n获得：{itemName}";
                 }
 
-                // AutoTip 显示奖励
-                ShowBattleTip(rewardText);
+                // AutoTip 显示奖励（定位在战斗瓦片上方）
+                ShowTileAutoTip(rewardText, activeBattleTileIndex);
 
                 // 恢复地牢 BGM
                 AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Dungeon, 1.0f);
 
                 activeBattleTile = null;
+                activeBattleTileIndex = -1;
 
                 Debug.Log($"[地牢] 内联战斗胜利 奖励: exp={battle.rewardExp} gold={battle.rewardGold}");
             }
@@ -1258,9 +1451,10 @@ namespace Game.UI
                 // === 战败 ===
                 var player = GameManager.Instance.Player;
 
-                // AutoTip 战败信息
+                // AutoTip 战败信息（定位在战斗瓦片上方）
                 int lostGold = (int)(player.gold * GameConstants.DEFEAT_GOLD_LOSS_RATE);
-                ShowBattleTip($"战败！损失 {lostGold} 金币，返回城镇...");
+                ShowTileAutoTip($"战败！损失 {lostGold} 金币，返回城镇...", activeBattleTileIndex);
+                activeBattleTileIndex = -1;
 
                 // 恢复玩家状态
                 player.FullRestore();
@@ -1339,6 +1533,30 @@ namespace Game.UI
             tipManager.ShowAutoTip(content, new Vector2(0, 350f), 3.0f);
         }
 
+        /// <summary>在指定瓦片上方显示 AutoTip（F175）</summary>
+        /// <param name="content">提示内容</param>
+        /// <param name="tileIndex">瓦片在对象池中的索引</param>
+        /// <param name="duration">显示时长（秒），默认2.5</param>
+        private void ShowTileAutoTip(string content, int tileIndex, float duration = 2.5f)
+        {
+            if (TipManager.Instance == null) return;
+
+            // 计算瓦片屏幕坐标并转换为 Tip Canvas 锚定坐标
+            Vector2 anchoredPos;
+            if (tileIndex >= 0 && tileIndex < MaxTiles && gridTiles[tileIndex].obj.activeSelf)
+            {
+                Vector2 screenPos = GetTileScreenPos(tileIndex);
+                anchoredPos = ScreenPosToTipAnchored(screenPos, 50f);
+            }
+            else
+            {
+                // 瓦片不可见时回退到屏幕中心上方
+                anchoredPos = new Vector2(0, 350f);
+            }
+
+            TipManager.Instance.ShowAutoTip(content, anchoredPos, duration);
+        }
+
         /// <summary>根据 DungeonTile 查找旧 rooms 列表中对应的 DungeonRoom（兼容 BattleManager）</summary>
         private DungeonRoom FindMatchingRoom(DungeonData dungeon, DungeonTile tile)
         {
@@ -1360,7 +1578,8 @@ namespace Game.UI
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_TreasureOpen);
             var player = GameManager.Instance.Player;
-            int goldFound = Random.Range(20, 40) * GameManager.Instance.Dungeon.floor;
+            var dungeon = GameManager.Instance.Dungeon;
+            int goldFound = Random.Range(20, 40) * dungeon.floor;
             player.gold += goldFound;
             pendingMessage = $"发现宝箱！获得 {goldFound} 金币";
 
@@ -1384,20 +1603,30 @@ namespace Game.UI
             tile.isCleared = true;
 
             // 同步旧 rooms
-            var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
+            var room = FindMatchingRoom(dungeon, tile);
             room.cleared = true;
+
+            // AutoTip：宝箱奖励显示在瓦片上方
+            int tileIdx = tile.gridPos.y * dungeon.gridWidth + tile.gridPos.x;
+            ShowTileAutoTip(pendingMessage, tileIdx, 3.0f);
         }
 
         private void HandleSpring(DungeonTile tile)
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_HealWater);
             var player = GameManager.Instance.Player;
+            var dungeon = GameManager.Instance.Dungeon;
             int hpHeal = player.maxHp / 3;
             int mpHeal = player.maxMp / 3;
             player.hp = Mathf.Min(player.hp + hpHeal, player.maxHp);
             player.mp = Mathf.Min(player.mp + mpHeal, player.maxMp);
             pendingMessage = $"发现泉水！\n恢复 {hpHeal} 生命，{mpHeal} 法力";
             tile.isCleared = true;
+
+            // AutoTip：泉水恢复显示在瓦片上方
+            string springTip = $"恢复 {hpHeal} HP  {mpHeal} MP";
+            int tileIdx = tile.gridPos.y * dungeon.gridWidth + tile.gridPos.x;
+            ShowTileAutoTip(springTip, tileIdx);
 
             var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
             room.cleared = true;
