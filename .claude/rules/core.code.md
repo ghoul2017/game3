@@ -60,9 +60,44 @@ transitionCoroutine = StartCoroutine(FadeInCoroutine());
 - SettingsPanel 滑块回调可能在 AudioManager 未初始化时触发
 - 任何 Awake/Start 阶段可能被触发的 AudioManager 引用都需加空检查
 
-## UIManager 栈管理
+## UIManager 三层 Canvas 架构（F161）
 
-- `ShowPanel<T>()` — 压栈显示新面板
-- `ReplacePanel<T>()` — 替换当前面板
-- Hide 用 CanvasGroup（alpha=0），不用 SetActive(false)
-- 避免破坏 RectTransform 层级
+| 层 | sortingOrder | Canvas 变量 | 用途 | API |
+|----|-------------|------------|------|-----|
+| HUD | 5 | canvasHUD | 永久固定布局 | ShowPanel（旧） |
+| Window | 10 | canvasWindow | 非全屏窗口 | ShowWindow/CloseWindow |
+| Tip | 20 | canvasTip | 浮动提示 | GetTipCanvas() |
+
+- 每层独立 Canvas + CanvasScaler(1920x1080) + GraphicRaycaster，均 DontDestroyOnLoad
+- **panelCache 跨层互斥**: 同一类型不能同时存在于 HUD 栈和 Window 层
+- ShowWindow 先 CloseWindowInternal 旧窗口，ShowPanel 先 Hide 栈顶面板
+- 缓存命中时自动 SetParent 重新挂载到目标 Canvas
+- ClearAll() 同时清理 panelStack 和 currentWindow
+
+## 跨场景切换模式（F176）
+
+所有场景切换统一使用 `ClearAll()` + `SetState()` 两步：
+```
+ClearAll()                    — 清空旧面板栈 + 关闭 Window
+SetState(newState)            — 联动 GameHUD.UpdateVisibility
+[可选] ShowPanel/ShowWindow   — 显示新场景面板
+```
+
+**规则**: 不要在 GameManager 的数据方法（NewGame/ContinueGame 等）中夹杂 SetState 调用，状态管理责任在调用方。
+
+完整切换路径:
+| 触发点 | 操作 | 目标状态 |
+|--------|------|----------|
+| MainPanel(开始冒险) | SetState(CreatingRole) + ReplacePanel | CreatingRole |
+| MainPanel(继续冒险) | ClearAll + SetState(InTown) | InTown |
+| CreateRolePanel(完成) | ClearAll + SetState(InTown) | InTown |
+| TownMapController(商店) | ShowWindow\<ShopWindow\> | InTown |
+| TownMapController(地牢入口) | ClearAll + SetState(InDungeon) + ShowPanel\<DungeonPanel\> | InDungeon |
+| DungeonPanel(返回/战败) | ClearAll + SetState(InTown) | InTown |
+| GameHUD(回城卷轴) | ClearAll + SetState(InTown) | InTown |
+
+## GameWorldContainer 子控制器模式
+
+GameWorldContainer（HUD 左侧主区域）的子控制器**不继承 UIPanel**，采用 MonoBehaviour + static Create(parent) 模式。
+- 子控制器无需进入 UIManager 面板栈/缓存系统，用 SetActive 显隐即可
+- 后续在 GameWorldContainer 新增子场景都应采用此模式

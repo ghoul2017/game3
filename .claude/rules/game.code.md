@@ -105,3 +105,21 @@ SkillPoolSize = 48（容纳全部 44 个非 Boss 技能）
 | 10 | SPD+10% | 属性修正 |
 
 燃烧效果（EffectType.Burn）与流血/中毒共享相同 Tick 逻辑（每回合固定伤害），属于 DoT。
+
+## ConfigManager JSON 配置（F113）
+
+### JSON 文件
+`Assets/Resources/Config/` 下 6 个文件：professions/skills/items/monsters/treasures/buffs.json
+
+### JsonUtility 限制
+1. **不支持顶层数组序列化** — 必须用包装类：`[Serializable] public class XxxConfigList { public List<Xxx> list; }`
+2. **枚举序列化为整数值**（不是字符串名）— JSON 中 `EffectType.Bleed` 写为 `"statusEffect": 0`
+
+### 双层机制
+- 每个 InitXxx 方法：JSON 优先 + 硬编码 fallback（LoadJson 失败 → LogW + 硬编码字典）
+- 新增配置类型需同时加包装类和 fallback
+- `ReloadConfig()` 公共方法重载全部配置，公共 API 不变
+
+### statusEffect=0 语义
+- JSON 中 statusEffect 缺省值为 0（对应 EffectType.Bleed）
+- 无状态效果的技能语义不精确但运行时安全（BattleManager 检查 `statusDuration > 0` 才触发）

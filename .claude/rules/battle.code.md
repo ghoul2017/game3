@@ -132,6 +132,43 @@ else: 闪避率 = min(速度差 × SPEED_DODGE_RATE_PER_POINT(2) / 100, 1.0)
 - 实现：操作 RectTransform.localPosition，0.1s x 3 次 ±5px
 - 新旧震动互斥（独立 shakeCoroutine 管理）
 
+## BattleController 轻量控制器（F170）
+
+- **非 MonoBehaviour 单例**: 纯 C# 类，不需要挂载 GameObject
+- **零 UI 引用**: 不引用 BattlePanel 或任何 UI 类
+- **两个事件**: `OnRoundComplete(RoundResult)` 和 `OnBattleEnd(BattleResult)`
+- **三个入口**: `ExecuteAttack()` / `ExecuteSkill(int)` / `ExecuteItem(int)`
+- `logCountAtRoundStart` 偏移量提取本回合新增日志，不修改 BattleManager 日志写入逻辑
+- 新的战斗触发点优先使用 BattleController.ExecuteXxx()，不再直接调用 BattleManager 回合方法
+
+## 地牢内联战斗（F171）
+
+DungeonPanel 订阅 BattleController 事件，跳过 BattlePanel 中转：
+- **两次点击模式**: 第一次点击触发战斗开始，第二次点击执行回合行动
+- isRoundAnimating 标记防连点，动画期间忽略输入
+- 被动技能回退到普通攻击（不报错），MP 不足提示但不消耗回合
+- 未来新增战斗场景可复用：订阅 BattleController 事件 + 自定义动画/结算
+
+## 怪物 AI 系统（F141+F147）
+
+### 五种 AI 模式
+| 模式 | 策略 | 代表怪物 |
+|------|------|----------|
+| Aggressive | 70%最高伤技能 / 30%普攻 | 骷髅兵、蝙蝠、暗影狼、暗黑法师 |
+| Defensive | HP<50%偏治疗；HP>=50%均衡 | 石像鬼、重甲兵 |
+| Debuffer | 玩家无debuff时70%上debuff | 毒蛇、暗影法师 |
+| Balanced | 50%普攻 / 50%随机技能 | 史莱姆、哥布林 |
+| Boss | HP>60%走Aggressive；30-60%混合；<30%全技能+伤害+20% | 五层Boss |
+
+### mp 字段陷阱
+- `BattleManager.MonsterAction()` 用 `m.mp > 0` 判断能否用技能
+- **MonsterConfig.mp 是 int，默认值 0**：有 skillIds 但未设 mp → AI 永远判定无 MP → 技能永不释放
+- **规则**: 有 skillIds 的怪物必须显式设置 mp 字段
+
+### 楼层分布
+- `GetMonstersByFloor(floor)`: `minFloor <= floor && (maxFloor == 0 || maxFloor >= floor) && !isBoss`
+- `maxFloor=0` 表示无上限（20+ 层怪物）
+
 ## 已知待修复项
 - `TrySpeedDodge()` dodgeChance 无 Mathf.Min 钳制
 - `new StatusEffect(...)` 仅取名称时产生不必要堆分配（改为 StatusEffect.GetName 静态方法）

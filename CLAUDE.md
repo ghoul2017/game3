@@ -143,7 +143,31 @@ UIBuilder 拆分为三个独立模块，UIBuilder 保留为门面：
 
 - **通用化**: 全职业可学任何技能（F144），ID 三段分配（职业/通用/Boss）
 - **7 标签页**: All/Attack/Heal/Buff/Control/Passive/Learned
-- **4 装备槽**: 索引定位 + 0 占位符 + 尾部裁剪 + 多消费者安全跳过
+- **无装备槽（F160）**: learnedSkills 即可用，maxSkillSlots=6
+- **完整规则见 `.claude/rules/game.code.md`**
+
+### UI 架构（F161-F176）
+
+- **三层 Canvas**: HUD(sortingOrder=5) / Window(10) / Tip(20)，面板缓存跨层互斥
+- **GameHUD**: 永久 HUD（日志区/角色信息/背包/技能栏）+ GameWorldContainer 子控制器
+- **WindowBase**: 可拖动窗口基类，Destroy 不缓存，单窗口互斥
+- **TipManager**: struct 池 + HoverTip/AutoTip 两种提示
+- **场景切换**: ClearAll + SetState 两步模式（F176）
+- **旧面板废弃**: TownPanel/BagPanel/RoleInfoPanel/ShopPanel/BattlePanel 已标记 [Obsolete]
+- **完整规则见 `.claude/rules/core.code.md` + `.claude/rules/ui.code.md`**
+
+### 战斗架构（F170-F171）
+
+- **BattleController**: 非 MonoBehaviour 单例，事件驱动（OnRoundComplete/OnBattleEnd）
+- **内联战斗**: DungeonPanel 订阅 BattleController，两次点击模式
+- **怪物 AI**: 五种模式（Aggressive/Defensive/Debuffer/Balanced/Boss），mp 字段陷阱
+- **完整规则见 `.claude/rules/battle.code.md`**
+
+### 配置系统（F113）
+
+- **JSON 外置**: 6 个配置文件在 `Assets/Resources/Config/`
+- **JsonUtility 限制**: 不支持顶层数组（需包装类）、枚举序列化为整数
+- **双层机制**: JSON 优先 + 硬编码 fallback
 - **完整规则见 `.claude/rules/game.code.md`**
 
 ## 开发注意事项
@@ -160,10 +184,10 @@ UIBuilder 拆分为三个独立模块，UIBuilder 保留为门面：
 
 | 路径 | 规则文件 | 核心要点 |
 |---|---|---|
-| `Assets/Scripts/Core/**` | `core.code.md` | UIPanel 生命周期、transitionCoroutine 精准停止、AudioManager 单例+轮播池、UIManager 栈管理 |
-| `Assets/Scripts/UI/**` | `ui.code.md` | 深色主题配色(UIColors 唯一来源)、F111 模块拆分、对象池、DestroyImmediate 禁令、CanvasGroup 隐藏、网格地图渲染规则 |
-| `Assets/Scripts/Game/Battle/**` | `battle.code.md` | 统一回合四阶段流程、TickEffects 仅一次、速度/伤害/Boss 公式体系、视觉效果、已知待修复 |
-| `Assets/Scripts/Game/**` | `game.code.md` | 网格地牢数据模型+迁移策略、战争迷雾、技能通用化+装备槽、Buff 配置、战斗数值常量 |
+| `Assets/Scripts/Core/**` | `core.code.md` | UIPanel 生命周期、transitionCoroutine 精准停止、AudioManager 单例+轮播池、三层Canvas架构(F161)、跨场景ClearAll+SetState(F176)、GameWorldContainer子控制器模式 |
+| `Assets/Scripts/UI/**` | `ui.code.md` | 深色主题配色(UIColors 唯一来源)、F111 模块拆分、对象池、CanvasGroup 隐藏、网格地图渲染、WindowBase可拖动窗口(F163)、TipManager浮动提示(F164)、GameHUD布局+旧面板废弃(F162-F176) |
+| `Assets/Scripts/Game/Battle/**` | `battle.code.md` | 统一回合四阶段流程、TickEffects 仅一次、速度/伤害/Boss 公式体系、BattleController事件驱动(F170)、内联战斗(F171)、怪物AI五模式+mp陷阱(F147)、视觉效果、已知待修复 |
+| `Assets/Scripts/Game/**` | `game.code.md` | 网格地牢数据模型+迁移策略、战争迷雾、技能通用化(F144)+取消装备槽(F160)、Buff配置、ConfigManager JSON架构+JsonUtility限制(F113)、战斗数值常量 |
 
 
 ## 用户偏好
