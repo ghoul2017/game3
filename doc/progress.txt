@@ -105,3 +105,4 @@
 2026-04-25 F173 COMPLETED - SkillLearnWindow技能学习窗口：继承WindowBase(750x520)+7标签页+对象池20行+学习检查+槽满提示+遗忘按钮
 2026-04-25 F174 COMPLETED - ThreeChooseOneWindow神殿/商人3选1窗口：继承WindowBase(500x380)+双模式(神殿3技能免费选1+兜底恢复50%HP/商人3物品8折选1)+卡片式UI+AutoTip提示
 2026-04-25 F175 COMPLETED - Tip系统全面接入：瓦片HoverTip(怪物属性+房间描述)+战斗/宝箱/泉水AutoTip+瓦片屏幕坐标定位
+2026-04-25 F176 COMPLETED - 整体流程串联+旧面板废弃：ClearAll+SetState统一状态切换+GameHUD.UpdateVisibility联动+6旧面板Obsolete标记
