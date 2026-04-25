@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Game.Battle;
+using Game.Config;
 using Game.Core;
 using Game.Data;
 using UnityEngine;
@@ -22,23 +24,26 @@ namespace Game.UI
         private const float SKILL_SLOT_SIZE = 56f;
         private const float SKILL_SLOT_GAP = 8f;
 
+        // 战斗日志对象池
+        private const int MAX_LOG_LINES = 12;
+
         // ============ 组件引用 ============
         private RectTransform gameWorldContainer;
         private RectTransform rightPanel;
 
         // 战斗日志
-        private Text combatLogText;
-        private readonly List<string> combatLogEntries = new List<string>();
-        private const int MAX_LOG_ENTRIES = 50;
+        private readonly Text[] logTexts = new Text[MAX_LOG_LINES];
+        private ScrollRect logScrollRect;
 
         // 角色信息
         private Text charNameText;
-        private Text charLevelText;
         private Slider hpSlider;
         private Text hpText;
         private Slider mpSlider;
         private Text mpText;
-        private Text goldText;
+        private Text statsText;    // ATK/DEF/SPD 一行
+        private Slider expSlider;
+        private Text expText;
 
         // 背包
         private Text bagCountText;
@@ -150,7 +155,7 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 战斗日志区 — 固定180px高，顶部
+        /// 战斗日志区 — 固定180px高，顶部，ScrollRect + Mask + 12行Text对象池
         /// </summary>
         private void BuildCombatLogSection(Transform parent)
         {
@@ -202,31 +207,78 @@ namespace Game.UI
             divRt.sizeDelta = new Vector2(0, 1);
             divRt.anchoredPosition = new Vector2(0, -24);
 
-            // 日志文本
-            var logObj = UIFactory.CreateUI(bgObj.transform, "LogText");
-            var logRt = logObj.GetComponent<RectTransform>();
-            logRt.anchorMin = new Vector2(0f, 0f);
-            logRt.anchorMax = new Vector2(1f, 1f);
-            logRt.offsetMin = new Vector2(8, 4);
-            logRt.offsetMax = new Vector2(-8, -28);
-            combatLogText = logObj.AddComponent<Text>();
-            combatLogText.text = "";
-            combatLogText.fontSize = 14;
-            combatLogText.color = UIColors.TextDim;
-            combatLogText.alignment = TextAnchor.LowerLeft;
-            combatLogText.verticalOverflow = VerticalWrapMode.Truncate;
-            combatLogText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            combatLogText.supportRichText = false;
+            // Viewport（含 Mask + ScrollRect）
+            var viewportObj = UIFactory.CreateUI(bgObj.transform, "Viewport");
+            var viewportImg = viewportObj.AddComponent<Image>();
+            viewportImg.color = UIColors.ViewportBg;
+            viewportImg.raycastTarget = true;
+            var viewportMask = viewportObj.AddComponent<Mask>();
+            viewportMask.showMaskGraphic = false;
+            var viewportRt = viewportObj.GetComponent<RectTransform>();
+            viewportRt.anchorMin = new Vector2(0f, 0f);
+            viewportRt.anchorMax = new Vector2(1f, 1f);
+            viewportRt.offsetMin = new Vector2(4, 4);
+            viewportRt.offsetMax = new Vector2(-4, -28);
+
+            // Content（日志行的容器）
+            float lineHeight = 14f;
+            float lineGap = 2f;
+            float contentHeight = MAX_LOG_LINES * (lineHeight + lineGap);
+            var contentObj = UIFactory.CreateUI(viewportObj.transform, "Content");
+            var contentRt = contentObj.GetComponent<RectTransform>();
+            contentRt.anchorMin = new Vector2(0f, 1f);
+            contentRt.anchorMax = new Vector2(1f, 1f);
+            contentRt.pivot = new Vector2(0.5f, 1f);
+            contentRt.sizeDelta = new Vector2(0, contentHeight);
+            contentRt.anchoredPosition = Vector2.zero;
+
+            // 12行Text对象池
+            for (int i = 0; i < MAX_LOG_LINES; i++)
+            {
+                var lineObj = UIFactory.CreateUI(contentObj.transform, $"Log_{i}");
+                var lineRt = lineObj.GetComponent<RectTransform>();
+                lineRt.anchorMin = new Vector2(0f, 1f);
+                lineRt.anchorMax = new Vector2(1f, 1f);
+                lineRt.pivot = new Vector2(0f, 1f);
+                lineRt.sizeDelta = new Vector2(0, lineHeight);
+                lineRt.anchoredPosition = new Vector2(0, -i * (lineHeight + lineGap));
+
+                var logText = lineObj.AddComponent<Text>();
+                logText.text = "";
+                logText.fontSize = 12;
+                logText.color = UIColors.TextDim;
+                logText.alignment = TextAnchor.LowerLeft;
+                logText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                logText.supportRichText = true;
+                logText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                logText.verticalOverflow = VerticalWrapMode.Truncate;
+                lineObj.SetActive(false);
+                logTexts[i] = logText;
+            }
+
+            // ScrollRect
+            logScrollRect = bgObj.AddComponent<ScrollRect>();
+            logScrollRect.content = contentRt;
+            logScrollRect.viewport = viewportRt;
+            logScrollRect.horizontal = false;
+            logScrollRect.vertical = true;
+            logScrollRect.movementType = ScrollRect.MovementType.Clamped;
+            logScrollRect.scrollSensitivity = 20f;
+            logScrollRect.elasticity = 0.1f;
         }
 
         /// <summary>
-        /// 角色信息区 — 固定140px高，战斗日志下方
+        /// 角色信息区 — 固定140px高，战斗日志下方，5行精炼布局
+        /// 第1行：名Lv职 | 第2行：HP条 | 第3行：MP条 | 第4行：ATK/DEF/SPD | 第5行：EXP条
         /// </summary>
         private void BuildCharInfoSection(Transform parent)
         {
             float offsetY = COMBAT_LOG_HEIGHT;
             float sectionHeight = CHAR_INFO_HEIGHT;
             float padding = 4f;
+            float leftMargin = 8f;
+            float rightMargin = 8f;
+            float barHeight = 12f;
 
             // 区块容器
             var sectionObj = UIFactory.CreateUI(parent, "CharInfoSection");
@@ -253,11 +305,11 @@ namespace Game.UI
             titleRt.anchorMin = new Vector2(0f, 1f);
             titleRt.anchorMax = new Vector2(1f, 1f);
             titleRt.pivot = new Vector2(0.5f, 1f);
-            titleRt.sizeDelta = new Vector2(0, 22);
+            titleRt.sizeDelta = new Vector2(0, 20);
             titleRt.anchoredPosition = Vector2.zero;
             var titleText = titleObj.AddComponent<Text>();
             titleText.text = "角色";
-            titleText.fontSize = 16;
+            titleText.fontSize = 14;
             titleText.color = UIColors.Gold;
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -271,124 +323,90 @@ namespace Game.UI
             divRt.anchorMax = new Vector2(1f, 1f);
             divRt.pivot = new Vector2(0.5f, 1f);
             divRt.sizeDelta = new Vector2(0, 1);
-            divRt.anchoredPosition = new Vector2(0, -22);
+            divRt.anchoredPosition = new Vector2(0, -20);
 
-            // 角色名称
+            // ---- 第1行：名字 LvXX 职业 (y: -22 ~ -38) ----
             var nameObj = UIFactory.CreateUI(bgObj.transform, "CharName");
             var nameRt = nameObj.GetComponent<RectTransform>();
             nameRt.anchorMin = new Vector2(0f, 1f);
-            nameRt.anchorMax = new Vector2(0.5f, 1f);
+            nameRt.anchorMax = new Vector2(1f, 1f);
             nameRt.pivot = new Vector2(0f, 1f);
-            nameRt.offsetMin = new Vector2(8, -40);
-            nameRt.offsetMax = new Vector2(0, -24);
+            nameRt.offsetMin = new Vector2(leftMargin, -38);
+            nameRt.offsetMax = new Vector2(-rightMargin, -22);
             charNameText = nameObj.AddComponent<Text>();
             charNameText.text = "--";
-            charNameText.fontSize = 14;
+            charNameText.fontSize = 13;
             charNameText.color = UIColors.TextWhite;
             charNameText.alignment = TextAnchor.MiddleLeft;
             charNameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            // 角色等级
-            var lvlObj = UIFactory.CreateUI(bgObj.transform, "CharLevel");
-            var lvlRt = lvlObj.GetComponent<RectTransform>();
-            lvlRt.anchorMin = new Vector2(0.5f, 1f);
-            lvlRt.anchorMax = new Vector2(1f, 1f);
-            lvlRt.pivot = new Vector2(1f, 1f);
-            lvlRt.offsetMin = new Vector2(0, -40);
-            lvlRt.offsetMax = new Vector2(-8, -24);
-            charLevelText = lvlObj.AddComponent<Text>();
-            charLevelText.text = "Lv.1";
-            charLevelText.fontSize = 14;
-            charLevelText.color = UIColors.Gold;
-            charLevelText.alignment = TextAnchor.MiddleRight;
-            charLevelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            // ---- 第2行：HP条 (y: -40 ~ -54) ----
+            BuildBarWithLabel(bgObj.transform, "HPBar", UIColors.Red, -40, -54, leftMargin, rightMargin, barHeight,
+                out hpSlider, out hpText);
 
-            // HP 条
-            var hpBarObj = UIFactory.CreateUI(bgObj.transform, "HPBar");
-            var hpBarRt = hpBarObj.GetComponent<RectTransform>();
-            hpBarRt.anchorMin = new Vector2(0f, 1f);
-            hpBarRt.anchorMax = new Vector2(1f, 1f);
-            hpBarRt.pivot = new Vector2(0.5f, 1f);
-            hpBarRt.offsetMin = new Vector2(8, -58);
-            hpBarRt.offsetMax = new Vector2(-8, -44);
-            var hpBgImg = hpBarObj.AddComponent<Image>();
-            hpBgImg.color = UIColors.SliderBg;
+            // ---- 第3行：MP条 (y: -56 ~ -70) ----
+            BuildBarWithLabel(bgObj.transform, "MPBar", UIColors.Blue, -56, -70, leftMargin, rightMargin, barHeight,
+                out mpSlider, out mpText);
 
-            var hpFillObj = UIFactory.CreateUI(hpBarObj.transform, "Fill");
-            var hpFillRt = hpFillObj.GetComponent<RectTransform>();
-            hpFillRt.anchorMin = Vector2.zero;
-            hpFillRt.anchorMax = Vector2.one;
-            hpFillRt.offsetMin = new Vector2(1, 1);
-            hpFillRt.offsetMax = new Vector2(-1, -1);
-            var hpFillImg = hpFillObj.AddComponent<Image>();
-            hpFillImg.color = UIColors.Red;
+            // ---- 第4行：ATK/DEF/SPD 一行 (y: -72 ~ -88) ----
+            var statsObj = UIFactory.CreateUI(bgObj.transform, "Stats");
+            var statsRt = statsObj.GetComponent<RectTransform>();
+            statsRt.anchorMin = new Vector2(0f, 1f);
+            statsRt.anchorMax = new Vector2(1f, 1f);
+            statsRt.pivot = new Vector2(0f, 1f);
+            statsRt.offsetMin = new Vector2(leftMargin, -88);
+            statsRt.offsetMax = new Vector2(-rightMargin, -72);
+            statsText = statsObj.AddComponent<Text>();
+            statsText.text = "ATK:0 DEF:0 SPD:0";
+            statsText.fontSize = 12;
+            statsText.color = UIColors.TextDim;
+            statsText.alignment = TextAnchor.MiddleLeft;
+            statsText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            hpSlider = hpBarObj.AddComponent<Slider>();
-            hpSlider.interactable = false;
-            hpSlider.fillRect = hpFillRt;
-            hpSlider.targetGraphic = hpFillImg;
-            hpSlider.value = 1f;
+            // ---- 第5行：EXP条 (y: -90 ~ -104) ----
+            BuildBarWithLabel(bgObj.transform, "EXPBar", UIColors.ExpColor, -90, -104, leftMargin, rightMargin, barHeight,
+                out expSlider, out expText);
+        }
 
-            // HP 文字
-            var hpLabelObj = UIFactory.CreateUI(hpBarObj.transform, "HPLabel");
-            UIBuilder.SetStretch(hpLabelObj);
-            hpText = hpLabelObj.AddComponent<Text>();
-            hpText.text = "0/0";
-            hpText.fontSize = 12;
-            hpText.color = UIColors.TextWhite;
-            hpText.alignment = TextAnchor.MiddleCenter;
-            hpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        /// <summary>创建带居中文字标签的Slider条</summary>
+        private void BuildBarWithLabel(Transform parent, string barName, Color fillColor,
+            float topOffset, float bottomOffset, float leftMargin, float rightMargin, float barHeight,
+            out Slider slider, out Text labelText)
+        {
+            var barObj = UIFactory.CreateUI(parent, barName);
+            var barRt = barObj.GetComponent<RectTransform>();
+            barRt.anchorMin = new Vector2(0f, 1f);
+            barRt.anchorMax = new Vector2(1f, 1f);
+            barRt.pivot = new Vector2(0f, 1f);
+            barRt.offsetMin = new Vector2(leftMargin, bottomOffset);
+            barRt.offsetMax = new Vector2(-rightMargin, topOffset);
 
-            // MP 条
-            var mpBarObj = UIFactory.CreateUI(bgObj.transform, "MPBar");
-            var mpBarRt = mpBarObj.GetComponent<RectTransform>();
-            mpBarRt.anchorMin = new Vector2(0f, 1f);
-            mpBarRt.anchorMax = new Vector2(1f, 1f);
-            mpBarRt.pivot = new Vector2(0.5f, 1f);
-            mpBarRt.offsetMin = new Vector2(8, -74);
-            mpBarRt.offsetMax = new Vector2(-8, -60);
-            var mpBgImg = mpBarObj.AddComponent<Image>();
-            mpBgImg.color = UIColors.SliderBg;
+            var bgImg = barObj.AddComponent<Image>();
+            bgImg.color = UIColors.SliderBg;
 
-            var mpFillObj = UIFactory.CreateUI(mpBarObj.transform, "Fill");
-            var mpFillRt = mpFillObj.GetComponent<RectTransform>();
-            mpFillRt.anchorMin = Vector2.zero;
-            mpFillRt.anchorMax = Vector2.one;
-            mpFillRt.offsetMin = new Vector2(1, 1);
-            mpFillRt.offsetMax = new Vector2(-1, -1);
-            var mpFillImg = mpFillObj.AddComponent<Image>();
-            mpFillImg.color = UIColors.Blue;
+            var fillObj = UIFactory.CreateUI(barObj.transform, "Fill");
+            var fillRt = fillObj.GetComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.offsetMin = new Vector2(1, 1);
+            fillRt.offsetMax = new Vector2(-1, -1);
+            var fillImg = fillObj.AddComponent<Image>();
+            fillImg.color = fillColor;
 
-            mpSlider = mpBarObj.AddComponent<Slider>();
-            mpSlider.interactable = false;
-            mpSlider.fillRect = mpFillRt;
-            mpSlider.targetGraphic = mpFillImg;
-            mpSlider.value = 1f;
+            slider = barObj.AddComponent<Slider>();
+            slider.interactable = false;
+            slider.fillRect = fillRt;
+            slider.targetGraphic = fillImg;
+            slider.value = 1f;
 
-            // MP 文字
-            var mpLabelObj = UIFactory.CreateUI(mpBarObj.transform, "MPLabel");
-            UIBuilder.SetStretch(mpLabelObj);
-            mpText = mpLabelObj.AddComponent<Text>();
-            mpText.text = "0/0";
-            mpText.fontSize = 12;
-            mpText.color = UIColors.TextWhite;
-            mpText.alignment = TextAnchor.MiddleCenter;
-            mpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-
-            // 金币
-            var goldObj = UIFactory.CreateUI(bgObj.transform, "Gold");
-            var goldRt = goldObj.GetComponent<RectTransform>();
-            goldRt.anchorMin = new Vector2(0f, 1f);
-            goldRt.anchorMax = new Vector2(1f, 1f);
-            goldRt.pivot = new Vector2(0.5f, 1f);
-            goldRt.offsetMin = new Vector2(8, -92);
-            goldRt.offsetMax = new Vector2(-8, -78);
-            goldText = goldObj.AddComponent<Text>();
-            goldText.text = "0 G";
-            goldText.fontSize = 13;
-            goldText.color = UIColors.Orange;
-            goldText.alignment = TextAnchor.MiddleLeft;
-            goldText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            var labelObj = UIFactory.CreateUI(barObj.transform, "Label");
+            UIBuilder.SetStretch(labelObj);
+            labelText = labelObj.AddComponent<Text>();
+            labelText.text = "0/0";
+            labelText.fontSize = 10;
+            labelText.color = UIColors.TextWhite;
+            labelText.alignment = TextAnchor.MiddleCenter;
+            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
         /// <summary>
@@ -556,22 +574,42 @@ namespace Game.UI
             RefreshSkillBar();
         }
 
-        /// <summary>刷新战斗日志（stub）</summary>
+        /// <summary>
+        /// 刷新战斗日志 — 从 BattleManager 读取日志，使用对象池12行显示，颜色标记
+        /// </summary>
         public void RefreshCombatLog()
         {
-            if (combatLogText == null) return;
-            // 后续接入战斗系统后填充真实日志
-            if (combatLogEntries.Count == 0)
+            var b = BattleManager.Instance?.CurrentBattle;
+            var log = b?.log;
+            int logCount = log != null ? log.Count : 0;
+
+            int showCount = Mathf.Min(logCount, MAX_LOG_LINES);
+            int startIdx = logCount - showCount;
+
+            for (int i = 0; i < MAX_LOG_LINES; i++)
             {
-                combatLogText.text = "暂无战斗记录";
+                if (logTexts[i] == null) continue;
+                if (i < showCount)
+                {
+                    logTexts[i].text = BattleLogFormatter.ColorizeLog(log[startIdx + i]);
+                    logTexts[i].gameObject.SetActive(true);
+                }
+                else
+                {
+                    logTexts[i].gameObject.SetActive(false);
+                }
             }
-            else
+
+            // 自动滚动到底部
+            if (logScrollRect != null && showCount > 0)
             {
-                combatLogText.text = string.Join("\n", combatLogEntries);
+                logScrollRect.normalizedPosition = new Vector2(0, 0);
             }
         }
 
-        /// <summary>刷新角色信息</summary>
+        /// <summary>
+        /// 刷新角色信息 — 从 GameManager.Player 读取，5行精炼布局
+        /// </summary>
         public void RefreshCharInfo()
         {
             if (charNameText == null) return;
@@ -580,25 +618,53 @@ namespace Game.UI
             if (player == null)
             {
                 charNameText.text = "--";
-                charLevelText.text = "Lv.1";
                 hpSlider.value = 0f;
                 hpText.text = "0/0";
                 mpSlider.value = 0f;
                 mpText.text = "0/0";
-                goldText.text = "0 G";
+                statsText.text = "ATK:0 DEF:0 SPD:0";
+                expSlider.value = 0f;
+                expText.text = "0/0";
                 return;
             }
 
-            charNameText.text = player.name;
-            charLevelText.text = $"Lv.{player.level}";
+            // 第1行：名字 LvXX 职业
+            string profName = GetProfessionDisplayName(player.profession);
+            charNameText.text = $"{player.name}  Lv.{player.level}  {profName}";
+
+            // 第2行：HP条
             hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0f;
             hpText.text = $"{player.hp}/{player.maxHp}";
+
+            // 第3行：MP条
             mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0f;
             mpText.text = $"{player.mp}/{player.maxMp}";
-            goldText.text = $"{player.gold} G";
+
+            // 第4行：ATK/DEF/SPD
+            statsText.text = $"ATK:{player.attack}  DEF:{player.defense}  SPD:{player.speed}";
+
+            // 第5行：EXP条
+            int expToNext = player.GetExpToNextLevel();
+            float expRatio = expToNext > 0 ? (float)player.exp / expToNext : 0f;
+            expSlider.value = expRatio;
+            expText.text = $"{player.exp}/{expToNext}";
         }
 
-        /// <summary>刷新背包（stub）</summary>
+        /// <summary>获取职业显示名称</summary>
+        private static string GetProfessionDisplayName(Profession prof)
+        {
+            return prof switch
+            {
+                Profession.Warrior => "战士",
+                Profession.Ranger => "游侠",
+                Profession.Knight => "骑士",
+                Profession.Priest => "牧师",
+                Profession.Mage => "法师",
+                _ => prof.ToString()
+            };
+        }
+
+        /// <summary>刷新背包</summary>
         public void RefreshBag()
         {
             if (bagCountText == null) return;
@@ -612,7 +678,7 @@ namespace Game.UI
             bagCountText.text = $"{player.bagItems.Count}/{player.maxBagSize}";
         }
 
-        /// <summary>刷新技能栏（stub）</summary>
+        /// <summary>刷新技能栏</summary>
         public void RefreshSkillBar()
         {
             var player = GameManager.Instance?.Player;
@@ -631,24 +697,6 @@ namespace Game.UI
                     skillSlotIcons[i].color = UIColors.TextDim;
                 }
             }
-        }
-
-        // ============ 战斗日志操作 ============
-
-        /// <summary>添加一条战斗日志</summary>
-        public void AddCombatLog(string entry)
-        {
-            combatLogEntries.Add(entry);
-            if (combatLogEntries.Count > MAX_LOG_ENTRIES)
-                combatLogEntries.RemoveAt(0);
-            RefreshCombatLog();
-        }
-
-        /// <summary>清空战斗日志</summary>
-        public void ClearCombatLog()
-        {
-            combatLogEntries.Clear();
-            RefreshCombatLog();
         }
 
         // ============ GameState 联动 ============
