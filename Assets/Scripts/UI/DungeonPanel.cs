@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Game.Battle;
 using Game.Core;
@@ -75,6 +76,19 @@ namespace Game.UI
 
         // ---- 战斗回传：战斗结束后标记对应房间 isCleared ----
         private DungeonTile activeBattleTile;
+
+        // ---- 内联战斗状态（F171） ----
+        /// <summary>是否正在进行内联战斗</summary>
+        private bool isInlineBattleActive;
+
+        /// <summary>内联战斗中的怪物 tile 索引（用于闪红动画定位）</summary>
+        private int activeBattleTileIndex = -1;
+
+        /// <summary>闪红动画协程引用</summary>
+        private Coroutine flashCoroutine;
+
+        /// <summary>回合动画是否播放中（防连点）</summary>
+        private bool isRoundAnimating;
 
         // ---- 缓存引用 ----
         private Text titleText;
@@ -499,7 +513,7 @@ namespace Game.UI
                     pendingBossConfig = null;
                     pendingBossTile = null;
                     pendingMessage = null;
-                    StartBattleWithConfig(GameManager.Instance.Dungeon, bTile, cfg);
+                    StartInlineBattle(GameManager.Instance.Dungeon, bTile, cfg);
                     return;
                 }
                 // 检查是否有事件选项1待执行
@@ -541,6 +555,12 @@ namespace Game.UI
             FindComponent<Button>("BtnBack").onClick.AddListener(() =>
             {
                 PlayUIClick();
+                // 内联战斗中不允许返回城镇
+                if (isInlineBattleActive)
+                {
+                    ShowBattleTip("战斗中无法返回城镇！");
+                    return;
+                }
                 Debug.Log("[操作] 返回城镇");
                 if (GameManager.Instance?.Dungeon != null)
                     GameManager.Instance.Dungeon.OnReturnTown();
@@ -554,14 +574,30 @@ namespace Game.UI
             FindComponent<Button>("BtnBag").onClick.AddListener(() =>
             {
                 PlayUIClick();
+                // 内联战斗中不允许打开背包面板（HUD背包仍可使用）
+                if (isInlineBattleActive)
+                {
+                    ShowBattleTip("战斗中请使用HUD背包！");
+                    return;
+                }
                 UIManager.Instance.ShowPanel<BagPanel>();
             });
 
             FindComponent<Button>("BtnRole").onClick.AddListener(() =>
             {
                 PlayUIClick();
+                // 内联战斗中不允许打开角色面板
+                if (isInlineBattleActive)
+                {
+                    ShowBattleTip("战斗中无法查看角色面板！");
+                    return;
+                }
                 UIManager.Instance.ShowPanel<RoleInfoPanel>();
             });
+
+            // 订阅 BattleController 事件（F171 内联战斗）
+            BattleController.Instance.OnRoundComplete += OnInlineRoundComplete;
+            BattleController.Instance.OnBattleEnd += OnInlineBattleEnd;
         }
 
         private void UpdateSkillBar(PlayerData player)
@@ -593,11 +629,14 @@ namespace Game.UI
 
         public override void OnShow()
         {
-            // 地牢背景音乐
-            AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Dungeon, 1.0f);
+            // 地牢背景音乐（内联战斗期间不切音乐，保持战斗BGM）
+            if (!isInlineBattleActive)
+            {
+                AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Dungeon, 1.0f);
+            }
 
-            // 战斗面板关闭后回到地牢面板：检查是否有战斗胜利待处理
-            if (activeBattleTile != null)
+            // 非内联战斗时，处理旧 BattlePanel 回来的情况
+            if (!isInlineBattleActive && activeBattleTile != null)
             {
                 var battle = BattleManager.Instance.CurrentBattle;
                 if (battle != null && battle.isFinished && battle.isVictory)
@@ -626,8 +665,20 @@ namespace Game.UI
             // 标题
             titleText.text = $"地牢 第{dungeon.floor} 层";
 
-            // 顶部状态栏
-            statusText.text = $"房间数 {dungeon.roomTiles.Count}  点击房间探索";
+            // 顶部状态栏（内联战斗中显示战斗状态，否则默认）
+            if (isInlineBattleActive)
+            {
+                var b = BattleManager.Instance.CurrentBattle;
+                if (b != null)
+                {
+                    var m = b.monster;
+                    statusText.text = $"战斗中 — {m.name} HP:{m.hp}/{m.maxHp}  点击怪物执行攻击";
+                }
+            }
+            else
+            {
+                statusText.text = $"房间数 {dungeon.roomTiles.Count}  点击房间探索";
+            }
 
             // 右侧状态面板
             hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
@@ -674,6 +725,9 @@ namespace Game.UI
                 msgOverlay.SetActive(false);
                 msgBtnOption2.gameObject.SetActive(false);
             }
+
+            // 同步刷新 HUD 信息
+            RefreshHUDCharInfo();
         }
 
         /// <summary>
@@ -763,7 +817,15 @@ namespace Game.UI
                         }
                         else
                         {
-                            tile.bg.color = GetTileColor(dungeonTile.roomType);
+                            // 内联战斗中的活跃 tile 用红色高亮
+                            if (isInlineBattleActive && idx == activeBattleTileIndex)
+                            {
+                                tile.bg.color = UIColors.Red;
+                            }
+                            else
+                            {
+                                tile.bg.color = GetTileColor(dungeonTile.roomType);
+                            }
                             tile.iconText.text = GetTileIcon(dungeonTile.roomType);
                             tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType);
 
@@ -838,7 +900,7 @@ namespace Game.UI
             };
         }
 
-        /// <summary>网格瓦片点击处理：点击已揭示的Room瓦片直接触发事件，边缘瓦片揭示迷雾</summary>
+        /// <summary>网格瓦片点击处理：内联战斗时执行动作，否则触发事件</summary>
         private void OnClickGridTile(int index)
         {
             var dungeon = GameManager.Instance.Dungeon;
@@ -862,6 +924,18 @@ namespace Game.UI
             // Explored/Visible 状态的 Room 瓦片：直接触发事件
             if (tile.tileType != TileType.Room) return;
             if (tile.isCleared) return;
+
+            // === 内联战斗中的再次点击 ===
+            if (isInlineBattleActive)
+            {
+                // 只响应正在战斗的 tile
+                if (index != activeBattleTileIndex) return;
+                // 回合动画中不响应连点
+                if (isRoundAnimating) return;
+
+                ExecuteInlineAction();
+                return;
+            }
 
             TriggerRoomEvent(dungeon, tile);
             RefreshUI();
@@ -929,7 +1003,7 @@ namespace Game.UI
             }
         }
 
-        /// <summary>处理战斗事件</summary>
+        /// <summary>处理战斗事件（F171 内联战斗：不再切换面板）</summary>
         private void HandleBattle(DungeonData dungeon, DungeonTile tile)
         {
             Debug.Log($"[地牢] 遭遇战斗 type={tile.roomType}");
@@ -939,7 +1013,7 @@ namespace Game.UI
                 : monsters.Count > 0 ? monsters[Random.Range(0, monsters.Count)] : null;
             if (monsterCfg != null)
             {
-                // Boss战：显示警告弹窗，玩家确认后进入战斗
+                // Boss战：显示警告弹窗，玩家确认后进入内联战斗
                 if (tile.roomType == DungeonEventType.Boss)
                 {
                     activeBattleTile = tile;
@@ -952,7 +1026,7 @@ namespace Game.UI
                     return;
                 }
 
-                StartBattleWithConfig(dungeon, tile, monsterCfg);
+                StartInlineBattle(dungeon, tile, monsterCfg);
             }
         }
 
@@ -960,11 +1034,15 @@ namespace Game.UI
         private MonsterConfig pendingBossConfig;
         private DungeonTile pendingBossTile;
 
-        /// <summary>使用指定怪物配置开始战斗</summary>
-        private void StartBattleWithConfig(DungeonData dungeon, DungeonTile tile, MonsterConfig monsterCfg)
+        /// <summary>使用指定怪物配置开始内联战斗（F171：不切换面板）</summary>
+        private void StartInlineBattle(DungeonData dungeon, DungeonTile tile, MonsterConfig monsterCfg)
         {
-            // 记录战斗对应的瓦片，战斗胜利后标记 isCleared
+            // 记录战斗对应的瓦片
             activeBattleTile = tile;
+
+            // 计算 tile 索引用于动画定位
+            int w = dungeon.gridWidth;
+            activeBattleTileIndex = tile.gridPos.y * w + tile.gridPos.x;
 
             float floorScale = 1f + (dungeon.floor - 1) * 0.12f;
             float eliteScale = tile.roomType == DungeonEventType.Elite ? 1.5f : 1f;
@@ -1002,8 +1080,263 @@ namespace Game.UI
                 },
                 room = room
             };
+
+            // 启动 BattleManager 战斗（不切换面板）
             BattleManager.Instance.StartBattle(battleData);
-            UIManager.Instance.ShowPanel<BattlePanel>();
+
+            // 标记内联战斗激活
+            isInlineBattleActive = true;
+            isRoundAnimating = false;
+
+            // 更新状态栏提示
+            statusText.text = $"战斗中 — {displayName} HP:{battleData.monster.hp}/{battleData.monster.maxHp}";
+
+            // 刷新 HUD 战斗日志
+            RefreshHUDCombatLog();
+
+            Debug.Log($"[地牢] 内联战斗开始 怪物={displayName} HP={scaledHp}");
+        }
+
+        // ============ F171 内联战斗核心逻辑 ============
+
+        /// <summary>执行内联战斗动作：根据 HUD 选中技能决定攻击或技能释放</summary>
+        private void ExecuteInlineAction()
+        {
+            if (!isInlineBattleActive || isRoundAnimating) return;
+
+            var b = BattleManager.Instance.CurrentBattle;
+            if (b == null || b.isFinished) return;
+
+            // 检查 HUD 选中的技能
+            int skillId = GameHUD.Instance != null ? GameHUD.Instance.GetSelectedSkillId() : 0;
+            var player = GameManager.Instance.Player;
+
+            if (skillId > 0)
+            {
+                // 检查 MP 是否足够
+                var skillCfg = ConfigManager.Instance.GetSkill(skillId);
+                if (skillCfg != null && skillCfg.type == SkillType.Passive)
+                {
+                    // 被动技能不可使用，回退到普通攻击
+                    BattleController.Instance.ExecuteAttack();
+                }
+                else if (skillCfg != null && player.mp < BattleManager.Instance.GetActualSkillCost(skillCfg.mpCost))
+                {
+                    // MP 不足提示
+                    ShowBattleTip("法力不足！");
+                    return;
+                }
+                else
+                {
+                    BattleController.Instance.ExecuteSkill(skillId);
+                }
+                // 取消技能选中
+                if (GameHUD.Instance != null)
+                {
+                    GameHUD.Instance.ClearSkillSelection();
+                }
+            }
+            else
+            {
+                // 无选中技能：普通攻击
+                BattleController.Instance.ExecuteAttack();
+            }
+            // 回合结果通过 OnRoundComplete 事件回调处理
+        }
+
+        /// <summary>BattleController 回合完成回调</summary>
+        private void OnInlineRoundComplete(RoundResult result)
+        {
+            if (!isInlineBattleActive) return;
+            if (result == null) return;
+
+            // 启动回合动画序列
+            if (flashCoroutine != null)
+                StopCoroutine(flashCoroutine);
+            flashCoroutine = StartCoroutine(RoundAnimationCoroutine(result));
+        }
+
+        /// <summary>BattleController 战斗结束回调</summary>
+        private void OnInlineBattleEnd(BattleResult result)
+        {
+            if (!isInlineBattleActive) return;
+            if (result == null) return;
+
+            // 战斗结束动画延迟到回合动画结束后处理
+            // isFinished 标记会在 RoundAnimationCoroutine 中检测到
+        }
+
+        /// <summary>回合动画协程：tile 闪红 + 浮动伤害数字 + 音效 + HUD 更新</summary>
+        private IEnumerator RoundAnimationCoroutine(RoundResult result)
+        {
+            isRoundAnimating = true;
+
+            // 1. 刷新 HUD 战斗日志（先更新日志，玩家能看到行动记录）
+            RefreshHUDCombatLog();
+
+            // 2. 如果有玩家伤害行动，tile 闪红动画
+            bool hasPlayerDamage = false;
+            foreach (var log in result.playerActionLogs)
+            {
+                if (log.Contains("造成") && log.Contains("伤害"))
+                {
+                    hasPlayerDamage = true;
+                    break;
+                }
+            }
+
+            if (hasPlayerDamage && activeBattleTileIndex >= 0 && activeBattleTileIndex < MaxTiles)
+            {
+                // 攻击音效
+                AudioManager.Instance?.PlaySFX(AudioClipType.Battle_Attack);
+
+                // tile 闪红 0.15s
+                var tile = gridTiles[activeBattleTileIndex];
+                Color originalColor = tile.bg.color;
+                tile.bg.color = UIColors.Red;
+                yield return new WaitForSeconds(0.15f);
+                tile.bg.color = originalColor;
+            }
+
+            // 3. 刷新玩家/怪物 HP 显示
+            RefreshInlineBattleStatus();
+            RefreshHUDCharInfo();
+
+            // 4. 短暂延迟让玩家看到状态变化
+            yield return new WaitForSeconds(0.1f);
+
+            isRoundAnimating = false;
+
+            // 5. 检查战斗是否结束
+            var b = BattleManager.Instance.CurrentBattle;
+            if (b != null && b.isFinished)
+            {
+                HandleInlineBattleFinished(b);
+            }
+        }
+
+        /// <summary>内联战斗结束处理</summary>
+        private void HandleInlineBattleFinished(BattleData battle)
+        {
+            isInlineBattleActive = false;
+            isRoundAnimating = false;
+            activeBattleTileIndex = -1;
+
+            if (battle.isVictory)
+            {
+                // === 胜利 ===
+                // 标记房间已清
+                if (activeBattleTile != null)
+                {
+                    activeBattleTile.isCleared = true;
+                    var room = FindMatchingRoom(GameManager.Instance.Dungeon, activeBattleTile);
+                    room.cleared = true;
+                }
+
+                // 构建奖励信息
+                string rewardText = $"胜利！";
+                if (battle.rewardExp > 0) rewardText += $" +{battle.rewardExp}经验";
+                if (battle.rewardGold > 0) rewardText += $" +{battle.rewardGold}金";
+                if (battle.rewardItems.Count > 0)
+                {
+                    foreach (var itemName in battle.rewardItems)
+                        rewardText += $"\n获得：{itemName}";
+                }
+
+                // AutoTip 显示奖励
+                ShowBattleTip(rewardText);
+
+                // 恢复地牢 BGM
+                AudioManager.Instance?.CrossfadeMusic(AudioClipType.BGM_Dungeon, 1.0f);
+
+                activeBattleTile = null;
+
+                Debug.Log($"[地牢] 内联战斗胜利 奖励: exp={battle.rewardExp} gold={battle.rewardGold}");
+            }
+            else
+            {
+                // === 战败 ===
+                var player = GameManager.Instance.Player;
+
+                // AutoTip 战败信息
+                int lostGold = (int)(player.gold * GameConstants.DEFEAT_GOLD_LOSS_RATE);
+                ShowBattleTip($"战败！损失 {lostGold} 金币，返回城镇...");
+
+                // 恢复玩家状态
+                player.FullRestore();
+                player.gold -= lostGold;
+                player.dungeonFloor = Mathf.Max(1, player.dungeonFloor - 1);
+
+                // 延迟回城
+                if (flashCoroutine != null)
+                    StopCoroutine(flashCoroutine);
+                flashCoroutine = StartCoroutine(ReturnToTownAfterDelay());
+            }
+
+            // 刷新地图
+            RefreshUI();
+        }
+
+        /// <summary>战败后延迟返回城镇</summary>
+        private IEnumerator ReturnToTownAfterDelay()
+        {
+            yield return new WaitForSeconds(1.5f);
+
+            // 返回城镇
+            if (GameManager.Instance.Dungeon != null)
+                GameManager.Instance.Dungeon.OnReturnTown();
+            GameManager.Instance.SetState(GameState.InTown);
+            GameManager.Instance.SaveGame();
+            UIManager.Instance.ReplacePanel<TownPanel>();
+
+            flashCoroutine = null;
+        }
+
+        /// <summary>刷新内联战斗状态栏信息</summary>
+        private void RefreshInlineBattleStatus()
+        {
+            var b = BattleManager.Instance.CurrentBattle;
+            if (b == null || !isInlineBattleActive) return;
+
+            var m = b.monster;
+            statusText.text = $"战斗中 — {m.name} HP:{m.hp}/{m.maxHp}";
+
+            // 更新右侧状态面板的 HP/MP
+            var player = GameManager.Instance.Player;
+            hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
+            hpText.text = $"HP  {player.hp}/{player.maxHp}";
+            mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0;
+            mpText.text = $"MP  {player.mp}/{player.maxMp}";
+        }
+
+        /// <summary>刷新 HUD 战斗日志</summary>
+        private void RefreshHUDCombatLog()
+        {
+            if (GameHUD.Instance != null)
+            {
+                GameHUD.Instance.RefreshCombatLog();
+            }
+        }
+
+        /// <summary>刷新 HUD 角色信息</summary>
+        private void RefreshHUDCharInfo()
+        {
+            if (GameHUD.Instance != null)
+            {
+                GameHUD.Instance.RefreshCharInfo();
+                GameHUD.Instance.RefreshBag();
+                GameHUD.Instance.RefreshSkillBar();
+            }
+        }
+
+        /// <summary>在屏幕上方显示浮动战斗提示（使用 TipManager）</summary>
+        private void ShowBattleTip(string content)
+        {
+            if (TipManager.Instance == null) return;
+
+            // 定位到屏幕中心偏上（Tip Canvas 坐标系）
+            var tipManager = TipManager.Instance;
+            tipManager.ShowAutoTip(content, new Vector2(0, 350f), 3.0f);
         }
 
         /// <summary>根据 DungeonTile 查找旧 rooms 列表中对应的 DungeonRoom（兼容 BattleManager）</summary>
@@ -1577,6 +1910,16 @@ namespace Game.UI
             if (dungeon != null && dungeon.grid != null)
             {
                 UpdateGridMap(dungeon);
+            }
+        }
+
+        /// <summary>销毁时取消订阅 BattleController 事件</summary>
+        protected override void OnDestroyed()
+        {
+            if (BattleController.Instance != null)
+            {
+                BattleController.Instance.OnRoundComplete -= OnInlineRoundComplete;
+                BattleController.Instance.OnBattleEnd -= OnInlineBattleEnd;
             }
         }
 

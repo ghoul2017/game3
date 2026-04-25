@@ -836,6 +836,13 @@ namespace Game.UI
             return skills[_selectedSkillIndex];
         }
 
+        /// <summary>清除技能选中状态（内联战斗使用技能后调用）</summary>
+        public void ClearSkillSelection()
+        {
+            _selectedSkillIndex = -1;
+            UpdateSkillSlotSelection();
+        }
+
         /// <summary>左键点击技能槽：选中/取消选中</summary>
         private void OnSkillSlotLeftClick(int index)
         {
