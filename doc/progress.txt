@@ -95,3 +95,4 @@
 2026-04-25 F163 COMPLETED - WindowBase可拖动非全屏窗口系统：abstract基类继承UIPanel+IDragHandler三接口+标题栏40px拖拽+关闭按钮+内容区+UIManager.ShowWindow/CloseWindow生命周期
 2026-04-25 F164 COMPLETED - TipManager浮动信息提示系统：MonoBehaviour单例挂TipCanvas+对象池8个(CardBg+BorderColor+Text+CanvasGroup)+HoverTip鼠标跟随(15,-10)+AutoTip定时淡出(2.5s→0.3s)+UIManager初始化集成
 2026-04-25 F165 COMPLETED - 右侧面板-战斗日志+角色信息：BattleLogFormatter提取+CombatLogSection(180px/ScrollRect/12行池/颜色标记)+CharInfoSection(140px/5行布局/HP-MP-ATK-DEF-SPD-EXP)
+2026-04-25 F166 COMPLETED - 右侧面板-背包：BagSection(ScrollRect+Mask填充剩余)+20行对象池(22px紧凑行)+按ID分组显示+装备/使用/出售操作+金币+容量+空背包提示

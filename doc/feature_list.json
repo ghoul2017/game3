@@ -330,7 +330,7 @@
 
   {"id":"F165","category":"ui/hud","priority":3,"desc":"右侧面板-战斗日志+角色信息。战斗日志固定180px可滚动(12行对象池+颜色标记)，角色信息固定~140px不滚动(精炼5行：名字等级/HP条/MP条/ATK-DEF-SPD一行/EXP条)","steps":["1. GameHUD.CombatLogSection: ScrollRect+Mask，12个Text对象池，RefreshCombatLog()读取BattleManager日志","2. 提取 BattleLogFormatter 静态工具类（从 BattlePanel.ColorizeLog 提取颜色标记逻辑）","3. GameHUD.CharInfoSection: 固定140px不滚动，5行精炼布局（名Lv职/HP条/MP条/攻防速/EXP条）","4. RefreshCharInfo() 从 GameManager.Instance.Player 读取并更新"],"passes":true},
 
-  {"id":"F166","category":"ui/hud","priority":3,"desc":"右侧面板-背包。ScrollRect可滚动填充剩余空间，20行对象池，紧凑22px行高，点击装备/使用/右键出售，顶部显示金币","steps":["1. GameHUD.BagSection: ScrollRect+Mask，20行对象池（22px高紧凑行）","2. RefreshBag(): 读取Player.bagItems按ID分组，显示[类型标]名称 x数量 [操作按钮]","3. 操作按钮：装备(装备/已装备)、消耗品(使用，战斗中可用)、右键出售(X金)","4. 顶部金币显示 + 空背包TextDim提示"],"passes":false},
+  {"id":"F166","category":"ui/hud","priority":3,"desc":"右侧面板-背包。ScrollRect可滚动填充剩余空间，20行对象池，紧凑22px行高，点击装备/使用/右键出售，顶部显示金币","steps":["1. GameHUD.BagSection: ScrollRect+Mask，20行对象池（22px高紧凑行）","2. RefreshBag(): 读取Player.bagItems按ID分组，显示[类型标]名称 x数量 [操作按钮]","3. 操作按钮：装备(装备/已装备)、消耗品(使用，战斗中可用)、右键出售(X金)","4. 顶部金币显示 + 空背包TextDim提示"],"passes":true},
 
   {"id":"F167","category":"ui/hud","priority":3,"desc":"底部技能栏(6槽)。水平居中130x55px槽位，显示learnedSkills最多6个，左键选中(金色高亮)右键遗忘，SelectedSkillIndex属性","steps":["1. GameHUD.SkillBar: 6个技能槽水平居中排列(130x55px)，深色边框卡片","2. RefreshSkillBar(): 读取player.learnedSkills，显示技能名+MP消耗，空槽显示+空槽位","3. 左键选中（金色边框高亮），再次点击取消，选中其他取消当前","4. 右键弹出遗忘按钮，确认后调用player.ForgetSkill(skillId)","5. SelectedSkillIndex 属性(-1=无选中)，GetSelectedSkillId() 返回选中技能ID"],"passes":false},
 
