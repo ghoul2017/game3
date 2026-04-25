@@ -347,7 +347,7 @@ namespace Game.Core
                     data[idx] = (bass + melody) * 0.5f;
                 }
             }
-            var clip = AudioClip.Create("BossBGM", samples, 1, sampleRate, true);
+            var clip = AudioClip.Create("BossBGM", samples, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
         }
@@ -385,7 +385,7 @@ namespace Game.Core
                     data[idx] = val * envelope * 0.4f;
                 }
             }
-            var clip = AudioClip.Create("PeacefulBGM", samples, 1, sampleRate, true);
+            var clip = AudioClip.Create("PeacefulBGM", samples, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
         }
@@ -418,7 +418,7 @@ namespace Game.Core
                     data[idx] = (bass + overtone + noise) * envelope;
                 }
             }
-            var clip = AudioClip.Create("DungeonBGM", samples, 1, sampleRate, true);
+            var clip = AudioClip.Create("DungeonBGM", samples, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
         }
@@ -455,7 +455,7 @@ namespace Game.Core
                     data[idx] = (melody + bass + perc) * 0.5f;
                 }
             }
-            var clip = AudioClip.Create("BattleBGM", samples, 1, sampleRate, true);
+            var clip = AudioClip.Create("BattleBGM", samples, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
         }

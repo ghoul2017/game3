@@ -1542,12 +1542,13 @@ namespace Game.UI
 
             // 按钮1: 逛逛（进入购买菜单）
             msgBtnContinueLabel.text = "逛逛";
+            var capturedTile = pendingEventTile;  // 捕获到局部变量，避免 ClearPendingEvent 清空后 NPE
             pendingEventOption1 = () =>
             {
                 // 标记已清
-                pendingEventTile.content.itemIds.Clear();
+                capturedTile.content.itemIds.Clear();
                 foreach (var item in shopItems)
-                    pendingEventTile.content.itemIds.Add(item.id);
+                    capturedTile.content.itemIds.Add(item.id);
                 MarkEventTileCleared();
 
                 // 重新设置事件状态以保持双按钮弹窗

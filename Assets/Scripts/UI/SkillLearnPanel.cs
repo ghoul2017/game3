@@ -577,7 +577,8 @@ namespace Game.UI
                 {
                     row.actionBtn.gameObject.SetActive(true);
                     row.actionBtn.interactable = true;
-                    row.actionBtn.image.color = UIBuilder.ButtonNormal;
+                    if (row.actionBtn.image != null)
+                        row.actionBtn.image.color = UIBuilder.ButtonNormal;
                     row.actionBtn.onClick.RemoveAllListeners();
                     int capturedId = skill.id;
                     row.actionBtn.onClick.AddListener(() =>
