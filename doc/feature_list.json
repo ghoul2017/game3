@@ -332,7 +332,7 @@
 
   {"id":"F166","category":"ui/hud","priority":3,"desc":"右侧面板-背包。ScrollRect可滚动填充剩余空间，20行对象池，紧凑22px行高，点击装备/使用/右键出售，顶部显示金币","steps":["1. GameHUD.BagSection: ScrollRect+Mask，20行对象池（22px高紧凑行）","2. RefreshBag(): 读取Player.bagItems按ID分组，显示[类型标]名称 x数量 [操作按钮]","3. 操作按钮：装备(装备/已装备)、消耗品(使用，战斗中可用)、右键出售(X金)","4. 顶部金币显示 + 空背包TextDim提示"],"passes":true},
 
-  {"id":"F167","category":"ui/hud","priority":3,"desc":"底部技能栏(6槽)。水平居中130x55px槽位，显示learnedSkills最多6个，左键选中(金色高亮)右键遗忘，SelectedSkillIndex属性","steps":["1. GameHUD.SkillBar: 6个技能槽水平居中排列(130x55px)，深色边框卡片","2. RefreshSkillBar(): 读取player.learnedSkills，显示技能名+MP消耗，空槽显示+空槽位","3. 左键选中（金色边框高亮），再次点击取消，选中其他取消当前","4. 右键弹出遗忘按钮，确认后调用player.ForgetSkill(skillId)","5. SelectedSkillIndex 属性(-1=无选中)，GetSelectedSkillId() 返回选中技能ID"],"passes":false},
+  {"id":"F167","category":"ui/hud","priority":3,"desc":"底部技能栏(6槽)。水平居中130x55px槽位，显示learnedSkills最多6个，左键选中(金色高亮)右键遗忘，SelectedSkillIndex属性","steps":["1. GameHUD.SkillBar: 6个技能槽水平居中排列(130x55px)，深色边框卡片","2. RefreshSkillBar(): 读取player.learnedSkills，显示技能名+MP消耗，空槽显示+空槽位","3. 左键选中（金色边框高亮），再次点击取消，选中其他取消当前","4. 右键弹出遗忘按钮，确认后调用player.ForgetSkill(skillId)","5. SelectedSkillIndex 属性(-1=无选中)，GetSelectedSkillId() 返回选中技能ID"],"passes":true},
 
   {"id":"F168","category":"ui/game","priority":4,"desc":"城镇网格地图。固定5x4布局，4个建筑(旅馆休息/商店/技能公会/地牢入口)可点击交互，替代TownPanel","steps":["1. 新建 Assets/Scripts/UI/TownMapController.cs，MonoBehaviour，挂GameWorldContainer","2. 固定5x4网格布局，单元格~100x100，RectTransform定位","3. 4个建筑：旅馆(green休息恢复+存档)、商店(gold全商店窗口)、技能公会(purple技能学习窗口)、地牢入口(red生成地牢)","4. 其余格子为路径(暗灰色不可交互)，建筑悬停变色","5. 进入城镇时创建TownMapController，离开时销毁"],"passes":false},
 
