@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using Game.Config;
 using Game.Data;
 using UnityEngine;

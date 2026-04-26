@@ -21,6 +21,9 @@ namespace Game.UI
         // HoverTip 索引（同时只有一个 HoverTip）
         private int hoverTipIndex = -1;
 
+        // Canvas 的 RectTransform，用于坐标转换
+        private RectTransform canvasRt;
+
         // 结构体：每个池对象的数据
         private struct TipItem
         {
@@ -50,25 +53,15 @@ namespace Game.UI
                 return;
             }
             instance = this;
+            // 获取所在 Canvas 的 RectTransform，用于屏幕坐标转换
+            canvasRt = GetComponentInParent<Canvas>()?.GetComponent<RectTransform>();
+            if (canvasRt == null) canvasRt = GetComponent<RectTransform>();
             InitPool();
         }
 
         private void Update()
         {
-            // HoverTip 每帧跟随鼠标
-            if (hoverTipIndex >= 0)
-            {
-                var item = pool[hoverTipIndex];
-                Vector2 screenPos = Input.mousePosition;
-                // 偏移 (15, -10)
-                screenPos.x += 15f;
-                screenPos.y -= 10f;
-
-                // 屏幕坐标转 Canvas 锚定坐标
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    (RectTransform)transform, screenPos, null, out Vector2 localPos);
-                item.rt.anchoredPosition = localPos;
-            }
+            // HoverTip 固定位置，不跟随鼠标
         }
 
         // ============ 初始化 ============
@@ -136,11 +129,11 @@ namespace Game.UI
         // ============ 公共 API ============
 
         /// <summary>
-        /// 显示 HoverTip — 鼠标跟随，每帧更新位置
+        /// 显示 HoverTip — 固定在锚定坐标，不跟随鼠标
         /// </summary>
         /// <param name="content">提示内容</param>
-        /// <param name="screenPos">初始屏幕坐标（仅首帧用）</param>
-        public void ShowHoverTip(string content, Vector2 screenPos)
+        /// <param name="anchoredPos">Tip Canvas 中的锚定坐标</param>
+        public void ShowHoverTipAt(string content, Vector2 anchoredPos)
         {
             // 如果已有 HoverTip，直接更新内容
             if (hoverTipIndex >= 0)
@@ -148,12 +141,14 @@ namespace Game.UI
                 var item = pool[hoverTipIndex];
                 item.text.text = content;
                 ResizeToFit(item);
+                item.rt.anchoredPosition = anchoredPos;
+                pool[hoverTipIndex] = item;
                 return;
             }
 
             // 找空闲槽位
             int idx = FindFreeSlot();
-            if (idx < 0) return; // 池满，静默丢弃
+            if (idx < 0) return;
 
             hoverTipIndex = idx;
             var tip = pool[idx];
@@ -161,17 +156,11 @@ namespace Game.UI
             tip.kind = TipKind.Hover;
             tip.text.text = content;
             tip.canvasGroup.alpha = 1f;
+            tip.rt.anchoredPosition = anchoredPos;
             tip.obj.SetActive(true);
 
             ResizeToFit(tip);
             pool[idx] = tip;
-
-            // 设置初始位置
-            screenPos.x += 15f;
-            screenPos.y -= 10f;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                (RectTransform)transform, screenPos, null, out Vector2 localPos);
-            tip.rt.anchoredPosition = localPos;
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using Game.Config;
 using Game.Data;
 using UnityEngine;
@@ -504,6 +505,12 @@ namespace Game.UI
                 RefreshUI();
             }
             // 空槽位不响应（技能通过列表学习）
+        }
+
+        private void CloseSelectOverlay()
+        {
+            if (selectOverlay != null)
+                selectOverlay.SetActive(false);
         }
 
         private void LearnSkill(int skillId, int cost)

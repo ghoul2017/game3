@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Game.UI;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace Game.Core
 {
@@ -266,6 +267,18 @@ namespace Game.Core
             if (cvMethod != null)
                 cvMethod.Invoke(null, new object[] { panelObj.transform });
             return panelObj;
+        }
+
+        /// <summary>
+        /// 在指定父节点下创建面板（用于 GameWorldContainer 子控制器）。
+        /// 不进入 panelCache/panelStack，由调用方管理生命周期。
+        /// </summary>
+        public T CreatePanelUnder<T>(Transform parent) where T : UIPanel
+        {
+            var panel = GetOrCreatePanel<T>(parent);
+            // 从缓存移除，避免 ShowPanel 冲突
+            panelCache.Remove(typeof(T).Name);
+            return panel;
         }
 
         public T GetPanel<T>() where T : UIPanel

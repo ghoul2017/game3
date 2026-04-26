@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Game.Battle;
 using Game.Config;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using Game.Data;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -25,7 +26,7 @@ namespace Game.UI
         private const float RIGHT_PANEL_WIDTH = 260f;
         private const float BOTTOM_BAR_HEIGHT = 70f;
         private const float COMBAT_LOG_HEIGHT = 180f;
-        private const float CHAR_INFO_HEIGHT = 140f;
+        private const float CHAR_INFO_HEIGHT = 110f;
         private const int MAX_SKILL_SLOTS = 6;
         private const float SKILL_SLOT_W = 130f;
         private const float SKILL_SLOT_H = 55f;
@@ -47,15 +48,12 @@ namespace Game.UI
         private readonly Text[] logTexts = new Text[MAX_LOG_LINES];
         private ScrollRect logScrollRect;
 
-        // 角色信息
-        private Text charNameText;
-        private Slider hpSlider;
-        private Text hpText;
-        private Slider mpSlider;
-        private Text mpText;
-        private Text statsText;    // ATK/DEF/SPD 一行
-        private Slider expSlider;
-        private Text expText;
+        // 角色信息（纯文字5行）
+        private Text charNameText;   // 名字 LvXX 职业
+        private Text charHpMpText;   // HP:xxx/xxx  MP:xxx/xxx
+        private Text charStatsText;  // ATK:xx DEF:xx SPD:xx LUK:xx 暴击:xx% 吸血:xx%
+        private Text charExpText;    // EXP:xxx/xxx  金币:xxxx
+        private Text charFloorText;  // 第 N 层
 
         // 背包
         private Text goldText;
@@ -75,6 +73,9 @@ namespace Game.UI
 
         // 城镇地图
         private TownMapController townMapController;
+
+        // 地牢面板
+        private DungeonPanel dungeonPanel;
 
         /// <summary>技能槽结构体</summary>
         private struct SkillSlot
@@ -237,7 +238,7 @@ namespace Game.UI
             titleRt.anchoredPosition = Vector2.zero;
             var titleText = titleObj.AddComponent<Text>();
             titleText.text = "战斗日志";
-            titleText.fontSize = 16;
+            titleText.fontSize = 24;
             titleText.color = UIColors.Gold;
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -291,7 +292,7 @@ namespace Game.UI
 
                 var logText = lineObj.AddComponent<Text>();
                 logText.text = "";
-                logText.fontSize = 12;
+                logText.fontSize = 18;
                 logText.color = UIColors.TextDim;
                 logText.alignment = TextAnchor.LowerLeft;
                 logText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -314,8 +315,8 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 角色信息区 — 固定140px高，战斗日志下方，5行精炼布局
-        /// 第1行：名Lv职 | 第2行：HP条 | 第3行：MP条 | 第4行：ATK/DEF/SPD | 第5行：EXP条
+        /// 角色信息区 — 固定110px高，战斗日志下方，5行纯文字布局
+        /// 第1行：名Lv职 | 第2行：HP/MP | 第3行：ATK/DEF/SPD | 第4行：EXP/金币 | 第5行：楼层
         /// </summary>
         private void BuildCharInfoSection(Transform parent)
         {
@@ -324,7 +325,6 @@ namespace Game.UI
             float padding = 4f;
             float leftMargin = 8f;
             float rightMargin = 8f;
-            float barHeight = 12f;
 
             // 区块容器
             var sectionObj = UIFactory.CreateUI(parent, "CharInfoSection");
@@ -355,7 +355,7 @@ namespace Game.UI
             titleRt.anchoredPosition = Vector2.zero;
             var titleText = titleObj.AddComponent<Text>();
             titleText.text = "角色";
-            titleText.fontSize = 14;
+            titleText.fontSize = 18;
             titleText.color = UIColors.Gold;
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -371,88 +371,80 @@ namespace Game.UI
             divRt.sizeDelta = new Vector2(0, 1);
             divRt.anchoredPosition = new Vector2(0, -20);
 
-            // ---- 第1行：名字 LvXX 职业 (y: -22 ~ -38) ----
+            // ---- 第1行：名字 LvXX 职业 (y: -22 ~ -40) ----
             var nameObj = UIFactory.CreateUI(bgObj.transform, "CharName");
             var nameRt = nameObj.GetComponent<RectTransform>();
             nameRt.anchorMin = new Vector2(0f, 1f);
             nameRt.anchorMax = new Vector2(1f, 1f);
             nameRt.pivot = new Vector2(0f, 1f);
-            nameRt.offsetMin = new Vector2(leftMargin, -38);
+            nameRt.offsetMin = new Vector2(leftMargin, -40);
             nameRt.offsetMax = new Vector2(-rightMargin, -22);
             charNameText = nameObj.AddComponent<Text>();
             charNameText.text = "--";
-            charNameText.fontSize = 13;
+            charNameText.fontSize = 16;
             charNameText.color = UIColors.TextWhite;
             charNameText.alignment = TextAnchor.MiddleLeft;
             charNameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            // ---- 第2行：HP条 (y: -40 ~ -54) ----
-            BuildBarWithLabel(bgObj.transform, "HPBar", UIColors.Red, -40, -54, leftMargin, rightMargin, barHeight,
-                out hpSlider, out hpText);
+            // ---- 第2行：HP/MP (y: -42 ~ -58) ----
+            var hpMpObj = UIFactory.CreateUI(bgObj.transform, "CharHpMp");
+            var hpMpRt = hpMpObj.GetComponent<RectTransform>();
+            hpMpRt.anchorMin = new Vector2(0f, 1f);
+            hpMpRt.anchorMax = new Vector2(1f, 1f);
+            hpMpRt.pivot = new Vector2(0f, 1f);
+            hpMpRt.offsetMin = new Vector2(leftMargin, -58);
+            hpMpRt.offsetMax = new Vector2(-rightMargin, -42);
+            charHpMpText = hpMpObj.AddComponent<Text>();
+            charHpMpText.text = "HP:0/0  MP:0/0";
+            charHpMpText.fontSize = 16;
+            charHpMpText.color = UIColors.TextWhite;
+            charHpMpText.alignment = TextAnchor.MiddleLeft;
+            charHpMpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            // ---- 第3行：MP条 (y: -56 ~ -70) ----
-            BuildBarWithLabel(bgObj.transform, "MPBar", UIColors.Blue, -56, -70, leftMargin, rightMargin, barHeight,
-                out mpSlider, out mpText);
-
-            // ---- 第4行：ATK/DEF/SPD 一行 (y: -72 ~ -88) ----
-            var statsObj = UIFactory.CreateUI(bgObj.transform, "Stats");
+            // ---- 第3行：ATK/DEF/SPD (y: -60 ~ -76) ----
+            var statsObj = UIFactory.CreateUI(bgObj.transform, "CharStats");
             var statsRt = statsObj.GetComponent<RectTransform>();
             statsRt.anchorMin = new Vector2(0f, 1f);
             statsRt.anchorMax = new Vector2(1f, 1f);
             statsRt.pivot = new Vector2(0f, 1f);
-            statsRt.offsetMin = new Vector2(leftMargin, -88);
-            statsRt.offsetMax = new Vector2(-rightMargin, -72);
-            statsText = statsObj.AddComponent<Text>();
-            statsText.text = "ATK:0 DEF:0 SPD:0";
-            statsText.fontSize = 12;
-            statsText.color = UIColors.TextDim;
-            statsText.alignment = TextAnchor.MiddleLeft;
-            statsText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            statsRt.offsetMin = new Vector2(leftMargin, -76);
+            statsRt.offsetMax = new Vector2(-rightMargin, -60);
+            charStatsText = statsObj.AddComponent<Text>();
+            charStatsText.text = "ATK:0  DEF:0  SPD:0";
+            charStatsText.fontSize = 16;
+            charStatsText.color = UIColors.TextDim;
+            charStatsText.alignment = TextAnchor.MiddleLeft;
+            charStatsText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            // ---- 第5行：EXP条 (y: -90 ~ -104) ----
-            BuildBarWithLabel(bgObj.transform, "EXPBar", UIColors.ExpColor, -90, -104, leftMargin, rightMargin, barHeight,
-                out expSlider, out expText);
-        }
+            // ---- 第4行：EXP/金币 (y: -78 ~ -94) ----
+            var expObj = UIFactory.CreateUI(bgObj.transform, "CharExp");
+            var expRt = expObj.GetComponent<RectTransform>();
+            expRt.anchorMin = new Vector2(0f, 1f);
+            expRt.anchorMax = new Vector2(1f, 1f);
+            expRt.pivot = new Vector2(0f, 1f);
+            expRt.offsetMin = new Vector2(leftMargin, -94);
+            expRt.offsetMax = new Vector2(-rightMargin, -78);
+            charExpText = expObj.AddComponent<Text>();
+            charExpText.text = "EXP:0/0  金币:0";
+            charExpText.fontSize = 16;
+            charExpText.color = UIColors.Orange;
+            charExpText.alignment = TextAnchor.MiddleLeft;
+            charExpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-        /// <summary>创建带居中文字标签的Slider条</summary>
-        private void BuildBarWithLabel(Transform parent, string barName, Color fillColor,
-            float topOffset, float bottomOffset, float leftMargin, float rightMargin, float barHeight,
-            out Slider slider, out Text labelText)
-        {
-            var barObj = UIFactory.CreateUI(parent, barName);
-            var barRt = barObj.GetComponent<RectTransform>();
-            barRt.anchorMin = new Vector2(0f, 1f);
-            barRt.anchorMax = new Vector2(1f, 1f);
-            barRt.pivot = new Vector2(0f, 1f);
-            barRt.offsetMin = new Vector2(leftMargin, bottomOffset);
-            barRt.offsetMax = new Vector2(-rightMargin, topOffset);
-
-            var bgImg = barObj.AddComponent<Image>();
-            bgImg.color = UIColors.SliderBg;
-
-            var fillObj = UIFactory.CreateUI(barObj.transform, "Fill");
-            var fillRt = fillObj.GetComponent<RectTransform>();
-            fillRt.anchorMin = Vector2.zero;
-            fillRt.anchorMax = Vector2.one;
-            fillRt.offsetMin = new Vector2(1, 1);
-            fillRt.offsetMax = new Vector2(-1, -1);
-            var fillImg = fillObj.AddComponent<Image>();
-            fillImg.color = fillColor;
-
-            slider = barObj.AddComponent<Slider>();
-            slider.interactable = false;
-            slider.fillRect = fillRt;
-            slider.targetGraphic = fillImg;
-            slider.value = 1f;
-
-            var labelObj = UIFactory.CreateUI(barObj.transform, "Label");
-            UIBuilder.SetStretch(labelObj);
-            labelText = labelObj.AddComponent<Text>();
-            labelText.text = "0/0";
-            labelText.fontSize = 10;
-            labelText.color = UIColors.TextWhite;
-            labelText.alignment = TextAnchor.MiddleCenter;
-            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            // ---- 第5行：楼层 (y: -96 ~ -108) ----
+            var floorObj = UIFactory.CreateUI(bgObj.transform, "CharFloor");
+            var floorRt = floorObj.GetComponent<RectTransform>();
+            floorRt.anchorMin = new Vector2(0f, 1f);
+            floorRt.anchorMax = new Vector2(1f, 1f);
+            floorRt.pivot = new Vector2(0f, 1f);
+            floorRt.offsetMin = new Vector2(leftMargin, -108);
+            floorRt.offsetMax = new Vector2(-rightMargin, -96);
+            charFloorText = floorObj.AddComponent<Text>();
+            charFloorText.text = "城镇";
+            charFloorText.fontSize = 16;
+            charFloorText.color = UIColors.TextDim;
+            charFloorText.alignment = TextAnchor.MiddleLeft;
+            charFloorText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
         /// <summary>
@@ -495,7 +487,7 @@ namespace Game.UI
             titleRt.anchoredPosition = Vector2.zero;
             var titleText = titleObj.AddComponent<Text>();
             titleText.text = "背包";
-            titleText.fontSize = 14;
+            titleText.fontSize = 21;
             titleText.color = UIColors.Gold;
             titleText.alignment = TextAnchor.MiddleCenter;
             titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -521,7 +513,7 @@ namespace Game.UI
             goldRt.offsetMax = new Vector2(-6, -(titleHeight + 1));
             goldText = goldObj.AddComponent<Text>();
             goldText.text = "金币: 0";
-            goldText.fontSize = 12;
+            goldText.fontSize = 18;
             goldText.color = UIColors.Orange;
             goldText.alignment = TextAnchor.MiddleCenter;
             goldText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -535,7 +527,7 @@ namespace Game.UI
             emptyRt.offsetMax = Vector2.zero;
             emptyBagText = emptyObj.AddComponent<Text>();
             emptyBagText.text = "背包是空的";
-            emptyBagText.fontSize = 13;
+            emptyBagText.fontSize = 20;
             emptyBagText.color = UIColors.TextDim;
             emptyBagText.alignment = TextAnchor.MiddleCenter;
             emptyBagText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -609,7 +601,7 @@ namespace Game.UI
             nameRt.offsetMax = new Vector2(-2, 0);
             var nameText = nameObj.AddComponent<Text>();
             nameText.text = "";
-            nameText.fontSize = 11;
+            nameText.fontSize = 17;
             nameText.color = UIColors.TextWhite;
             nameText.alignment = TextAnchor.MiddleLeft;
             nameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -961,46 +953,32 @@ namespace Game.UI
         }
 
         /// <summary>
-        /// 刷新角色信息 — 从 GameManager.Player 读取，5行精炼布局
+        /// 刷新角色信息 — 从 GameManager.Player 读取，5行纯文字布局
         /// </summary>
         public void RefreshCharInfo()
         {
-            if (charNameText == null) return;
-
             var player = GameManager.Instance?.Player;
-            if (player == null)
+            if (player == null || charNameText == null)
             {
-                charNameText.text = "--";
-                hpSlider.value = 0f;
-                hpText.text = "0/0";
-                mpSlider.value = 0f;
-                mpText.text = "0/0";
-                statsText.text = "ATK:0 DEF:0 SPD:0";
-                expSlider.value = 0f;
-                expText.text = "0/0";
+                if (charNameText != null) charNameText.text = "--";
                 return;
             }
 
-            // 第1行：名字 LvXX 职业
             string profName = GetProfessionDisplayName(player.profession);
             charNameText.text = $"{player.name}  Lv.{player.level}  {profName}";
 
-            // 第2行：HP条
-            hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0f;
-            hpText.text = $"{player.hp}/{player.maxHp}";
+            charHpMpText.text = $"HP:{player.hp}/{player.maxHp}  MP:{player.mp}/{player.maxMp}";
+            // HP low warning color
+            charHpMpText.color = player.hp < player.maxHp * 0.3f ? UIColors.Red : UIColors.TextWhite;
 
-            // 第3行：MP条
-            mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0f;
-            mpText.text = $"{player.mp}/{player.maxMp}";
+            // Stats with equipment bonuses
+            charStatsText.text = $"ATK:{player.attack}  DEF:{player.defense}  SPD:{player.speed}";
 
-            // 第4行：ATK/DEF/SPD
-            statsText.text = $"ATK:{player.attack}  DEF:{player.defense}  SPD:{player.speed}";
-
-            // 第5行：EXP条
             int expToNext = player.GetExpToNextLevel();
-            float expRatio = expToNext > 0 ? (float)player.exp / expToNext : 0f;
-            expSlider.value = expRatio;
-            expText.text = $"{player.exp}/{expToNext}";
+            charExpText.text = $"EXP:{player.exp}/{expToNext}  金币:{player.gold}";
+
+            var dungeon = GameManager.Instance.Dungeon;
+            charFloorText.text = dungeon != null ? $"第 {dungeon.floor} 层" : "城镇";
         }
 
         /// <summary>获取职业显示名称</summary>
@@ -1101,7 +1079,7 @@ namespace Game.UI
                     {
                         row.actionBtnLabel.text = isEquipped ? "已装" : (levelOk ? "装备" : $"Lv{itemCfg.reqLevel}");
                         row.actionBtnLabel.color = isEquipped ? UIColors.Green : (levelOk ? UIColors.Gold : UIColors.TextDim);
-                        row.actionBtnLabel.fontSize = 10;
+                        row.actionBtnLabel.fontSize = 15;
                     }
                 }
                 else if (itemCfg.type == ItemType.Consumable)
@@ -1119,7 +1097,7 @@ namespace Game.UI
                     {
                         row.actionBtnLabel.text = "使用";
                         row.actionBtnLabel.color = UIColors.Gold;
-                        row.actionBtnLabel.fontSize = 10;
+                        row.actionBtnLabel.fontSize = 15;
                     }
                 }
                 else
@@ -1143,7 +1121,7 @@ namespace Game.UI
                 {
                     row.sellBtnLabel.text = $"{sellPrice}金";
                     row.sellBtnLabel.color = UIColors.Orange;
-                    row.sellBtnLabel.fontSize = 9;
+                    row.sellBtnLabel.fontSize = 14;
                 }
 
                 idx++;
@@ -1300,15 +1278,18 @@ namespace Game.UI
                 case GameState.None:
                     _instance.Hide();
                     _instance.HideTownMap();
+                    _instance.HideDungeon();
                     break;
                 case GameState.InTown:
                     _instance.Show();
                     _instance.ShowTownMap();
+                    _instance.HideDungeon();
                     break;
                 case GameState.InDungeon:
                 case GameState.InBattle:
                     _instance.Show();
                     _instance.HideTownMap();
+                    _instance.ShowDungeon();
                     break;
             }
         }
@@ -1331,6 +1312,39 @@ namespace Game.UI
             if (townMapController != null)
             {
                 townMapController.gameObject.SetActive(false);
+            }
+        }
+
+        // ============ 地牢面板 ============
+
+        /// <summary>显示地牢面板（InDungeon 时调用）</summary>
+        private void ShowDungeon()
+        {
+            if (dungeonPanel == null)
+            {
+                dungeonPanel = UIManager.Instance.CreatePanelUnder<DungeonPanel>(gameWorldContainer);
+                // 确保 stretch 填满 gameWorldContainer
+                UIBuilder.SetStretch(dungeonPanel.gameObject);
+            }
+            dungeonPanel.Show();
+        }
+
+        /// <summary>隐藏地牢面板</summary>
+        private void HideDungeon()
+        {
+            if (dungeonPanel != null)
+            {
+                dungeonPanel.Hide();
+            }
+        }
+
+        /// <summary>销毁地牢面板（战败/回城时调用）</summary>
+        public void DestroyDungeon()
+        {
+            if (dungeonPanel != null)
+            {
+                UnityEngine.Object.Destroy(dungeonPanel.gameObject);
+                dungeonPanel = null;
             }
         }
 

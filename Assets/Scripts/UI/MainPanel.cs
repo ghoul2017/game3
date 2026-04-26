@@ -1,4 +1,5 @@
 using Game.Core;
+using Logger = Game.Core.Logger;
 using Game.Config;
 using UnityEngine;
 using UnityEngine.UI;

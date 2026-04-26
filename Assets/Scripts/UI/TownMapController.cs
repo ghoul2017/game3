@@ -271,10 +271,10 @@ namespace Game.UI
             ShopWindow.OpenTownShop();
         }
 
-        /// <summary>技能公会：打开技能学习面板</summary>
+        /// <summary>技能公会：打开技能学习窗口</summary>
         private void OnSkillGuildClick()
         {
-            UIManager.Instance.ShowPanel<SkillLearnPanel>();
+            UIManager.Instance.ShowWindow<SkillLearnWindow>();
         }
 
         /// <summary>地牢入口：生成地牢 + 切换到地牢</summary>
@@ -286,10 +286,8 @@ namespace Game.UI
             var dungeon = new DungeonData();
             dungeon.GenerateFloor(player.dungeonFloor > 0 ? player.dungeonFloor : 1);
             GameManager.Instance.Dungeon = dungeon;
-            // 新流程：清除旧面板栈，显示DungeonPanel，GameState联动隐藏城镇地图
-            UIManager.Instance.ClearAll();
+            // SetState 触发 GameHUD.UpdateVisibility → 自动隐藏城镇地图 + 显示地牢面板
             GameManager.Instance.SetState(GameState.InDungeon);
-            UIManager.Instance.ShowPanel<DungeonPanel>();
         }
     }
 }

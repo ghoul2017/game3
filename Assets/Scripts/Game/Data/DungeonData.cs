@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Game.Config;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using UnityEngine;
 
 namespace Game.Data
@@ -756,29 +757,14 @@ namespace Game.Data
             SetVisibleArea(startPos);
         }
 
-        /// <summary>获取指定坐标的可见性状态</summary>
+        /// <summary>获取指定坐标的可见性状态（纯 isExplored 驱动，无玩家位置概念）</summary>
         public TileVisibility GetTileVisibility(int x, int y)
         {
             var tile = GetTileAt(x, y);
             if (tile == null) return TileVisibility.Hidden;
 
-            // 当前玩家位置 → Visible
-            if (currentPos.x == x && currentPos.y == y)
-                return TileVisibility.Visible;
-
-            // 当前位置的相邻格子 → Visible
-            for (int i = 0; i < 4; i++)
-            {
-                if (currentPos.x + DirX[i] == x && currentPos.y + DirY[i] == y)
-                    return TileVisibility.Visible;
-            }
-
-            // 已探索但不在视野内 → Explored
-            if (tile.isExplored)
-                return TileVisibility.Explored;
-
-            // 未探索 → Hidden
-            return TileVisibility.Hidden;
+            // 已探索=可见，未探索=隐藏
+            return tile.isExplored ? TileVisibility.Visible : TileVisibility.Hidden;
         }
 
         /// <summary>玩家移动到新位置：更新迷雾可见性</summary>

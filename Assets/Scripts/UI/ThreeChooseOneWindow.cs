@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Game.Config;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using Game.Data;
 using UnityEngine;
 using UnityEngine.UI;
@@ -251,15 +252,15 @@ namespace Game.UI
                     descText.text = "你已领悟所有技能，神殿赐予你恢复之力";
 
                 // 只显示一张居中的恢复卡片
-                float totalW = CARD_W;
-                float startX = 0f;
+                float fallbackW = CARD_W;
+                float fallbackStartX = 0f;
                 for (int i = 0; i < MAX_CHOICES; i++)
                 {
                     if (i == 0)
                     {
                         cardObjs[i].SetActive(true);
                         var rt = cardObjs[i].GetComponent<RectTransform>();
-                        rt.anchoredPosition = new Vector2(startX, 10);
+                        rt.anchoredPosition = new Vector2(fallbackStartX, 10);
                         cardNameTexts[i].text = $"恢复 {player.maxHp / 2} HP";
                         cardNameTexts[i].color = UIColors.Green;
                         cardDescTexts[i].text = "接受神殿的赐福";

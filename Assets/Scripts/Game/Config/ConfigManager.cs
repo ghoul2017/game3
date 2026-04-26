@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Game.Battle;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using UnityEngine;
 
 namespace Game.Config
@@ -81,6 +82,8 @@ namespace Game.Config
 
         public ItemConfig GetItem(int id)
             => items.TryGetValue(id, out var c) ? c : null;
+
+        public List<ItemConfig> GetAllItems() => items.Values.ToList();
 
         public List<ItemConfig> GetItemsByType(ItemType type)
             => items.Values.Where(i => i.type == type).ToList();

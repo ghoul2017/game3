@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Game.Config;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using UnityEngine;
 
 namespace Game.Data

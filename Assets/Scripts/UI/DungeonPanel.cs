@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Game.Battle;
 using Game.Core;
+using Logger = Game.Core.Logger;
 using Game.Config;
 using Game.Data;
 using UnityEngine;
@@ -21,7 +22,7 @@ namespace Game.UI
         private const float ZoomStep = 10f;
 
         // ---- 房间颜色方案（深色主题适配） ----
-        private static readonly Color ColorWall      = HexColor(0x0d0d0d);      // 极黑
+        private static readonly Color ColorWall      = HexColor(0x0a0a12);      // 极暗蓝黑（与空白房间区分）
         private static readonly Color ColorMonster   = HexColor(0xc0392b);      // 深红
         private static readonly Color ColorElite     = HexColor(0xe74c3c);      // 亮红
         private static readonly Color ColorTreasure  = HexColor(0xf39c12);      // 金
@@ -92,8 +93,7 @@ namespace Game.UI
         private bool isRoundAnimating;
 
         // ---- 缓存引用 ----
-        private Text titleText;
-        private Text statusText;
+        private Text floorText;
         private GameObject msgOverlay;
         private Text msgText;
 
@@ -118,52 +118,50 @@ namespace Game.UI
             public EventTrigger eventTrigger; // 悬停事件（HoverTip）
         }
 
-        // 右侧状态栏引用
-        private Slider hpSlider;
-        private Text hpText;
-        private Slider mpSlider;
-        private Text mpText;
-        private Slider expSlider;
-        private Text expText;
-        private Text floorText;
-        private Text goldText;
-        private Text statsText;
-
-        // 底部技能栏引用
-        private const int MaxSkillSlots = GameConstants.MAX_SKILL_SLOTS;
-        private Text[] skillLabels = new Text[MaxSkillSlots];
-        private Text[] skillMpLabels = new Text[MaxSkillSlots];
-
         /// <summary>仅供 PrefabGenerator 调用</summary>
         public static void CreateVisuals(Transform parent)
         {
-            UIBuilder.CreateFullScreenBg(parent);
-            UIBuilder.CreateTitleBar(parent, "地       牢");
+            // 背景
+            var bgObj = UIFactory.CreateUI(parent, "Bg");
+            var bgImg = bgObj.AddComponent<Image>();
+            bgImg.color = UIColors.DarkBg;
+            UIBuilder.SetStretch(bgObj);
 
-            // 状态栏（顶部信息条）
-            var bar = UIBuilder.CreatePanel(parent, 0, 45, "StatusBar");
-            var barRt = bar.GetComponent<RectTransform>();
-            barRt.anchorMin = new Vector2(0, 1);
-            barRt.anchorMax = new Vector2(1, 1);
-            barRt.pivot = new Vector2(0.5f, 1);
-            barRt.anchoredPosition = new Vector2(0, -70);
-            barRt.sizeDelta = new Vector2(0, 45);
-            bar.GetComponent<Image>().color = UIBuilder.InfoBarBg;
-            var statusTextObj = UIBuilder.CreateText(bar.transform, "", 16, UIBuilder.TextWhite, TextAnchor.MiddleCenter, name: "StatusText");
-            UIBuilder.SetStretch(statusTextObj.gameObject);
+            // 顶部条：层数 + 返回按钮
+            var topBar = UIFactory.CreateUI(parent, "TopBar");
+            var topBarRt = topBar.GetComponent<RectTransform>();
+            topBarRt.anchorMin = new Vector2(0, 1);
+            topBarRt.anchorMax = new Vector2(1, 1);
+            topBarRt.pivot = new Vector2(0.5f, 1);
+            topBarRt.sizeDelta = new Vector2(0, 36);
+            topBarRt.anchoredPosition = Vector2.zero;
 
-            // ===== 左侧：地图面板（ScrollRect 可滚动缩放） =====
+            var floorTextObj = UIFactory.CreateText(topBar.transform, "第 1 层", 18, UIColors.Gold, TextAnchor.MiddleLeft, false, "FloorText");
+            var floorRt = floorTextObj.GetComponent<RectTransform>();
+            floorRt.anchorMin = new Vector2(0, 0);
+            floorRt.anchorMax = new Vector2(1, 1);
+            floorRt.offsetMin = new Vector2(12, 0);
+            floorRt.offsetMax = new Vector2(-100, 0);
+
+            var (btnBack, _) = UIBuilder.CreateButtonWithRef(topBar.transform, "返回城镇", 90, 28, null, 14, "BtnBack");
+            var backRt = btnBack.GetComponent<RectTransform>();
+            backRt.anchorMin = new Vector2(1, 0.5f);
+            backRt.anchorMax = new Vector2(1, 0.5f);
+            backRt.pivot = new Vector2(1, 0.5f);
+            backRt.sizeDelta = new Vector2(90, 28);
+            backRt.anchoredPosition = new Vector2(-8, 0);
+
+            // 地图面板（stretch 填满剩余空间，顶部留36px）
             var mapPanel = UIBuilder.CreateBorderedPanel(parent, 880, 500, "MapPanel");
             var mapPanelRt = mapPanel.GetComponent<RectTransform>();
             mapPanelRt.anchorMin = new Vector2(0, 0);
             mapPanelRt.anchorMax = new Vector2(1, 1);
             mapPanelRt.pivot = new Vector2(0.5f, 0.5f);
-            mapPanelRt.anchoredPosition = new Vector2(-50, 20);
-            mapPanelRt.sizeDelta = new Vector2(-280, -170);
+            mapPanelRt.anchoredPosition = Vector2.zero;
+            mapPanelRt.sizeDelta = new Vector2(0, -40);
 
             var mapInner = mapPanel.transform.Find("Inner");
 
-            // ScrollRect Viewport
             var viewport = new GameObject("Viewport");
             viewport.transform.SetParent(mapInner, false);
             var vpRt = viewport.AddComponent<RectTransform>();
@@ -172,11 +170,10 @@ namespace Game.UI
             vpRt.offsetMin = Vector2.zero;
             vpRt.offsetMax = Vector2.zero;
             var vpImg = viewport.AddComponent<Image>();
-            vpImg.color = UIBuilder.ViewportBg;
+            vpImg.color = UIColors.DarkBg;
             var vpMask = viewport.AddComponent<Mask>();
             vpMask.showMaskGraphic = false;
 
-            // ScrollRect Content 容器
             var content = new GameObject("Content");
             content.transform.SetParent(viewport.transform, false);
             var contentRt = content.AddComponent<RectTransform>();
@@ -186,7 +183,6 @@ namespace Game.UI
             contentRt.anchoredPosition = Vector2.zero;
             contentRt.sizeDelta = new Vector2(MaxGridSize * DefaultCellSize, MaxGridSize * DefaultCellSize);
 
-            // ScrollRect 组件（挂在 Viewport 上，确保拖拽和点击事件正确传递）
             var scrollRect = viewport.AddComponent<ScrollRect>();
             scrollRect.viewport = vpRt;
             scrollRect.content = contentRt;
@@ -197,22 +193,21 @@ namespace Game.UI
             scrollRect.scrollSensitivity = 1f;
             scrollRect.decelerationRate = 0.135f;
 
-            // 网格瓦片对象池（最大 100 = 10x10）
             for (int i = 0; i < MaxTiles; i++)
             {
                 CreateGridTileVisual(contentRt, i);
             }
 
-            // 消息覆盖层（默认隐藏）
+            // 消息覆盖层
             var msgOverlay = new GameObject("MsgOverlay");
             msgOverlay.transform.SetParent(mapInner, false);
             UIBuilder.SetStretch(msgOverlay);
             var oImg = msgOverlay.AddComponent<Image>();
-            oImg.color = new Color(UIBuilder.DarkBg.r, UIBuilder.DarkBg.g, UIBuilder.DarkBg.b, 0.88f);
+            oImg.color = new Color(UIColors.DarkBg.r, UIColors.DarkBg.g, UIColors.DarkBg.b, 0.88f);
             msgOverlay.AddComponent<CanvasGroup>();
             msgOverlay.SetActive(false);
 
-            var msgTextObj = UIBuilder.CreateText(msgOverlay.transform, "", 26, UIBuilder.Gold, TextAnchor.MiddleCenter, name: "MsgText");
+            var msgTextObj = UIFactory.CreateText(msgOverlay.transform, "", 26, UIColors.Gold, TextAnchor.MiddleCenter, false, "MsgText");
             UIBuilder.SetStretch(msgTextObj.gameObject);
 
             var (btnContinue, _) = UIBuilder.CreateButtonWithRef(msgOverlay.transform, "继续", 160, 40, null, 20, "BtnContinue");
@@ -220,146 +215,10 @@ namespace Game.UI
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(-90, -60), new Vector2(160, 40));
 
-            // 事件弹窗第二个选项按钮（默认隐藏，仅事件弹窗时显示）
             var (btnOption2, _) = UIBuilder.CreateButtonWithRef(msgOverlay.transform, "离开", 160, 40, null, 20, "BtnOption2");
             UIBuilder.SetAnchored(btnOption2.gameObject,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(90, -60), new Vector2(160, 40));
-
-            // ===== 右侧：状态面板 =====
-            CreateStatusPanelVisuals(parent);
-
-            // ===== 底部技能快捷栏 =====
-            CreateSkillBarVisuals(parent);
-
-            // ===== 底部按钮区 =====
-            float btnW = 150;
-            float btnH = 45;
-
-            var (btnBack, _) = UIBuilder.CreateButtonWithRef(parent, "返回城镇", btnW, btnH, null, 20, "BtnBack");
-            UIBuilder.SetAnchored(btnBack.gameObject,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(-180, 30), new Vector2(btnW, btnH));
-
-            var (btnBag, _) = UIBuilder.CreateButtonWithRef(parent, "背包", btnW, btnH, null, 18, "BtnBag");
-            UIBuilder.SetAnchored(btnBag.gameObject,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0, 30), new Vector2(btnW, btnH));
-
-            var (btnRole, _) = UIBuilder.CreateButtonWithRef(parent, "角色", btnW, btnH, null, 18, "BtnRole");
-            UIBuilder.SetAnchored(btnRole.gameObject,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(180, 30), new Vector2(btnW, btnH));
-        }
-
-        private static void CreateStatusPanelVisuals(Transform parent)
-        {
-            var panel = UIBuilder.CreateBorderedPanel(parent, 240, 500, "StatusPanel");
-            var panelRt = panel.GetComponent<RectTransform>();
-            panelRt.anchorMin = new Vector2(1, 0);
-            panelRt.anchorMax = new Vector2(1, 1);
-            panelRt.pivot = new Vector2(1, 0.5f);
-            panelRt.anchoredPosition = new Vector2(-20, 20);
-            panelRt.sizeDelta = new Vector2(240, -170);
-
-            var inner = panel.transform.Find("Inner");
-
-            float y = 200;
-            float sliderW = 200;
-            float barH = 18;
-            float rowGap = 60;
-
-            // HP 条
-            var hpLabel = UIBuilder.CreateText(inner, "HP", 15, UIBuilder.HpColor, TextAnchor.MiddleLeft, true, "HpLabel");
-            UIBuilder.SetAnchored(hpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-70, y), new Vector2(36, 22));
-            var hpSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.HpColor, "HpSlider");
-            UIBuilder.SetAnchored(hpSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(20, y), new Vector2(sliderW, barH));
-            var hpTextObj = UIBuilder.CreateText(inner, "", 13, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "HpText");
-            UIBuilder.SetAnchored(hpTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 18), new Vector2(sliderW, 16));
-
-            y -= rowGap;
-
-            // MP 条
-            var mpLabel = UIBuilder.CreateText(inner, "MP", 15, UIBuilder.MpColor, TextAnchor.MiddleLeft, true, "MpLabel");
-            UIBuilder.SetAnchored(mpLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-70, y), new Vector2(36, 22));
-            var mpSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.MpColor, "MpSlider");
-            UIBuilder.SetAnchored(mpSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(20, y), new Vector2(sliderW, barH));
-            var mpTextObj = UIBuilder.CreateText(inner, "", 13, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "MpText");
-            UIBuilder.SetAnchored(mpTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 18), new Vector2(sliderW, 16));
-
-            y -= rowGap;
-
-            // EXP 条
-            var expLabel = UIBuilder.CreateText(inner, "EXP", 15, UIBuilder.ExpColor, TextAnchor.MiddleLeft, true, "ExpLabel");
-            UIBuilder.SetAnchored(expLabel.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-70, y), new Vector2(36, 22));
-            var expSliderObj = UIBuilder.CreateSlider(inner, sliderW, barH, UIBuilder.ExpColor, "ExpSlider");
-            UIBuilder.SetAnchored(expSliderObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(20, y), new Vector2(sliderW, barH));
-            var expTextObj = UIBuilder.CreateText(inner, "", 13, UIBuilder.TextWhite, TextAnchor.MiddleCenter, false, "ExpText");
-            UIBuilder.SetAnchored(expTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y - 18), new Vector2(sliderW, 16));
-
-            y -= rowGap + 5;
-
-            // 分隔线
-            var div = UIBuilder.CreateDivider(inner);
-            var divRt = div.GetComponent<RectTransform>();
-            divRt.anchoredPosition = new Vector2(0, y + 8);
-            divRt.sizeDelta = new Vector2(210, 2);
-
-            y -= 12;
-
-            // 层数/金币/攻防信息
-            var floorTextObj = UIBuilder.CreateText(inner, "", 17, UIBuilder.Gold, TextAnchor.MiddleLeft, true, "FloorText");
-            UIBuilder.SetAnchored(floorTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(210, 24));
-            y -= 28;
-            var goldTextObj = UIBuilder.CreateText(inner, "", 17, UIBuilder.Gold, TextAnchor.MiddleLeft, false, "GoldText");
-            UIBuilder.SetAnchored(goldTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(210, 24));
-            y -= 28;
-            var statsTextObj = UIBuilder.CreateText(inner, "", 15, UIBuilder.TextDim, TextAnchor.MiddleLeft, false, "StatsText");
-            UIBuilder.SetAnchored(statsTextObj.gameObject, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0, y), new Vector2(210, 22));
-        }
-
-        private static void CreateSkillBarVisuals(Transform parent)
-        {
-            float slotW = 160;
-            float slotH = 55;
-            float gap = 15;
-            float totalW = MaxSkillSlots * slotW + (MaxSkillSlots - 1) * gap;
-            float startX = -totalW / 2 + slotW / 2;
-            float barY = -245;
-
-            for (int i = 0; i < MaxSkillSlots; i++)
-            {
-                var slot = UIBuilder.CreateBorderedPanel(parent, slotW, slotH, $"SkillSlot_{i}");
-                UIBuilder.SetAnchored(slot,
-                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                    new Vector2(startX + i * (slotW + gap), barY), new Vector2(slotW, slotH));
-
-                // 技能名称
-                var nameLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 16, UIBuilder.TextWhite,
-                    TextAnchor.MiddleCenter, false, "SkillName");
-                UIBuilder.SetAnchored(nameLabel.gameObject,
-                    new Vector2(0, 0.35f), new Vector2(1, 1),
-                    new Vector2(0, 0), new Vector2(0, 0));
-
-                // MP消耗标签
-                var mpLabel = UIBuilder.CreateText(slot.transform.Find("Inner"), "", 12, UIBuilder.MpColor,
-                    TextAnchor.MiddleCenter, false, "SkillMp");
-                UIBuilder.SetAnchored(mpLabel.gameObject,
-                    new Vector2(0, 0), new Vector2(1, 0.4f),
-                    new Vector2(0, 0), new Vector2(0, 0));
-            }
         }
 
         /// <summary>创建网格瓦片视觉结构（对象池）</summary>
@@ -436,8 +295,7 @@ namespace Game.UI
 
         protected override void BindReferences()
         {
-            titleText = FindComponent<Text>("TitleBar/Title");
-            statusText = FindComponent<Text>("StatusBar/StatusText");
+            floorText = FindComponent<Text>("TopBar/FloorText");
 
             // ScrollRect 地图区
             mapScrollRect = FindComponent<ScrollRect>("MapPanel/Inner/Viewport");
@@ -476,24 +334,6 @@ namespace Game.UI
             msgBtnContinueLabel = FindComponent<Text>("MapPanel/Inner/MsgOverlay/BtnContinue/Label");
             msgBtnOption2Label = FindComponent<Text>("MapPanel/Inner/MsgOverlay/BtnOption2/Label");
             msgBtnContinueRt = FindComponent<RectTransform>("MapPanel/Inner/MsgOverlay/BtnContinue");
-
-            // 右侧状态面板
-            hpSlider = FindComponent<Slider>("StatusPanel/Inner/HpSlider");
-            hpText = FindComponent<Text>("StatusPanel/Inner/HpText");
-            mpSlider = FindComponent<Slider>("StatusPanel/Inner/MpSlider");
-            mpText = FindComponent<Text>("StatusPanel/Inner/MpText");
-            expSlider = FindComponent<Slider>("StatusPanel/Inner/ExpSlider");
-            expText = FindComponent<Text>("StatusPanel/Inner/ExpText");
-            floorText = FindComponent<Text>("StatusPanel/Inner/FloorText");
-            goldText = FindComponent<Text>("StatusPanel/Inner/GoldText");
-            statsText = FindComponent<Text>("StatusPanel/Inner/StatsText");
-
-            // 底部技能栏
-            for (int i = 0; i < MaxSkillSlots; i++)
-            {
-                skillLabels[i] = FindComponent<Text>($"SkillSlot_{i}/Inner/SkillName");
-                skillMpLabels[i] = FindComponent<Text>($"SkillSlot_{i}/Inner/SkillMp");
-            }
         }
 
         protected override void BindEvents()
@@ -562,7 +402,7 @@ namespace Game.UI
                 RefreshUI();
             });
 
-            FindComponent<Button>("BtnBack").onClick.AddListener(() =>
+            FindComponent<Button>("TopBar/BtnBack").onClick.AddListener(() =>
             {
                 PlayUIClick();
                 // 内联战斗中不允许返回城镇
@@ -577,65 +417,13 @@ namespace Game.UI
                 if (GameManager.Instance.Dungeon != null)
                     GameManager.Instance.Player.dungeonFloor = GameManager.Instance.Dungeon.floor;
                 GameManager.Instance.SaveGame();
-                // 新流程：清空旧面板栈，SetState联动显示GameHUD+TownMapController
-                UIManager.Instance.ClearAll();
+                // SetState 联动 GameHUD：隐藏地牢面板 + 显示城镇地图
                 GameManager.Instance.SetState(GameState.InTown);
-            });
-
-            FindComponent<Button>("BtnBag").onClick.AddListener(() =>
-            {
-                PlayUIClick();
-                // 内联战斗中不允许打开背包面板（HUD背包仍可使用）
-                if (isInlineBattleActive)
-                {
-                    ShowBattleTip("战斗中请使用HUD背包！");
-                    return;
-                }
-                UIManager.Instance.ShowPanel<BagPanel>();
-            });
-
-            FindComponent<Button>("BtnRole").onClick.AddListener(() =>
-            {
-                PlayUIClick();
-                // 内联战斗中不允许打开角色面板
-                if (isInlineBattleActive)
-                {
-                    ShowBattleTip("战斗中无法查看角色面板！");
-                    return;
-                }
-                UIManager.Instance.ShowPanel<RoleInfoPanel>();
             });
 
             // 订阅 BattleController 事件（F171 内联战斗）
             BattleController.Instance.OnRoundComplete += OnInlineRoundComplete;
             BattleController.Instance.OnBattleEnd += OnInlineBattleEnd;
-        }
-
-        private void UpdateSkillBar(PlayerData player)
-        {
-            for (int i = 0; i < MaxSkillSlots; i++)
-            {
-                bool hasSkill = i < player.learnedSkills.Count;
-                if (hasSkill)
-                {
-                    var skillCfg = ConfigManager.Instance.GetSkill(player.learnedSkills[i]);
-                    if (skillCfg != null)
-                    {
-                        skillLabels[i].text = skillCfg.name;
-                        skillMpLabels[i].text = $"MP {skillCfg.mpCost}";
-                    }
-                    else
-                    {
-                        skillLabels[i].text = "???";
-                        skillMpLabels[i].text = "";
-                    }
-                }
-                else
-                {
-                    skillLabels[i].text = "空";
-                    skillMpLabels[i].text = "";
-                }
-            }
         }
 
         public override void OnShow()
@@ -673,40 +461,20 @@ namespace Game.UI
             var player = GameManager.Instance.Player;
             if (dungeon == null) return;
 
-            // 标题
-            titleText.text = $"地牢 第{dungeon.floor} 层";
-
-            // 顶部状态栏（内联战斗中显示战斗状态，否则默认）
+            // 顶部条层数（内联战斗中附带战斗状态）
             if (isInlineBattleActive)
             {
                 var b = BattleManager.Instance.CurrentBattle;
                 if (b != null)
                 {
                     var m = b.monster;
-                    statusText.text = $"战斗中 — {m.name} HP:{m.hp}/{m.maxHp}  点击怪物执行攻击";
+                    floorText.text = $"第 {dungeon.floor} 层  |  战斗中 — {m.name} HP:{m.hp}/{m.maxHp}";
                 }
             }
             else
             {
-                statusText.text = $"房间数 {dungeon.roomTiles.Count}  点击房间探索";
+                floorText.text = $"第 {dungeon.floor} 层";
             }
-
-            // 右侧状态面板
-            hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
-            hpText.text = $"HP  {player.hp}/{player.maxHp}";
-            mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0;
-            mpText.text = $"MP  {player.mp}/{player.maxMp}";
-
-            int expNeeded = player.GetExpToNextLevel();
-            expSlider.value = expNeeded > 0 ? (float)player.exp / expNeeded : 0;
-            expText.text = $"Lv.{player.level}  {player.exp}/{expNeeded}";
-
-            floorText.text = $"第 {dungeon.floor} 层";
-            goldText.text = $"金币: {player.gold}";
-            statsText.text = $"攻击: {player.attack}  防御: {player.defense}";
-
-            // 底部技能栏
-            UpdateSkillBar(player);
 
             // 网格地图
             UpdateGridMap(dungeon);
@@ -776,7 +544,7 @@ namespace Game.UI
                     tile.rt.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
                     tile.rt.sizeDelta = new Vector2(cellSize, cellSize);
 
-                    // === 战争迷雾渲染 ===
+                    // === 迷雾渲染（两态：已探索=可见，未探索=隐藏）===
                     if (visibility == TileVisibility.Hidden)
                     {
                         // 未探索：纯黑覆盖，不显示任何内容，不可点击
@@ -787,40 +555,23 @@ namespace Game.UI
                         tile.typeLabel.text = "";
                         tile.btn.interactable = false;
                     }
-                    else if (visibility == TileVisibility.Explored)
+                    else // Visible（已探索）
                     {
-                        // 已探索但不在视野内：显示房间颜色但alpha降低
+                        tile.fogOverlay.color = ColorFogVisible;
+
                         if (dungeonTile.tileType == TileType.Wall)
                         {
+                            // 墙壁：极暗色，无内容
                             tile.bg.color = ColorWall;
                             tile.overlay.color = Color.clear;
                             tile.iconText.text = "";
                             tile.typeLabel.text = "";
                             tile.btn.interactable = false;
                         }
-                        else
+                        else if (dungeonTile.isCleared)
                         {
-                            // 房间着色降低透明度
-                            var roomColor = GetTileColor(dungeonTile.roomType);
-                            tile.bg.color = new Color(roomColor.r, roomColor.g, roomColor.b, 0.4f);
-                            tile.iconText.text = GetTileIcon(dungeonTile.roomType);
-                            tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType);
-
-                            // 已清房间再加灰色叠加
-                            tile.overlay.color = dungeonTile.isCleared ? ColorExploredCleared : Color.clear;
-
-                            // 已探索的 Room 瓦片可点击
-                            tile.btn.interactable = true;
-                        }
-
-                        tile.fogOverlay.color = ColorFogExplored;
-                    }
-                    else // Visible
-                    {
-                        // 完全可见：正常渲染
-                        if (dungeonTile.tileType == TileType.Wall)
-                        {
-                            tile.bg.color = ColorWall;
+                            // 已触发的房间 → 空白方块（与墙壁区分）
+                            tile.bg.color = ColorEmpty;
                             tile.overlay.color = Color.clear;
                             tile.iconText.text = "";
                             tile.typeLabel.text = "";
@@ -839,15 +590,11 @@ namespace Game.UI
                             }
                             tile.iconText.text = GetTileIcon(dungeonTile.roomType);
                             tile.typeLabel.text = GetTileTypeName(dungeonTile.roomType);
+                            tile.overlay.color = Color.clear;
 
-                            // 已清房间覆盖灰色半透明
-                            tile.overlay.color = dungeonTile.isCleared ? ColorClearedOverlay : Color.clear;
-
-                            // 可见的 Room 瓦片可点击
+                            // 出口瓦片始终可点击（不走 isCleared 检查）
                             tile.btn.interactable = true;
                         }
-
-                        tile.fogOverlay.color = ColorFogVisible;
                     }
                 }
             }
@@ -931,7 +678,7 @@ namespace Game.UI
             evtTrigger.triggers.Add(exitEntry);
         }
 
-        /// <summary>鼠标进入瓦片：显示 HoverTip</summary>
+        /// <summary>鼠标进入瓦片：显示 HoverTip（固定在瓦片上方）</summary>
         private void OnTilePointerEnter(int index)
         {
             var dungeon = GameManager.Instance.Dungeon;
@@ -949,12 +696,24 @@ namespace Game.UI
             if (visibility == TileVisibility.Hidden) return;
 
             // 已清理的瓦片不显示提示
-            if (tile.isCleared) return;
+            if (tile.isCleared && tile.roomType != DungeonEventType.Exit) return;
 
             string content = BuildHoverTipContent(tile, dungeon.floor);
             if (string.IsNullOrEmpty(content)) return;
 
-            TipManager.Instance?.ShowHoverTip(content, Input.mousePosition);
+            // 计算瓦片屏幕坐标 → 转为 Tip Canvas 锚定坐标（偏移到瓦片上方）
+            Vector2 anchoredPos;
+            if (index >= 0 && index < MaxTiles && gridTiles[index].obj.activeSelf)
+            {
+                Vector2 screenPos = GetTileScreenPos(index);
+                anchoredPos = ScreenPosToTipAnchored(screenPos, cellSize + 10f);
+            }
+            else
+            {
+                anchoredPos = new Vector2(0, 200f);
+            }
+
+            TipManager.Instance?.ShowHoverTipAt(content, anchoredPos);
         }
 
         /// <summary>鼠标离开瓦片：隐藏 HoverTip</summary>
@@ -1085,7 +844,10 @@ namespace Game.UI
         {
             if (TipManager.Instance == null) return Vector2.zero;
 
-            var tipRt = TipManager.Instance.GetComponent<RectTransform>();
+            // TipManager 不一定有 RectTransform，使用其所在 Canvas 的
+            var tipCanvas = TipManager.Instance.GetComponentInParent<Canvas>();
+            var tipRt = tipCanvas != null ? tipCanvas.GetComponent<RectTransform>() : null;
+            if (tipRt == null) return Vector2.zero;
             // 先转为 Tip Canvas 坐标
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 tipRt, screenPos, null, out Vector2 localPos);
@@ -1112,12 +874,14 @@ namespace Game.UI
             // Hidden 状态不响应
             if (visibility == TileVisibility.Hidden) return;
 
-            // 边缘瓦片揭示迷雾：如果该瓦片相邻有未探索瓦片，则将其揭示
+            // 非房间不响应
+            if (tile.tileType != TileType.Room) return;
+
+            // 揭示相邻迷雾（点击时扩展视野，已清房间也能揭示）
             RevealAdjacentFog(dungeon, x, y);
 
-            // Explored/Visible 状态的 Room 瓦片：直接触发事件
-            if (tile.tileType != TileType.Room) return;
-            if (tile.isCleared) return;
+            // 已清理的非出口房间不响应事件（出口可重复进入下一层）
+            if (tile.isCleared && tile.roomType != DungeonEventType.Exit) return;
 
             // === 内联战斗中的再次点击 ===
             if (isInlineBattleActive)
@@ -1180,7 +944,7 @@ namespace Game.UI
                     break;
                 case DungeonEventType.Merchant:
                     Logger.LogI("地牢", "遇到商人");
-                    ShopWindow.OpenTownShop();
+                    HandleMerchant(tile);
                     break;
                 case DungeonEventType.Exit:
                     Logger.LogI("地牢", "进入下一层");
@@ -1282,8 +1046,8 @@ namespace Game.UI
             isInlineBattleActive = true;
             isRoundAnimating = false;
 
-            // 更新状态栏提示
-            statusText.text = $"战斗中 — {displayName} HP:{battleData.monster.hp}/{battleData.monster.maxHp}";
+            // 更新顶部条战斗状态
+            floorText.text = $"第 {dungeon.floor} 层  |  战斗中 — {displayName} HP:{battleData.monster.hp}/{battleData.monster.maxHp}";
 
             // 刷新 HUD 战斗日志
             RefreshHUDCombatLog();
@@ -1481,8 +1245,7 @@ namespace Game.UI
             if (GameManager.Instance.Dungeon != null)
                 GameManager.Instance.Dungeon.OnReturnTown();
             GameManager.Instance.SaveGame();
-            // 新流程：清空旧面板栈，SetState联动显示GameHUD+TownMapController
-            UIManager.Instance.ClearAll();
+            // SetState 联动 GameHUD：隐藏地牢面板 + 显示城镇地图
             GameManager.Instance.SetState(GameState.InTown);
 
             flashCoroutine = null;
@@ -1495,14 +1258,11 @@ namespace Game.UI
             if (b == null || !isInlineBattleActive) return;
 
             var m = b.monster;
-            statusText.text = $"战斗中 — {m.name} HP:{m.hp}/{m.maxHp}";
+            var dungeon = GameManager.Instance.Dungeon;
+            floorText.text = $"第 {dungeon.floor} 层  |  战斗中 — {m.name} HP:{m.hp}/{m.maxHp}";
 
-            // 更新右侧状态面板的 HP/MP
-            var player = GameManager.Instance.Player;
-            hpSlider.value = player.maxHp > 0 ? (float)player.hp / player.maxHp : 0;
-            hpText.text = $"HP  {player.hp}/{player.maxHp}";
-            mpSlider.value = player.maxMp > 0 ? (float)player.mp / player.maxMp : 0;
-            mpText.text = $"MP  {player.mp}/{player.maxMp}";
+            // 刷新 HUD 角色信息（HP/MP 等由 GameHUD 显示）
+            RefreshHUDCharInfo();
         }
 
         /// <summary>刷新 HUD 战斗日志</summary>
@@ -1634,13 +1394,32 @@ namespace Game.UI
             room.cleared = true;
         }
 
-        /// <summary>技能神殿：遍历全技能池，筛选未学技能，随机免费学习一个</summary>
+        /// <summary>商人方块：用 ThreeChooseOneWindow 商人模式（3件8折选1）</summary>
+        private void HandleMerchant(DungeonTile tile)
+        {
+            var items = ConfigManager.Instance.GetAllItems();
+            if (items == null || items.Count == 0) return;
+
+            // 随机选3件物品
+            var shuffled = new List<ItemConfig>(items);
+            for (int i = shuffled.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                var tmp = shuffled[i];
+                shuffled[i] = shuffled[j];
+                shuffled[j] = tmp;
+            }
+            var merchantItems = shuffled.GetRange(0, Mathf.Min(3, shuffled.Count));
+            ThreeChooseOneWindow.OpenMerchant(merchantItems);
+        }
+
+        /// <summary>技能神殿：用 ThreeChooseOneWindow 神殿模式（3技能选1）</summary>
         private void HandleShrine(DungeonTile tile)
         {
             AudioManager.Instance?.PlaySFX(AudioClipType.Dungeon_MagicLearn);
             var player = GameManager.Instance.Player;
 
-            // 遍历全技能池，筛选玩家未学的技能（含被动）
+            // 遍历全技能池，筛选未学技能
             var allSkills = ConfigManager.Instance.GetAllSkills();
             var unlearned = new List<SkillConfig>();
             foreach (var skill in allSkills)
@@ -1649,27 +1428,28 @@ namespace Game.UI
                 unlearned.Add(skill);
             }
 
-            if (unlearned.Count > 0)
-            {
-                // 随机选一个免费学习（0金币）
-                var chosen = unlearned[Random.Range(0, unlearned.Count)];
-                player.LearnSkill(chosen.id);
-                pendingMessage = $"技能神殿：你领悟了 {chosen.name}！\n{chosen.desc}";
-                Logger.LogI("神殿", $"免费习得技能 {chosen.name}(id={chosen.id})");
+            bool fallbackHeal = unlearned.Count == 0 || player.learnedSkills.Count >= GameConstants.MAX_SKILL_SLOTS;
 
-                // 如果SkillLearnPanel打开着，刷新显示
-                TryRefreshSkillLearnPanel();
+            if (!fallbackHeal && unlearned.Count > 0)
+            {
+                // 随机选3个未学技能
+                for (int i = unlearned.Count - 1; i > 0; i--)
+                {
+                    int j = Random.Range(0, i + 1);
+                    var tmp = unlearned[i];
+                    unlearned[i] = unlearned[j];
+                    unlearned[j] = tmp;
+                }
+                var shrineSkills = unlearned.GetRange(0, Mathf.Min(3, unlearned.Count));
+                ThreeChooseOneWindow.OpenShrine(shrineSkills, false);
             }
             else
             {
-                // 所有技能已学，改为恢复效果
-                int hpHeal = player.maxHp / 2;
-                player.hp = Mathf.Min(player.hp + hpHeal, player.maxHp);
-                pendingMessage = "技能神殿：你已领悟所有技能！\n恢复了生命值";
+                // 全已学或槽满，兜底恢复HP
+                ThreeChooseOneWindow.OpenShrine(new List<SkillConfig>(), true);
             }
 
             tile.isCleared = true;
-
             var room = FindMatchingRoom(GameManager.Instance.Dungeon, tile);
             room.cleared = true;
         }
@@ -1690,13 +1470,7 @@ namespace Game.UI
             var currentDungeon = GameManager.Instance.Dungeon;
             int nextFloor = currentDungeon.floor + 1;
 
-            // 标记出口房间为已清理
-            if (tile != null)
-            {
-                tile.isCleared = true;
-                var exitRoom = FindMatchingRoom(currentDungeon, tile);
-                exitRoom.cleared = true;
-            }
+            // 出口不标记 isCleared，始终可见可点击
 
             // 通关检查
             if (nextFloor > currentDungeon.maxFloor)
