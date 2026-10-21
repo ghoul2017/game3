@@ -711,7 +711,7 @@ namespace Game.UI
             nameRt.offsetMax = new Vector2(-4, 0);
             var nameText = nameObj.AddComponent<Text>();
             nameText.text = "";
-            nameText.fontSize = 13;
+            nameText.fontSize = 20;
             nameText.color = UIColors.TextWhite;
             nameText.alignment = TextAnchor.MiddleCenter;
             nameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -725,7 +725,7 @@ namespace Game.UI
             mpRt.offsetMax = new Vector2(-4, 0);
             var mpText = mpObj.AddComponent<Text>();
             mpText.text = "";
-            mpText.fontSize = 11;
+            mpText.fontSize = 15;
             mpText.color = UIColors.Blue;
             mpText.alignment = TextAnchor.MiddleCenter;
             mpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
