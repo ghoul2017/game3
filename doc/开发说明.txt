@@ -1,2 +1,5 @@
-1.阅读 https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents 学习强化自己
-2.阅读项目设计.txt 来开发本项目
+本项目使用 Unity 2022.3.62f3c1，入口为 Assets/Scenes/SampleScene.unity。
+
+初始需求见《项目设计.txt》，当前玩法规则见《现行设计.md》。运行、配置、测试与构建说明统一见仓库根 README.md。
+
+feature_list.json 与 progress.txt 保留旧开发历史，不作为现行需求、待办或验收依据。原自动循环开发脚本已退出当前流程，后续变更以实际需求和行为验证为准。

@@ -2,91 +2,52 @@ using UnityEngine;
 
 namespace Game.Core
 {
-    /// <summary>
-    /// 设置管理器单例，统一管理用户偏好设置的读写和运行时应用。
-    /// 数据持久化使用 PlayerPrefs。
-    /// </summary>
-    public class SettingsManager
+    public sealed class SettingsManager
     {
-        private static SettingsManager instance;
-        public static SettingsManager Instance => instance ??= new SettingsManager();
-
-        // --- 设置数据 ---
-        public float MusicVolume { get; set; } = 1f;
-        public float SfxVolume { get; set; } = 1f;
-        public bool Fullscreen { get; set; } = true;
-        public int ResIndex { get; set; }
-        public int LangIndex { get; set; }
-
-        // --- 选项列表 ---
-        public static readonly string[] Resolutions = { "1920x1080", "1600x900", "1280x720" };
-        public static readonly string[] Languages = { "中文", "English" };
-
-        // --- PlayerPrefs 键 ---
-        private const string KeyMusic = "Settings_MusicVolume";
-        private const string KeySfx = "Settings_SfxVolume";
-        private const string KeyFullscreen = "Settings_Fullscreen";
-        private const string KeyResIndex = "Settings_ResIndex";
-        private const string KeyLangIndex = "Settings_LangIndex";
-
-        /// <summary>从 PlayerPrefs 加载设置</summary>
-        public void Load()
+        public static SettingsManager Instance { get; } = new SettingsManager();
+        public float MusicVolume
         {
-            MusicVolume = PlayerPrefs.GetFloat(KeyMusic, 1f);
-            SfxVolume = PlayerPrefs.GetFloat(KeySfx, 1f);
-            Fullscreen = PlayerPrefs.GetInt(KeyFullscreen, Screen.fullScreen ? 1 : 0) == 1;
-            ResIndex = Mathf.Clamp(PlayerPrefs.GetInt(KeyResIndex, 0), 0, Resolutions.Length - 1);
-            LangIndex = Mathf.Clamp(PlayerPrefs.GetInt(KeyLangIndex, 0), 0, Languages.Length - 1);
+            get; set;
+        }
+        public float SfxVolume
+        {
+            get; set;
         }
 
-        /// <summary>保存当前设置到 PlayerPrefs</summary>
+        private SettingsManager()
+        {
+            MusicVolume = PlayerPrefs.GetFloat("Ember.Music", 0.45f);
+            SfxVolume = PlayerPrefs.GetFloat("Ember.Sfx", 0.65f);
+        }
+
+        public void ApplyAudio()
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.MusicVolume = MusicVolume;
+                AudioManager.Instance.SoundVolume = SfxVolume;
+            }
+        }
+
         public void Save()
         {
-            PlayerPrefs.SetFloat(KeyMusic, MusicVolume);
-            PlayerPrefs.SetFloat(KeySfx, SfxVolume);
-            PlayerPrefs.SetInt(KeyFullscreen, Fullscreen ? 1 : 0);
-            PlayerPrefs.SetInt(KeyResIndex, ResIndex);
-            PlayerPrefs.SetInt(KeyLangIndex, LangIndex);
+            PlayerPrefs.SetFloat("Ember.Music", MusicVolume);
+            PlayerPrefs.SetFloat("Ember.Sfx", SfxVolume);
             PlayerPrefs.Save();
         }
 
-        /// <summary>应用全屏设置到 Screen</summary>
-        public void ApplyFullscreen()
+        public void SetDisplay(int width, int height, bool fullscreen)
         {
-            Screen.fullScreen = Fullscreen;
+            Screen.SetResolution(width, height, fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
+            PlayerPrefs.SetInt("Ember.Width", width);
+            PlayerPrefs.SetInt("Ember.Height", height);
+            PlayerPrefs.SetInt("Ember.Fullscreen", fullscreen ? 1 : 0);
+            PlayerPrefs.Save();
         }
 
-        /// <summary>应用分辨率设置到 Screen</summary>
-        public void ApplyResolution()
+        public void ApplyDisplay()
         {
-            var parts = Resolutions[ResIndex].Split('x');
-            int w = int.Parse(parts[0]);
-            int h = int.Parse(parts[1]);
-            Screen.SetResolution(w, h, Fullscreen);
-        }
-
-        /// <summary>加载并应用全部设置</summary>
-        public void LoadAndApply()
-        {
-            Load();
-            ApplySettings();
-        }
-
-        /// <summary>
-        /// 应用当前设置（全屏、分辨率、音量同步到 AudioManager）
-        /// </summary>
-        public void ApplySettings()
-        {
-            ApplyFullscreen();
-            ApplyResolution();
-
-            // 同步音量到音频管理器
-            var am = AudioManager.Instance;
-            if (am != null)
-            {
-                am.SoundVolume = SfxVolume;
-                am.MusicVolume = MusicVolume;
-            }
+            Screen.SetResolution(PlayerPrefs.GetInt("Ember.Width", 1600), PlayerPrefs.GetInt("Ember.Height", 900), PlayerPrefs.GetInt("Ember.Fullscreen", 0) == 1 ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
         }
     }
 }

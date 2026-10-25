@@ -1,0 +1,5 @@
+{
+  "name": "Game.PlayTests",
+  "references": ["Game.Runtime", "Unity.ugui"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

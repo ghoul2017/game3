@@ -1,25 +1,42 @@
-using UnityEngine;
+using System;
+using System.IO;
 using Game.UI;
+using UnityEngine;
 
 namespace Game.Core
 {
-    /// <summary>
-    /// 游戏启动入口，挂载到场景 GameObject 上
-    /// </summary>
-    public class GameEntry : MonoBehaviour
+    public sealed class GameEntry : MonoBehaviour
     {
-        private void Awake()
-        {
-            Logger.LogI("GameEntry", "初始化音频系统");
-            AudioManager.EnsureCreated();
-        }
+        private string startupError;
 
         private void Start()
         {
-            Logger.LogI("GameEntry", "方块与地下城 启动");
-            UIManager.EnsureCreated();
-            GameHUD.Create();  // 创建 HUD（初始隐藏）
-            UIManager.Instance.ShowPanel<MainPanel>();
+            try
+            {
+                Application.targetFrameRate = 60;
+                AudioManager.EnsureCreated();
+                SettingsManager.Instance.ApplyAudio();
+                SettingsManager.Instance.ApplyDisplay();
+                GameConfig config = new GameConfig();
+                SaveStore store = new SaveStore(Path.Combine(Application.persistentDataPath, "adventure-v2.json"));
+                AdventureSession session = new AdventureSession(config, store);
+                gameObject.AddComponent<AdventureView>().Initialize(session);
+                Debug.Log("[启动] 方块与地下城界面初始化完成。");
+            }
+            catch (Exception exception)
+            {
+                startupError = $"游戏无法启动：{exception.Message}";
+                Debug.LogError($"[启动] {exception}");
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (!string.IsNullOrEmpty(startupError))
+            {
+                GUIStyle style = new GUIStyle(GUI.skin.label) { font = SlateUI.Font, fontSize = 24, wordWrap = true };
+                GUI.Label(new Rect(40, 40, Screen.width - 80, Screen.height - 80), startupError, style);
+            }
         }
     }
 }

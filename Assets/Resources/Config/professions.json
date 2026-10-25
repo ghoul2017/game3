@@ -1,74 +1,129 @@
 {
   "list": [
     {
-      "profession": 0,
-      "name": "\u6218\u58eb",
-      "desc": "\u8fd1\u6218\u7269\u7406\u8f93\u51fa\uff0c\u9ad8\u653b\u51fb\u9ad8\u751f\u547d",
-      "strBase": 12, "strGrow": 3,
-      "agiBase": 6, "agiGrow": 1,
-      "intBase": 4, "intGrow": 1,
-      "vitBase": 10, "vitGrow": 2,
-      "hpBase": 50, "mpBase": 20,
-      "atkBase": 8, "defBase": 4,
-      "critBase": 5, "dodgeBase": 3,
-      "speedBase": 10,
-      "defaultSkillIds": [1001]
+      "id": 0,
+      "name": "战士",
+      "title": "钢铁与血",
+      "description": "用流血削弱强敌，凭借充沛生命正面交锋。",
+      "symbol": "剑",
+      "basis": {
+        "hp": 125,
+        "mp": 35,
+        "attack": 20,
+        "magic": 8,
+        "defense": 5,
+        "speed": 9
+      },
+      "growth": {
+        "hp": 13,
+        "mp": 3,
+        "attack": 4,
+        "magic": 1,
+        "defense": 1,
+        "speed": 0
+      },
+      "startingSkill": 101,
+      "startingWeapon": 1001
     },
     {
-      "profession": 1,
-      "name": "\u6e38\u4fa0",
-      "desc": "\u8fdc\u7a0b\u7269\u7406\u8f93\u51fa\uff0c\u9ad8\u66b4\u51fb\u9ad8\u95ea\u907f",
-      "strBase": 8, "strGrow": 2,
-      "agiBase": 12, "agiGrow": 3,
-      "intBase": 6, "intGrow": 1,
-      "vitBase": 6, "vitGrow": 1,
-      "hpBase": 35, "mpBase": 30,
-      "atkBase": 6, "defBase": 2,
-      "critBase": 10, "dodgeBase": 10,
-      "speedBase": 12,
-      "defaultSkillIds": [2001]
+      "id": 1,
+      "name": "游侠",
+      "title": "林间的猎手",
+      "description": "高速先手，用毒箭持续消耗敌人。",
+      "symbol": "弓",
+      "basis": {
+        "hp": 95,
+        "mp": 45,
+        "attack": 18,
+        "magic": 12,
+        "defense": 3,
+        "speed": 15
+      },
+      "growth": {
+        "hp": 10,
+        "mp": 4,
+        "attack": 4,
+        "magic": 2,
+        "defense": 1,
+        "speed": 1
+      },
+      "startingSkill": 201,
+      "startingWeapon": 1002
     },
     {
-      "profession": 2,
-      "name": "\u9a91\u58eb",
-      "desc": "\u8fd1\u6218\u5766\u514b\uff0c\u9ad8\u9632\u5fa1\u9ad8\u751f\u547d",
-      "strBase": 8, "strGrow": 2,
-      "agiBase": 4, "agiGrow": 1,
-      "intBase": 4, "intGrow": 1,
-      "vitBase": 14, "vitGrow": 3,
-      "hpBase": 70, "mpBase": 15,
-      "atkBase": 5, "defBase": 10,
-      "critBase": 3, "dodgeBase": 2,
-      "speedBase": 10,
-      "defaultSkillIds": [3001]
+      "id": 2,
+      "name": "骑士",
+      "title": "不灭的誓言",
+      "description": "护盾抵挡重击，控制打断敌人行动。",
+      "symbol": "盾",
+      "basis": {
+        "hp": 145,
+        "mp": 35,
+        "attack": 16,
+        "magic": 10,
+        "defense": 8,
+        "speed": 6
+      },
+      "growth": {
+        "hp": 15,
+        "mp": 3,
+        "attack": 3,
+        "magic": 1,
+        "defense": 2,
+        "speed": 0
+      },
+      "startingSkill": 301,
+      "startingWeapon": 1003
     },
     {
-      "profession": 3,
-      "name": "\u7267\u5e08",
-      "desc": "\u6cbb\u7597\u8f85\u52a9\uff0c\u9ad8\u6cd5\u529b\u9ad8\u6062\u590d",
-      "strBase": 4, "strGrow": 1,
-      "agiBase": 6, "agiGrow": 1,
-      "intBase": 12, "intGrow": 3,
-      "vitBase": 8, "vitGrow": 2,
-      "hpBase": 40, "mpBase": 60,
-      "atkBase": 3, "defBase": 3,
-      "critBase": 4, "dodgeBase": 5,
-      "speedBase": 10,
-      "defaultSkillIds": [4001]
+      "id": 3,
+      "name": "牧师",
+      "title": "微光的守护",
+      "description": "以圣光击退敌人，用治疗维持长途探索。",
+      "symbol": "光",
+      "basis": {
+        "hp": 105,
+        "mp": 65,
+        "attack": 10,
+        "magic": 20,
+        "defense": 4,
+        "speed": 10
+      },
+      "growth": {
+        "hp": 11,
+        "mp": 6,
+        "attack": 2,
+        "magic": 4,
+        "defense": 1,
+        "speed": 0
+      },
+      "startingSkill": 401,
+      "startingWeapon": 1004
     },
     {
-      "profession": 4,
-      "name": "\u6cd5\u5e08",
-      "desc": "\u8fdc\u7a0b\u9b54\u6cd5\u8f93\u51fa\uff0c\u9ad8\u9b54\u6cd5\u4f24\u5bb3",
-      "strBase": 4, "strGrow": 1,
-      "agiBase": 6, "agiGrow": 1,
-      "intBase": 14, "intGrow": 3,
-      "vitBase": 6, "vitGrow": 1,
-      "hpBase": 30, "mpBase": 70,
-      "atkBase": 4, "defBase": 2,
-      "critBase": 6, "dodgeBase": 4,
-      "speedBase": 10,
-      "defaultSkillIds": [5001]
+      "id": 4,
+      "name": "法师",
+      "title": "余烬的低语",
+      "description": "以法术和冰冻控制敌人，留意生命与法力。",
+      "symbol": "焰",
+      "basis": {
+        "hp": 85,
+        "mp": 75,
+        "attack": 8,
+        "magic": 25,
+        "defense": 3,
+        "speed": 11
+      },
+      "growth": {
+        "hp": 9,
+        "mp": 7,
+        "attack": 1,
+        "magic": 5,
+        "defense": 1,
+        "speed": 0
+      },
+      "startingSkill": 501,
+      "startingWeapon": 1005
     }
   ]
 }
